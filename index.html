@@ -231,7 +231,7 @@ var V={
       obhliadkaBody(o),'editObhliadka',true,
       o.klientId?'':'<button class="btn-edit" style="background:#16a34a" onclick="convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>')}],
   spravy:['spravyList','Žiadne správy.',function(a,b){return (b.ts||0)-(a.ts||0)},function(s){
-    return card('spravy',s,'💬 Od: '+esc(s.author||'Anonym')+(s.toNames&&s.toNames.length?' → Pre: '+s.toNames.map(esc).join(', '):''),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':''))}]
+    return card('spravy',s,'💬 Od: '+esc(s.author||'Anonym')+(s.toNames&&s.toNames.length?' → Pre: '+s.toNames.map(esc).join(', '):''),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':''),false,true)}]
 };
 function render(){
   COLS.forEach(function(c){
