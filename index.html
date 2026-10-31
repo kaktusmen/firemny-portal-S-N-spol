@@ -144,6 +144,7 @@ function delItem(c,id){
   if(!confirm('Naozaj zmazať túto položku?'))return;
   col(c).doc(id).delete().catch(function(){toast('Mazanie zlyhalo!')});
   if(c==='clients'&&$('editingClientId').value===id)clearClient();
+  if(c==='obhliadky'&&$('editingObhliadkaId').value===id)clearObhliadka();
 }
 
 // ---------- Záloha ----------
@@ -185,12 +186,12 @@ function goHome(){
 }
 
 // ---------- Zobrazenie ----------
-function card(c,o,title,body,edit,collapsed){
+function card(c,o,title,body,edit,collapsed,extra){
   var id=esc(o.id);
   var tg=collapsed?' style="cursor:pointer" title="Kliknutím zobrazíte detaily" onclick="var n=this.parentNode.nextElementSibling;if(n)n.style.display=(n.style.display===\'none\'?\'block\':\'none\')"':'';
   return '<div class="item-card"><div class="item-card-header"><span class="item-card-title"'+tg+'>'+title+'</span><div class="btn-group">'+
     (edit?'<button class="btn-edit" onclick="'+(edit===true?'editClient':edit)+'(\''+id+'\')">Upraviť</button>':'')+
-    '<button class="btn-delete" onclick="delItem(\''+c+'\',\''+id+'\')">Zmazať</button></div></div>'+
+    (extra||'')+'<button class="btn-delete" onclick="delItem(\''+c+'\',\''+id+'\')">Zmazať</button></div></div>'+
     (body?'<div class="item-note"'+(collapsed?' style="display:none"':'')+'>'+body+'</div>':'')+'</div>';
 }
 var V={
@@ -207,7 +208,9 @@ var V={
   members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
     return card('members',t,'🛡️ '+esc(t.name||''),'Tel: '+esc(t.telefon||'-'),'editMember')}],
   obhliadky:['obhliadkaList','Žiadne obhliadky.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(o){
-    return card('obhliadky',o,'🔍 '+esc(o.name||'')+' ('+esc(o.date||'')+')','')}],
+    return card('obhliadky',o,'🔍 '+esc(onm(o))+(o.obec?' – '+esc(o.obec):'')+(o.date?' ('+esc(o.date)+')':'')+(o.klientId?' ✅':''),
+      obhliadkaBody(o),'editObhliadka',true,
+      o.klientId?'':'<button class="btn-edit" style="background:#16a34a" onclick="convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>')}],
   spravy:['spravyList','Žiadne správy.',function(a,b){return (b.ts||0)-(a.ts||0)},function(s){
     return card('spravy',s,'💬 '+esc(s.author||'Anonym'),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':''))}]
 };
@@ -291,10 +294,50 @@ function editMember(id){
   $('editingMemberId').value=t.id;$('memberSaveBtn').innerText='Aktualizovať člena';$('memberCancelBtn').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
+var OF=['Meno','Priezvisko','Obec','Adresa','Telefon','Email','Zariadenie','Budova','Stena','Vnutorna','Vonkajsia','Elektro','Odvod'];
+var OL=[['zariadenie','Typ zariadenia'],['budova','Typ budovy'],['stena','Stena'],['vnutorna','Vnútorná jednotka'],['vonkajsia','Vonkajšia jednotka'],['elektro','Elektrické pripojenie'],['odvod','Odvod kondenzátu']];
+function onm(o){return o.name||((o.meno||'')+' '+(o.priezvisko||'')).trim()||'Obhliadka'}
+function obhliadkaBody(o){
+  return '<strong>Telefón:</strong> '+telA(o.telefon)+' | <strong>E-mail:</strong> '+mailA(o.email)+'\n<strong>Adresa:</strong> '+mapA(o)+
+    OL.map(function(x){return o[x[0]]?'\n<strong>'+x[1]+':</strong> '+esc(o[x[0]]):''}).join('');
+}
+function clearObhliadka(){
+  OF.forEach(function(n){$('o'+n).value=''});$('oDate').value='';
+  $('editingObhliadkaId').value='';$('obhliadkaSaveBtn').innerText='Uložiť obhliadku';$('obhliadkaCancelBtn').style.display='none';
+}
 function saveObhliadka(){
-  var n=$('oName').value.trim();if(!n){toast('Zadajte meno klienta / opis');return}
-  put('obhliadky',{name:n,date:$('oDate').value});
-  $('oName').value='';$('oDate').value='';toast('Obhliadka uložená!');
+  var o={};
+  OF.forEach(function(n){o[lf(n)]=$('o'+n).value.trim()});
+  o.name=(o.meno+' '+o.priezvisko).trim();
+  if(!o.name){toast('Zadajte meno alebo priezvisko');return}
+  o.date=$('oDate').value;
+  var eid=$('editingObhliadkaId').value||null;
+  if(eid){var old=findById('obhliadky',eid);if(old&&old.klientId)o.klientId=old.klientId}
+  put('obhliadky',o,eid);
+  clearObhliadka();toast(eid?'Obhliadka aktualizovaná!':'Obhliadka uložená!');
+}
+function editObhliadka(id){
+  var o=findById('obhliadky',id);if(!o)return;
+  openSection('obhliadkaSection','Obhliadky');
+  OF.forEach(function(n){$('o'+n).value=o[lf(n)]||''});
+  if(!o.meno&&!o.priezvisko)$('oMeno').value=o.name||'';
+  $('oDate').value=o.date||'';
+  $('editingObhliadkaId').value=o.id;$('obhliadkaSaveBtn').innerText='Aktualizovať obhliadku';$('obhliadkaCancelBtn').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function convertObhliadka(id){
+  var o=findById('obhliadky',id);if(!o||o.klientId)return;
+  if(!confirm('Klient potvrdil montáž? Vytvorí sa nová karta klienta z tejto obhliadky.'))return;
+  var det=OL.filter(function(x){return o[x[0]]&&x[0]!=='zariadenie'}).map(function(x){return x[1]+': '+o[x[0]]}).join(', ');
+  var cid=col('clients').doc().id;
+  var c={meno:o.meno||(o.priezvisko?'':o.name)||'',priezvisko:o.priezvisko||'',obec:o.obec||'',adresa:o.adresa||'',telefon:o.telefon||'',email:o.email||'',
+    zariadenie:o.zariadenie||'',znacka:'',snVnutorna:'',snVonkajsia:'',datumMontaze:'',zarukaRoky:'',
+    poznamky:'Z obhliadky'+(o.date?' '+o.date:'')+(det?': '+det:'')};
+  c.name=(c.meno+' '+c.priezvisko).trim()||onm(o);
+  put('clients',c,cid);
+  col('obhliadky').doc(id).update({klientId:cid}).catch(function(){toast('Obhliadku sa nepodarilo označiť')});
+  toast('Klient vytvorený – doplňte záruku a značku');
+  openSection('clientsSection','Správa klientov');
 }
 function saveSprava(){
   var t=$('sText').value.trim();if(!t){toast('Napíšte text správy');return}
@@ -326,14 +369,19 @@ function showEvent(type,id){
       info='<h3>🔧 '+esc(o.title||'Montáž')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+
         (o.memberNames&&o.memberNames.length?'<div class="modal-row"><strong>Tím:</strong> '+o.memberNames.map(esc).join(', ')+'</div>':'');
     }else{
-      info='<h3>🔍 Obhliadka</h3><div class="modal-row"><strong>Klient / opis:</strong> '+esc(o.name||'-')+'</div><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+'</div>';
+      c=(o.klientId&&findById('clients',o.klientId))||null;
+      info='<h3>🔍 Obhliadka: '+esc(onm(o))+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+'</div>'+
+        '<div class="modal-row"><strong>Telefón:</strong> '+telA(o.telefon)+'</div><div class="modal-row"><strong>E-mail:</strong> '+mailA(o.email)+'</div><div class="modal-row"><strong>Adresa:</strong> '+mapA(o)+'</div>'+
+        OL.map(function(x){return o[x[0]]?'<div class="modal-row"><strong>'+x[1]+':</strong> '+esc(o[x[0]])+'</div>':''}).join('');
+      var edO='<button class="btn-edit" onclick="closeEvent();editObhliadka(\''+esc(o.id)+'\')">Upraviť obhliadku</button>'+
+        (o.klientId?'':'<button class="btn-edit" style="background:#16a34a" onclick="closeEvent();convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>');
     }
     var nmx=(o.clientName||o.name||'').trim().toLowerCase();
     if(!c&&nmx)c=dbData.clients.filter(function(x){return nm(x).toLowerCase()===nmx})[0]||null;
   }
   var h=info+(info?'<div class="modal-sep"></div>':'')+
-    (c?clientDetail(c):'<div class="modal-row">Karta klienta sa nenašla.</div>')+
-    '<div class="modal-actions">'+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
+    (c?clientDetail(c):(type==='obhliadky'?'':'<div class="modal-row">Karta klienta sa nenašla.</div>'))+
+    '<div class="modal-actions">'+(typeof edO!=='undefined'?edO:'')+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
     '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
 }
@@ -456,8 +504,26 @@ window.onload=function(){
   <div id="obhliadkaSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
     <h2>Obhliadky</h2>
-    <div class="form-grid"><input type="text" id="oName" placeholder="Meno klienta / opis"><input type="date" id="oDate"></div>
-    <button class="action-btn" onclick="saveObhliadka()">Uložiť obhliadku</button>
+    <p style="color:#64748b;font-size:.9rem;margin-top:0">Obhliadka je pre potenciálneho klienta. Keď klient potvrdí montáž, preklopíš ho na kartu klienta.</p>
+    <input type="hidden" id="editingObhliadkaId" value="">
+    <div class="form-grid">
+      <input type="text" id="oMeno" placeholder="Meno">
+      <input type="text" id="oPriezvisko" placeholder="Priezvisko">
+      <input type="text" id="oTelefon" placeholder="Telefón">
+      <input type="email" id="oEmail" placeholder="E-mail">
+      <input type="text" id="oObec" placeholder="Obec">
+      <input type="text" id="oAdresa" placeholder="Adresa">
+      <input type="date" id="oDate" title="Dátum obhliadky" class="full-width-input">
+      <select id="oZariadenie"><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option></select>
+      <select id="oBudova"><option value="">-- Typ budovy --</option><option>Dom</option><option>Byt</option></select>
+      <select id="oStena"><option value="">-- Stena --</option><option>Betón</option><option>Tehla</option></select>
+      <select id="oVnutorna"><option value="">-- Miesto zabudovania vnútornej jednotky --</option><option>Obývacia izba</option><option>Kuchyňa</option><option>Detská izba</option></select>
+      <select id="oVonkajsia"><option value="">-- Vonkajšia jednotka --</option><option>Pod okno</option><option>Na konzolu</option><option>Na nohy</option></select>
+      <select id="oElektro"><option value="">-- Elektrické pripojenie --</option><option>Na istič</option><option>Na zásuvku</option></select>
+      <select id="oOdvod"><option value="">-- Odvod kondenzátu --</option><option>Do zbernej nádoby</option><option>Exteriér</option><option>Interiér</option></select>
+    </div>
+    <button class="action-btn" id="obhliadkaSaveBtn" onclick="saveObhliadka()">Uložiť obhliadku</button>
+    <button class="back-btn" id="obhliadkaCancelBtn" style="display:none" onclick="clearObhliadka()">✖ Zrušiť úpravu</button>
     <h3>Zoznam obhliadok</h3><div id="obhliadkaList">Načítavam...</div>
   </div>
 
