@@ -38,6 +38,14 @@ button.action-btn{background:var(--primary);color:#fff;border:none;font-weight:b
 .calendar-cell.empty{background:#f1f5f9;opacity:.4}
 .calendar-cell.today{border:2px solid var(--primary)}
 .calendar-day-number{font-weight:bold;font-size:.85rem;margin-bottom:4px;border-bottom:1px solid #f1f5f9}
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000}
+.modal-box{background:#fff;border-radius:12px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.modal-box h3{margin-top:0;color:var(--primary)}
+.modal-row{margin:6px 0;font-size:.95rem;color:#334155}
+.modal-sep{border-top:1px solid #e2e8f0;margin:12px 0}
+.modal-actions{display:flex;gap:8px;margin-top:14px}
+.modal-actions button{margin:0}
+.cal-event-card{cursor:pointer}
 .cal-event-card{padding:3px 5px;border-radius:4px;margin-bottom:3px;font-size:.75rem;color:#fff;word-break:break-word}
 .cal-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;margin-top:10px}
 .cal-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-2px}
@@ -263,6 +271,39 @@ function saveSprava(){
 // ---------- Kalendár ----------
 function changeMonth(d){viewMonth+=d;if(viewMonth<0){viewMonth=11;viewYear--}if(viewMonth>11){viewMonth=0;viewYear++}renderCalendar()}
 function goToday(){var n=new Date();viewYear=n.getFullYear();viewMonth=n.getMonth();renderCalendar()}
+function findById(c,id){return dbData[c].filter(function(x){return x.id===id})[0]}
+function clientDetail(c){
+  var r=function(l,v){return '<div class="modal-row"><strong>'+l+':</strong> '+esc(v||'-')+'</div>'};
+  return '<h3>👤 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):'')+'</h3>'+
+    r('Telefón',c.telefon)+r('E-mail',c.email)+r('Adresa',c.adresa)+
+    r('Zariadenie',(c.zariadenie||'-')+(c.znacka?' ('+c.znacka+')':''))+
+    r('S/N vnútornej',c.snVnutorna||c.vyrobneCislo)+r('S/N vonkajšej',c.snVonkajsia)+
+    r('Záruka',c.zarukaRoky?c.zarukaRoky+' r.':'')+r('Dátum montáže',c.datumMontaze)+
+    (c.poznamky?r('Poznámky',c.poznamky):'');
+}
+function showEvent(type,id){
+  var o=findById(type,id);if(!o)return;
+  var c=null,info='';
+  if(type==='clients'){c=o}
+  else{
+    if(type==='montaze'){
+      c=(o.clientId&&findById('clients',o.clientId))||null;
+      info='<h3>🔧 '+esc(o.title||'Montáž')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+
+        (o.memberNames&&o.memberNames.length?'<div class="modal-row"><strong>Tím:</strong> '+o.memberNames.map(esc).join(', ')+'</div>':'');
+    }else{
+      info='<h3>🔍 Obhliadka</h3><div class="modal-row"><strong>Klient / opis:</strong> '+esc(o.name||'-')+'</div><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+'</div>';
+    }
+    var nmx=(o.clientName||o.name||'').trim().toLowerCase();
+    if(!c&&nmx)c=dbData.clients.filter(function(x){return nm(x).toLowerCase()===nmx})[0]||null;
+  }
+  var h=info+(info?'<div class="modal-sep"></div>':'')+
+    (c?clientDetail(c):'<div class="modal-row">Karta klienta sa nenašla.</div>')+
+    '<div class="modal-actions">'+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
+    '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
+  $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
+}
+function closeEvent(){$('eventModal').style.display='none'}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEvent()});
 function renderCalendar(){
   var g=$('calendarDaysGrid');if(!g)return;
   $('calTitle').textContent=MONTHS[viewMonth]+' '+viewYear;
@@ -272,9 +313,9 @@ function renderCalendar(){
   for(var i=0;i<first;i++)h+='<div class="calendar-cell empty"></div>';
   for(var d=1;d<=total;d++){
     var ds=viewYear+'-'+p(viewMonth+1)+'-'+p(d),ev='';
-    dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:#0d9488">🔧 '+(m.time?esc(m.time)+' ':'')+esc(m.title)+'</div>'});
-    dbData.obhliadky.forEach(function(o){if(o.date===ds)ev+='<div class="cal-event-card" style="background:#7c3aed">🔍 '+esc(o.name)+'</div>'});
-    dbData.clients.forEach(function(c){if(c.datumMontaze===ds)ev+='<div class="cal-event-card" style="background:#d97706">👤 '+esc(nm(c))+'</div>'});
+    dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:#0d9488" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">🔧 '+(m.time?esc(m.time)+' ':'')+esc(m.title)+'</div>'});
+    dbData.obhliadky.forEach(function(o){if(o.date===ds)ev+='<div class="cal-event-card" style="background:#7c3aed" onclick="showEvent(\'obhliadky\',\''+esc(o.id)+'\')">🔍 '+esc(o.name)+'</div>'});
+    dbData.clients.forEach(function(c){if(c.datumMontaze===ds)ev+='<div class="cal-event-card" style="background:#d97706" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">👤 '+esc(nm(c))+'</div>'});
     h+='<div class="calendar-cell'+(ds===today?' today':'')+'"><div class="calendar-day-number">'+d+'</div>'+ev+'</div>';
   }
   g.innerHTML=h;
@@ -393,6 +434,7 @@ window.onload=function(){
   </div>
   </div>
 </div>
+<div id="eventModal" class="modal-bg" onclick="if(event.target===this)closeEvent()"><div class="modal-box" id="eventModalBody"></div></div>
 <div id="toast"></div>
 </body>
 </html>
