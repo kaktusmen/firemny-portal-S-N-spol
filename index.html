@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firemný Portál</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --success: #16a34a;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
+    .menu-card {
+      background: var(--card); padding: 24px; border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; cursor: pointer;
+      border: 2px solid #e2e8f0; transition: border-color 0.2s;
+    }
+    .menu-card:hover { border-color: var(--primary); }
+    .menu-card h3 { margin: 0 0 8px 0; color: var(--primary); font-size: 1.3rem; }
+    .menu-card p { margin: 0; color: #64748b; font-size: 0.95rem; }
+    
+    .section-content {
+      display: none; background: var(--card); padding: 24px;
+      border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-top: 20px;
+    }
+    .back-btn { background: #64748b; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 20px; }
+    h2 { margin-top: 0; font-size: 1.4rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
+    @media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } .full-width-input { grid-column: 1 / -1; } }
+    input, select, textarea, button { width: 100%; padding: 10px; margin-top: 4px; margin-bottom: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+    textarea { resize: vertical; height: 80px; }
+    button.action-btn { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+    .item-card { background: #f1f5f9; border-left: 4px solid var(--primary); padding: 16px; border-radius: 8px; margin-top: 12px; }
+    .item-card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .item-card-title { font-size: 1.1rem; font-weight: bold; color: var(--text); }
+    .item-details { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; font-size: 0.95rem; color: #475569; line-height: 1.5; }
+    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-delete { width: auto; padding: 6px 12px; margin: 0; background: var(--danger); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+    
+    /* KALENDÁR */
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .calendar-day-name { text-align: center; font-weight: bold; color: #64748b; padding: 8px 0; font-size: 0.9rem; }
+    .calendar-cell { background: #ffffff; border: 1px solid #cbd5e1; min-height: 110px; padding: 6px; border-radius: 8px; box-sizing: border-box; overflow-y: auto; }
+    .calendar-cell.empty { background: #f1f5f9; border-color: #e2e8f0; opacity: 0.4; }
+    .calendar-day-number { font-weight: bold; font-size: 0.9rem; color: #1e293b; margin-bottom: 6px; border-bottom: 1px solid #f1f5f9; padding-bottom: 2px; }
+    .cal-event-card { padding: 4px 6px; border-radius: 6px; margin-bottom: 4px; font-size: 0.75rem; color: white; background: #2563eb; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="appContent">
+  <div class="top-bar">
+    <div>
+      <h1 id="pageHeaderTitle" style="margin: 0;">Firemný Portál</h1>
+      <p id="pageHeaderSubtitle" style="color: #64748b; margin: 0;">Vyberte sekciu z menu</p>
+    </div>
+  </div>
+
+  <!-- HLAVNÉ MENU -->
+  <div id="mainMenu" class="menu-grid">
+    <div class="menu-card" onclick="openSection('clientsSection', 'Správa klientov')">
+      <h3>👥 Klienti</h3>
+      <p>Karty klientov, záruky a servis</p>
+    </div>
+    <div class="menu-card" onclick="openSection('calendarSection', 'Kalendár udalostí')">
+      <h3>📅 Kalendár</h3>
+      <p>Mesačná mriežka a termíny</p>
+    </div>
+    <div class="menu-card" onclick="openSection('teamSection', 'Správa tímu')">
+      <h3>🛡️ Tím</h3>
+      <p>Členovia pracovného tímu</p>
+    </div>
+    <div class="menu-card" onclick="openSection('montazSection', 'Montáže')">
+      <h3>🔧 Montáž</h3>
+      <p>Plánovanie montáží</p>
+    </div>
+    <div class="menu-card" onclick="openSection('obhliadkaSection', 'Obhliadky')">
+      <h3>🔍 Obhliadky</h3>
+      <p>Správa obhliadok</p>
+    </div>
+    <div class="menu-card" onclick="openSection('spravySection', 'Správy pre tím')">
+      <h3>💬 Správy</h3>
+      <p>Oznámenia pre kolegov</p>
+    </div>
+  </div>
+
+  <!-- 1. KLIENTI -->
+  <div id="clientsSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Zoznam klientov</h2>
+    <div id="clientsList">Načítavam...</div>
+  </div>
+
+  <!-- 2. KALENDÁR -->
+  <div id="calendarSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <div class="calendar-header">
+      <button style="width: auto; padding: 6px 12px; margin:0;" onclick="changeMonth(-1)">◀ Predchádzajúci</button>
+      <h2 id="calendarMonthTitle" style="margin: 0; border: none;">Mesiac Rok</h2>
+      <button style="width: auto; padding: 6px 12px; margin:0;" onclick="changeMonth(1)">Nasledujúci ▶</button>
+    </div>
+    <div class="calendar-grid">
+      <div class="calendar-day-name">Po</div><div class="calendar-day-name">Ut</div><div class="calendar-day-name">St</div><div class="calendar-day-name">Št</div><div class="calendar-day-name">Pi</div><div class="calendar-day-name">So</div><div class="calendar-day-name">Ne</div>
+    </div>
+    <div id="calendarDaysGrid" class="calendar-grid" style="margin-top: 4px;"></div>
+  </div>
+
+  <!-- 3. TÍM -->
+  <div id="teamSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Členovia tímu</h2>
+    <div id="membersList">Načítavam...</div>
+  </div>
+
+  <!-- 4. MONTÁŽ -->
+  <div id="montazSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Montáže</h2>
+    <div id="montazList">Načítavam...</div>
+  </div>
+
+  <!-- 5. OBHLIADKY -->
+  <div id="obhliadkaSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Obhliadky</h2>
+    <div id="obhliadkaList">Načítavam...</div>
+  </div>
+
+  <!-- 6. SPRÁVY -->
+  <div id="spravySection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Správy pre tím</h2>
+    <div id="spravyList">Načítavam...</div>
+  </div>
+</div>
+
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyBoUcM_hApyuOMDWIgIE8t0glxQfL0V9w8",
+    authDomain: "sandnspol-15db0.firebaseapp.com",
+    projectId: "sandnspol-15db0",
+    storageBucket: "sandnspol-15db0.firebasestorage.app",
+    messagingSenderId: "1047987666074",
+    appId: "1:1047987666074:web:20a6fe5583838d18b1b323",
+    measurementId: "G-3R61MVJ665"
+  };
+
+  var db = null;
+  try {
+    if (typeof firebase !== 'undefined') {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      initListeners();
+    }
+  } catch(e) { console.log("Init error:", e); }
+
+  function openSection(secId, title) {
+    document.getElementById('mainMenu').style.display = 'none';
+    document.getElementById('pageHeaderTitle').innerText = title;
+    document.getElementById('pageHeaderSubtitle').style.display = 'none';
+    var sections = document.querySelectorAll('.section-content');
+    for (var i = 0; i < sections.length; i++) sections[i].style.display = 'none';
+    var target = document.getElementById(secId);
+    if (target) target.style.display = 'block';
+    if (secId === 'calendarSection') renderCalendar();
+  }
+
+  function goHome() {
+    var sections = document.querySelectorAll('.section-content');
+    for (var i = 0; i < sections.length; i++) sections[i].style.display = 'none';
+    document.getElementById('mainMenu').style.display = 'grid';
+    document.getElementById('pageHeaderTitle').innerText = 'Firemný Portál';
+    document.getElementById('pageHeaderSubtitle').style.display = 'block';
+  }
+
+  var clients = [], members = [], events = [], montaze = [], obhliadky = [], spravy = [];
+  var currentMonthDate = new Date();
+
+  function initListeners() {
+    if (!db) return;
+    try {
+      db.collection('clients').onSnapshot(function(snap) {
+        clients = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderClients(); renderCalendar();
+      }, function(e){});
+
+      db.collection('members').onSnapshot(function(snap) {
+        members = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderMembers();
+      }, function(e){});
+
+      db.collection('montaze').onSnapshot(function(snap) {
+        montaze = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderMontaze(); renderCalendar();
+      }, function(e){});
+
+      db.collection('obhliadky').onSnapshot(function(snap) {
+        obhliadky = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderObhliadky(); renderCalendar();
+      }, function(e){});
+
+      db.collection('spravy').onSnapshot(function(snap) {
+        spravy = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderSpravy();
+      }, function(e){});
+
+      db.collection('events').onSnapshot(function(snap) {
+        events = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderCalendar();
+      }, function(e){});
+    } catch(err) {}
+  }
+
+  function renderClients() {
+    var el = document.getElementById('clientsList');
+    if(el) el.innerHTML = clients.map(function(c) { return '<div class="item-card"><div class="item-card-title">👤 ' + (c.name || 'Klient') + '</div></div>'; }).join('') || 'Žiadni klienti.';
+  }
+
+  function renderMembers() {
+    var el = document.getElementById('membersList');
+    if(el) el.innerHTML = members.map(function(m) { return '<div class="item-card"><div class="item-card-title">🛡️ ' + (m.name || 'Člen') + '</div></div>'; }).join('') || 'Žiadni členovia.';
+  }
+
+  function renderMontaze() {
+    var el = document.getElementById('montazList');
+    if(el) el.innerHTML = montaze.map(function(m) { return '<div class="item-card"><div class="item-card-title">🔧 ' + (m.title || 'Montáž') + '</div></div>'; }).join('') || 'Žiadne montáže.';
+  }
+
+  function renderObhliadky() {
+    var el = document.getElementById('obhliadkaList');
+    if(el) el.innerHTML = obhliadky.map(function(o) { return '<div class="item-card"><div class="item-card-title">🔍 ' + (o.name || 'Obhliadka') + '</div></div>'; }).join('') || 'Žiadne obhliadky.';
+  }
+
+  function renderSpravy() {
+    var el = document.getElementById('spravyList');
+    if(el) el.innerHTML = spravy.map(function(s) { return '<div class="item-card"><div class="item-card-title">💬 ' + (s.author || 'Správa') + '</div><div class="item-details">' + (s.text || '') + '</div></div>'; }).join('') || 'Žiadne správy.';
+  }
+
+  function renderCalendar() {
+    var year = currentMonthDate.getFullYear();
+    var month = currentMonthDate.getMonth();
+    var monthNames = ["Január", "Február", "Marec", "Apríl", "Máj", "Jún", "Júl", "August", "September", "Október", "November", "December"];
+    var titleEl = document.getElementById('calendarMonthTitle');
+    if(titleEl) titleEl.innerText = monthNames[month] + ' ' + year;
+
+    var firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
+    var totalDays = new Date(year, month + 1, 0).getDate();
+    var gridHtml = '';
+    for (var i = 0; i < firstDayIndex; i++) gridHtml += '<div class="calendar-cell empty"></div>';
+
+    for (var day = 1; day <= totalDays; day++) {
+      var dayStr = String(day).padStart(2, '0');
+      var monthStr = String(month + 1).padStart(2, '0');
+      var dateString = year + '-' + monthStr + '-' + dayStr;
+      var dayCards = '';
+
+      events.filter(function(e){ return e.date === dateString; }).forEach(function(e){
+        dayCards += '<div class="cal-event-card">📅 ' + e.title + '</div>';
+      });
+
+      montaze.filter(function(m){ return m.date === dateString; }).forEach(function(m){
+        dayCards += '<div class="cal-event-card" style="background:#0d9488;">🔧 ' + m.title + '</div>';
+      });
+
+      gridHtml += '<div class="calendar-cell"><div class="calendar-day-number">' + day + '</div>' + dayCards + '</div>';
+    }
+    var daysGrid = document.getElementById('calendarDaysGrid');
+    if(daysGrid) daysGrid.innerHTML = gridHtml;
+  }
+
+  function changeMonth(dir) { currentMonthDate.setMonth(currentMonthDate.getMonth() + dir); renderCalendar(); }
+</script>
+
+</body>
+</html>
