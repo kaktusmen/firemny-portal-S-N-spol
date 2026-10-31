@@ -196,7 +196,7 @@
       
       <div>
         <label style="font-size: 0.85rem; color: #64748b; display: block; margin-bottom: 2px;">Dátum montáže (vyberte z montáží alebo zadajte):</label>
-        <select id="cDatumMontazeSelect" onchange="document.getElementById('cDatumMontaze').value = this.value;">
+        <select id="cDatumMontazeSelect" onchange="var el = document.getElementById('cDatumMontaze'); if(el) el.value = this.value;">
           <option value="">-- Vyberte z uložených montáží --</option>
         </select>
       </div>
@@ -275,4 +275,299 @@
     <h2 id="obhliadkaFormTitle">Nová obhliadka</h2>
     <input type="hidden" id="obhliadkaEditId" value="">
     <div class="form-grid">
-      <input type="text" id="oName"
+      <input type="text" id="oName" placeholder="Meno klienta">
+      <input type="date" id="oDate">
+    </div>
+    <button class="action-btn" id="obhliadkaSubmitBtn" onclick="saveObhliadka()">Uložiť obhliadku</button>
+    <button id="obhliadkaCancelBtn" style="background: #64748b; display: none;" onclick="resetObhliadkaForm()">Zrušiť úpravu</button>
+    <h2 style="margin-top: 30px;">Zoznam obhliadok</h2>
+    <div id="obhliadkaList">Načítavam...</div>
+  </div>
+
+  <!-- SPRÁVY -->
+  <div id="spravySection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Nová správa</h2>
+    <div class="form-grid">
+      <input type="text" id="sAuthor" placeholder="Vaše meno">
+      <textarea id="sText" placeholder="Text správy..." class="full-width-input"></textarea>
+    </div>
+    <button class="action-btn" onclick="saveSprava()">Odoslať správu</button>
+    <h2 style="margin-top: 30px;">História správ</h2>
+    <div id="spravyList">Načítavam...</div>
+  </div>
+</div>
+
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyBoUcM_hApyuOMDWIgIE8t0glxQfL0V9w8",
+    authDomain: "sandnspol-15db0.firebaseapp.com",
+    projectId: "sandnspol-15db0",
+    storageBucket: "sandnspol-15db0.firebasestorage.app",
+    messagingSenderId: "1047987666074",
+    appId: "1:1047987666074:web:20a6fe5583838d18b1b323",
+    measurementId: "G-3R61MVJ665"
+  };
+
+  var db = null;
+  var clients = [], members = [], montaze = [], obhliadky = [], spravy = [];
+  var currentMonthDate = new Date();
+
+  try {
+    if (typeof firebase !== 'undefined') {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      initListeners();
+    }
+  } catch(e) { console.error("Init error:", e); }
+
+  function initListeners() {
+    if (!db) return;
+    try {
+      db.collection('clients').onSnapshot(function(snap) {
+        clients = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderClients();
+        updateClientDropdown();
+      }, function(e){ console.error(e); });
+      
+      db.collection('members').onSnapshot(function(snap) {
+        members = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderMembers();
+      }, function(e){ console.error(e); });
+      
+      db.collection('montaze').onSnapshot(function(snap) {
+        montaze = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderMontaze(); renderCalendar(); updateMontazSelectOptions();
+      }, function(e){ console.error(e); });
+      
+      db.collection('obhliadky').onSnapshot(function(snap) {
+        obhliadky = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderObhliadky(); renderCalendar();
+      }, function(e){ console.error(e); });
+      
+      db.collection('spravy').onSnapshot(function(snap) {
+        spravy = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderSpravy();
+      }, function(e){ console.error(e); });
+    } catch(err) { console.error("Listener error:", err); }
+  }
+
+  function updateClientDropdown() {
+    var sel = document.getElementById('mClientName');
+    if (!sel) return;
+    var optionsHtml = '<option value="">-- Vyberte klienta zo zoznamu --</option>';
+    if (clients && clients.length > 0) {
+      clients.forEach(function(c) {
+        var clientName = c.name || ((c.meno || '') + ' ' + (c.priezvisko || '')).trim() || 'Neznámy klient';
+        optionsHtml += '<option value="' + clientName + '">' + clientName + (c.telefon ? ' (' + c.telefon + ')' : '') + '</option>';
+      });
+    }
+    sel.innerHTML = optionsHtml;
+  }
+
+  function updateMontazSelectOptions() {
+    var sel = document.getElementById('cDatumMontazeSelect');
+    if (!sel) return;
+    var optionsHtml = '<option value="">-- Vyberte z uložených montáží --</option>';
+    if (montaze && montaze.length > 0) {
+      montaze.forEach(function(m) {
+        if (m.date) {
+          var clientPart = m.clientName ? ' (' + m.clientName + ')' : '';
+          optionsHtml += '<option value="' + m.date + '">' + m.title + clientPart + ' – ' + m.date + '</option>';
+        }
+      });
+    }
+    sel.innerHTML = optionsHtml;
+  }
+
+  // --- SPRÁVA KLIENTOV ---
+  window.saveClient = function() {
+    var editId = document.getElementById('clientEditId').value;
+    var menoEl = document.getElementById('cMeno');
+    var priezviskoEl = document.getElementById('cPriezvisko');
+    
+    var meno = menoEl ? menoEl.value.trim() : '';
+    var priezvisko = priezviskoEl ? priezviskoEl.value.trim() : '';
+
+    if (!meno && !priezvisko) {
+      alert('Prosím, zadajte aspoň meno alebo priezvisko klienta.');
+      return;
+    }
+
+    if (!db) {
+      alert('Chyba pripojenia k databáze.');
+      return;
+    }
+
+    var data = {
+      meno: meno,
+      priezvisko: priezvisko,
+      name: (meno + ' ' + priezvisko).trim(),
+      adresa: document.getElementById('cAdresa').value.trim(),
+      telefon: document.getElementById('cTelefon').value.trim(),
+      email: document.getElementById('cEmail').value.trim(),
+      druhZariadenia: document.getElementById('cDruhZariadenia').value,
+      znacka: document.getElementById('cZnacka').value,
+      snVnutorna: document.getElementById('cSNVnutorna').value.trim(),
+      snVonkajsia: document.getElementById('cSNVonkajsia').value.trim(),
+      datumMontaze: document.getElementById('cDatumMontaze').value,
+      zarucnyServis: document.getElementById('cZarucnyServis').value,
+      pozarucnyServis: document.getElementById('cPozarucnyServis').value.trim()
+    };
+
+    if (editId) {
+      db.collection('clients').doc(editId).update(data).then(function() {
+        resetClientForm();
+      }).catch(function(error) {
+        alert('Chyba pri aktualizácii: ' + error.message);
+      });
+    } else {
+      db.collection('clients').add(data).then(function() {
+        resetClientForm();
+      }).catch(function(error) {
+        alert('Chyba pri ukladaní: ' + error.message);
+      });
+    }
+  };
+
+  window.toggleClientCard = function(id) {
+    var card = document.getElementById('client-card-' + id);
+    if (card) {
+      card.style.display = (card.style.display === 'block') ? 'none' : 'block';
+    }
+  };
+
+  window.editClient = function(id) {
+    var c = clients.find(function(item) { return item.id === id; });
+    if (!c) return;
+
+    document.getElementById('clientEditId').value = c.id;
+    document.getElementById('cMeno').value = c.meno || '';
+    document.getElementById('cPriezvisko').value = c.priezvisko || '';
+    document.getElementById('cAdresa').value = c.adresa || '';
+    document.getElementById('cTelefon').value = c.telefon || '';
+    document.getElementById('cEmail').value = c.email || '';
+    document.getElementById('cDruhZariadenia').value = c.druhZariadenia || '';
+    document.getElementById('cZnacka').value = c.znacka || '';
+    document.getElementById('cSNVnutorna').value = c.snVnutorna || '';
+    document.getElementById('cSNVonkajsia').value = c.snVonkajsia || '';
+    document.getElementById('cDatumMontaze').value = c.datumMontaze || '';
+    document.getElementById('cZarucnyServis').value = c.zarucnyServis || '';
+    document.getElementById('cPozarucnyServis').value = c.pozarucnyServis || '';
+
+    document.getElementById('clientFormTitle').innerText = 'Upraviť klienta';
+    document.getElementById('clientSubmitBtn').innerText = 'Aktualizovať klienta';
+    document.getElementById('clientCancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.resetClientForm = function() {
+    document.getElementById('clientEditId').value = '';
+    var fields = ['cMeno','cPriezvisko','cAdresa','cTelefon','cEmail','cDruhZariadenia','cZnacka','cSNVnutorna','cSNVonkajsia','cDatumMontaze','cZarucnyServis','cPozarucnyServis','cDatumMontazeSelect'];
+    for(var i=0; i<fields.length; i++) {
+      var el = document.getElementById(fields[i]);
+      if(el) el.value = '';
+    }
+    document.getElementById('clientFormTitle').innerText = 'Pridať nového klienta';
+    document.getElementById('clientSubmitBtn').innerText = 'Uložiť klienta';
+    document.getElementById('clientCancelBtn').style.display = 'none';
+  };
+
+  window.deleteClient = function(id) { 
+    if(confirm('Naozaj chcete zmazať tohto klienta?') && db) {
+      db.collection('clients').doc(id).delete(); 
+    }
+  };
+
+  // --- TÍM ---
+  window.saveTeamMember = function() {
+    var editId = document.getElementById('teamEditId').value;
+    var meno = document.getElementById('tMeno').value.trim();
+    if (meno && db) {
+      var data = { name: meno, telefon: document.getElementById('tTelefon').value.trim() };
+      if (editId) {
+        db.collection('members').doc(editId).update(data).then(function() { resetTeamForm(); });
+      } else {
+        db.collection('members').add(data).then(function() { resetTeamForm(); });
+      }
+    }
+  };
+  window.editMember = function(id, name, telefon) {
+    document.getElementById('teamEditId').value = id;
+    document.getElementById('tMeno').value = name || '';
+    document.getElementById('tTelefon').value = telefon || '';
+    document.getElementById('teamFormTitle').innerText = 'Upraviť člena tímu';
+    document.getElementById('teamSubmitBtn').innerText = 'Aktualizovať člena';
+    document.getElementById('teamCancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  window.resetTeamForm = function() {
+    document.getElementById('teamEditId').value = '';
+    document.getElementById('tMeno').value = '';
+    document.getElementById('tTelefon').value = '';
+    document.getElementById('teamFormTitle').innerText = 'Pridať člena tímu';
+    document.getElementById('teamSubmitBtn').innerText = 'Uložiť člena';
+    document.getElementById('teamCancelBtn').style.display = 'none';
+  };
+  window.deleteMember = function(id) { if(db) db.collection('members').doc(id).delete(); };
+
+  // --- MONTÁŽE ---
+  window.saveMontaz = function() {
+    var editId = document.getElementById('montazEditId').value;
+    var title = document.getElementById('mTitle').value.trim();
+    var clientName = document.getElementById('mClientName').value;
+    var date = document.getElementById('mDate').value;
+    var time = document.getElementById('mTime').value;
+    if (title && db) {
+      var data = { title: title, clientName: clientName, date: date, time: time };
+      if (editId) {
+        db.collection('montaze').doc(editId).update(data).then(function() { resetMontazForm(); });
+      } else {
+        db.collection('montaze').add(data).then(function() { resetMontazForm(); });
+      }
+    }
+  };
+  window.editMontaz = function(id, title, clientName, date, time) {
+    document.getElementById('montazEditId').value = id;
+    document.getElementById('mTitle').value = title || '';
+    document.getElementById('mClientName').value = clientName || '';
+    document.getElementById('mDate').value = date || '';
+    document.getElementById('mTime').value = time || '';
+    document.getElementById('montazFormTitle').innerText = 'Upraviť montáž';
+    document.getElementById('montazSubmitBtn').innerText = 'Aktualizovať montáž';
+    document.getElementById('montazCancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  window.resetMontazForm = function() {
+    document.getElementById('montazEditId').value = '';
+    document.getElementById('mTitle').value = '';
+    document.getElementById('mClientName').value = '';
+    document.getElementById('mDate').value = '';
+    document.getElementById('mTime').value = '';
+    document.getElementById('montazFormTitle').innerText = 'Nová montáž';
+    document.getElementById('montazSubmitBtn').innerText = 'Uložiť montáž';
+    document.getElementById('montazCancelBtn').style.display = 'none';
+  };
+  window.deleteMontaz = function(id) { if(db) db.collection('montaze').doc(id).delete(); };
+
+  // --- OBHLIADKY ---
+  window.saveObhliadka = function() {
+    var editId = document.getElementById('obhliadkaEditId').value;
+    var name = document.getElementById('oName').value.trim();
+    var date = document.getElementById('oDate').value;
+    if (name && db) {
+      var data = { name: name, date: date };
+      if (editId) {
+        db.collection('obhliadky').doc(editId).update(data).then(function() { resetObhliadkaForm(); });
+      } else {
+        db.collection('obhliadky').add(data).then(function() { resetObhliadkaForm(); });
+      }
+    }
+  };
+  window.editObhliadka = function(id, name, date) {
+    document.getElementById('obhliadkaEditId').value = id;
+    document.getElementById('oName').value = name || '';
+    document.getElementById('oDate').value = date || '';
+    document.getElementById('obhliadkaFormTitle').innerText = 'Upraviť obhliadku';
+    document.getElementById('obhliadkaSubmitBtn').innerText = 'Aktualizovať obhliadku';
+    document.getElementById('obhliadkaCancelBtn').style.display = 'inline-block';
