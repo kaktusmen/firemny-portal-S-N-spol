@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -61,7 +60,7 @@ var dbData={clients:[],montaze:[],members:[],obhliadky:[],spravy:[]};
 var KEY=null;
 var MONTHS=['Január','Február','Marec','Apríl','Máj','Jún','Júl','August','September','Október','November','December'];
 var viewYear=new Date().getFullYear(),viewMonth=new Date().getMonth();
-var CF=['Meno','Priezvisko','Adresa','Telefon','Email','Zariadenie','Znacka','SnVnutorna','SnVonkajsia','DatumMontaze','ZarukaRoky','Poznamky'];
+var CF=['Meno','Priezvisko','Obec','Adresa','Telefon','Email','Zariadenie','Znacka','SnVnutorna','SnVonkajsia','DatumMontaze','ZarukaRoky','Poznamky'];
 
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -146,21 +145,22 @@ function goHome(){
 }
 
 // ---------- Zobrazenie ----------
-function card(c,o,title,body,edit){
+function card(c,o,title,body,edit,collapsed){
   var id=esc(o.id);
-  return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">'+title+'</span><div class="btn-group">'+
+  var tg=collapsed?' style="cursor:pointer" title="Kliknutím zobrazíte detaily" onclick="var n=this.parentNode.nextElementSibling;if(n)n.style.display=(n.style.display===\'none\'?\'block\':\'none\')"':'';
+  return '<div class="item-card"><div class="item-card-header"><span class="item-card-title"'+tg+'>'+title+'</span><div class="btn-group">'+
     (edit?'<button class="btn-edit" onclick="editClient(\''+id+'\')">Upraviť</button>':'')+
     '<button class="btn-delete" onclick="delItem(\''+c+'\',\''+id+'\')">Zmazať</button></div></div>'+
-    (body?'<div class="item-note">'+body+'</div>':'')+'</div>';
+    (body?'<div class="item-note"'+(collapsed?' style="display:none"':'')+'>'+body+'</div>':'')+'</div>';
 }
 var V={
   clients:['clientsList','Žiadni klienti.',function(a,b){return nm(a).localeCompare(nm(b))},function(c){
-    return card('clients',c,'👤 '+esc(nm(c))+' ('+esc(c.telefon||'-')+')',
-      '<strong>Adresa:</strong> '+esc(c.adresa||'-')+' | <strong>E-mail:</strong> '+esc(c.email||'-')+'\n'+
+    return card('clients',c,'👤 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):''),
+      '<strong>Telefón:</strong> '+esc(c.telefon||'-')+' | <strong>Adresa:</strong> '+esc(c.adresa||'-')+' | <strong>E-mail:</strong> '+esc(c.email||'-')+'\n'+
       '<strong>Zariadenie:</strong> '+esc(c.zariadenie||'-')+' ('+esc(c.znacka||'-')+')\n'+
       '<strong>S/N vnút.:</strong> '+esc(c.snVnutorna||c.vyrobneCislo||'-')+' | <strong>S/N von.:</strong> '+esc(c.snVonkajsia||'-')+'\n'+
       '<strong>Záruka:</strong> '+(c.zarukaRoky?esc(c.zarukaRoky)+' r.':'-')+' | <strong>Montáž:</strong> '+esc(c.datumMontaze||'-')+
-      (c.poznamky?'\n📝 '+esc(c.poznamky):''),true)}],
+      (c.poznamky?'\n📝 '+esc(c.poznamky):''),true,true)}],
   montaze:['montazList','Žiadne montáže.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(m){
     return card('montaze',m,'🔧 '+esc(m.title||'Montáž')+(m.clientName?' – '+esc(m.clientName):'')+' ('+esc(m.date||'bez dátumu')+')','')}],
   members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
@@ -286,6 +286,7 @@ window.onload=function(){
     <div class="form-grid">
       <input type="text" id="cMeno" placeholder="Meno">
       <input type="text" id="cPriezvisko" placeholder="Priezvisko">
+      <input type="text" id="cObec" placeholder="Obec" class="full-width-input">
       <input type="text" id="cAdresa" placeholder="Adresa" class="full-width-input">
       <input type="text" id="cTelefon" placeholder="Telefónne číslo">
       <input type="email" id="cEmail" placeholder="E-mail">
