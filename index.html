@@ -234,7 +234,7 @@ var V={
       (c.poznamky?'\n📝 '+esc(c.poznamky):''),true,true)}],
   montaze:['montazList','Žiadne montáže.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(m){
     return card('montaze',m,'🔧 '+esc(m.title||'Montáž')+(m.clientName?' – '+esc(m.clientName):'')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')',
-      (m.memberNames&&m.memberNames.length?'<strong>Tím:</strong> '+m.memberNames.map(esc).join(', '):''))}],
+      (m.memberNames&&m.memberNames.length?'<strong>👷 Na montáž idú:</strong> '+m.memberNames.map(esc).join(', '):''))}],
   members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
     return card('members',t,'🛡️ '+esc(t.name||''),'Tel: '+esc(t.telefon||'-'),'editMember')}],
   obhliadky:['obhliadkaList','Žiadne obhliadky.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(o){
@@ -424,7 +424,7 @@ function showEvent(type,id){
     if(type==='montaze'){
       c=(o.clientId&&findById('clients',o.clientId))||null;
       info='<h3>🔧 '+esc(o.title||'Montáž')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+
-        (o.memberNames&&o.memberNames.length?'<div class="modal-row"><strong>Tím:</strong> '+o.memberNames.map(esc).join(', ')+'</div>':'');
+        '<div class="modal-row" style="background:#ecfeff;border-left:4px solid #0d9488;padding:8px 10px;border-radius:6px"><strong>👷 Na montáž idú:</strong> '+(o.memberNames&&o.memberNames.length?o.memberNames.map(esc).join(', '):'nikto nie je priradený')+'</div>';
     }else{
       c=(o.klientId&&findById('clients',o.klientId))||null;
       info='<h3>🔍 Obhliadka: '+esc(onm(o))+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+'</div>'+
@@ -453,7 +453,7 @@ function renderCalendar(){
   for(var i=0;i<first;i++)h+='<div class="calendar-cell empty"></div>';
   for(var d=1;d<=total;d++){
     var ds=viewYear+'-'+p(viewMonth+1)+'-'+p(d),ev='';
-    dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:#0d9488" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">🔧 '+(m.time?esc(m.time)+' ':'')+esc(m.title)+'</div>'});
+    dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:#0d9488" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">🔧 '+(m.time?esc(m.time)+' ':'')+esc(m.title)+(m.memberNames&&m.memberNames.length?'<div style="margin-top:2px;padding-top:2px;border-top:1px solid rgba(255,255,255,.4);font-weight:bold">👷 '+m.memberNames.map(esc).join(', ')+'</div>':'')+'</div>'});
     dbData.obhliadky.forEach(function(o){if(o.date===ds)ev+='<div class="cal-event-card" style="background:#7c3aed" onclick="showEvent(\'obhliadky\',\''+esc(o.id)+'\')">🔍 '+esc(o.name)+'</div>'});
     dbData.clients.forEach(function(c){if(c.datumMontaze===ds&&!dbData.montaze.some(function(m){return m.date===ds&&m.clientId===c.id}))ev+='<div class="cal-event-card" style="background:#d97706" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">👤 '+esc(nm(c))+'</div>'});
     dbData.clients.forEach(function(c){if(serviceDates(c).indexOf(ds)>-1)ev+='<div class="cal-event-card" style="background:#dc2626" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">🛠 Servis: '+esc(nm(c))+'</div>'});
