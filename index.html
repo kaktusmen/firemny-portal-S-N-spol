@@ -46,7 +46,7 @@
 
 <div class="container">
   <div class="status-bar">
-    <span>🟢 Systém je pripravený a plne funkčný</span>
+    <span>🟢 Portál je pripravený a plne funkčný</span>
     <div style="display:flex; gap:6px;">
       <button onclick="exportData()" style="width:auto; padding:4px 10px; margin:0; font-size:0.75rem; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer;">💾 Stiahnuť zálohu</button>
       <label style="width:auto; padding:4px 10px; margin:0; font-size:0.75rem; background:#475569; color:white; border-radius:4px; cursor:pointer; display:inline-block;">
@@ -79,9 +79,15 @@
       <input type="text" id="cAdresa" placeholder="Adresa" class="full-width-input">
       <input type="text" id="cTelefon" placeholder="Telefónne číslo">
       <input type="email" id="cEmail" placeholder="E-mail">
-      <input type="text" id="cZariadenie" placeholder="Druh zariadenia (napr. Klimatizácia)">
-      <input type="text" id="cZnacka" placeholder="Značka (napr. Daikin)">
-      <input type="text" id="cVyrobneCislo" placeholder="Výrobné číslo">
+      <select id="cZariadenie">
+        <option value="">-- Vyberte druh zariadenia --</option>
+        <option value="Klimatizácia">Klimatizácia</option>
+        <option value="Tepelné čerpadlo">Tepelné čerpadlo</option>
+        <option value="Rekuperácia">Rekuperácia</option>
+        <option value="Iné zariadenie">Iné zariadenie</option>
+      </select>
+      <input type="text" id="cZnacka" placeholder="Značka (napr. Daikin, Mitsubishi)">
+      <input type="text" id="cVyrobneCislo" placeholder="Výrobné číslo (S/N)">
       <input type="date" id="cDatumMontaze">
       <select id="cZarukaRoky">
         <option value="">-- Záruka v rokoch --</option>
@@ -90,7 +96,7 @@
         <option value="3">3 roky</option>
         <option value="5">5 rokov</option>
       </select>
-      <input type="text" id="cPoznamky" placeholder="Poznámky / servis" class="full-width-input">
+      <input type="text" id="cPoznamky" placeholder="Poznámky / servisné záznamy" class="full-width-input">
     </div>
     <button class="action-btn" id="clientSaveBtn" onclick="saveClient()">Uložiť klienta</button>
     <h3>Zoznam klientov</h3>
@@ -240,7 +246,7 @@
     var cHtml = '';
     (dbData.clients || []).forEach(function(c, index) {
       var name = c.name || ((c.meno || '') + ' ' + (c.priezvisko || '')).trim() || 'Klient';
-      cHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">👤 ' + name + ' (' + (c.telefon || '-') + ')</span><div class="btn-group"><button class="btn-edit" onclick="editClient(' + index + ')">Upraviť</button><button class="btn-delete" onclick="deleteItem(\'clients\', ' + index + ')">Zmazať</button></div></div><div><strong>Zariadenie:</strong> ' + (c.zariadenie || '-') + ' | <strong>S/N:</strong> ' + (c.vyrobneCislo || '-') + '</div></div>';
+      cHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">👤 ' + name + ' (' + (c.telefon || '-') + ')</span><div class="btn-group"><button class="btn-edit" onclick="editClient(' + index + ')">Upraviť</button><button class="btn-delete" onclick="deleteItem(\'clients\', ' + index + ')">Zmazať</button></div></div><div><strong>Zariadenie:</strong> ' + (c.zariadenie || '-') + ' (' + (c.znacka || '-') + ') | <strong>S/N:</strong> ' + (c.vyrobneCislo || '-') + '</div></div>';
     });
     document.getElementById('clientsList').innerHTML = cHtml || 'Žiadni klienti.';
 
@@ -288,7 +294,7 @@
       adresa: document.getElementById('cAdresa').value.trim(),
       telefon: document.getElementById('cTelefon').value.trim(),
       email: document.getElementById('cEmail').value.trim(),
-      zariadenie: document.getElementById('cZariadenie').value.trim(),
+      zariadenie: document.getElementById('cZariadenie').value,
       znacka: document.getElementById('cZnacka').value.trim(),
       vyrobneCislo: document.getElementById('cVyrobneCislo').value.trim(),
       datumMontaze: document.getElementById('cDatumMontaze').value,
@@ -347,6 +353,8 @@
     if(!dbData.montaze) dbData.montaze = [];
     dbData.montaze.push({ title: title, clientName: document.getElementById('mClientName').value.trim(), date: document.getElementById('mDate').value });
     document.getElementById('mTitle').value = '';
+    document.getElementById('mClientName').value = '';
+    document.getElementById('mDate').value = '';
     saveLocalData();
     alert('Montáž uložená!');
   }
@@ -357,6 +365,7 @@
     if(!dbData.members) dbData.members = [];
     dbData.members.push({ name: name, telefon: document.getElementById('tTel').value.trim() });
     document.getElementById('tName').value = '';
+    document.getElementById('tTel').value = '';
     saveLocalData();
     alert('Člen uložený!');
   }
@@ -367,6 +376,7 @@
     if(!dbData.obhliadky) dbData.obhliadky = [];
     dbData.obhliadky.push({ name: name, date: document.getElementById('oDate').value });
     document.getElementById('oName').value = '';
+    document.getElementById('oDate').value = '';
     saveLocalData();
     alert('Obhliadka uložená!');
   }
