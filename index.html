@@ -9,66 +9,34 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
   <style>
-    body { font-family: sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 16px; }
-    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    h1 { color: #2563eb; margin-top: 0; }
-    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 20px; }
-    .menu-card { background: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid #cbd5e1; font-weight: bold; color: #2563eb; }
-    .menu-card:hover { background: #e2e8f0; }
-    .section { display: none; margin-top: 20px; }
-    input, select, textarea, button { width: 100%; padding: 10px; margin: 6px 0; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; }
-    button.btn { background: #2563eb; color: white; border: none; font-weight: bold; cursor: pointer; }
-    .back-btn { background: #64748b; width: auto; padding: 8px 16px; color: white; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; }
-    .card { background: #f8fafc; border-left: 4px solid #2563eb; padding: 12px; margin-top: 10px; border-radius: 6px; }
-  </style>
-</head>
-<body>
+    :root {
+      --primary: #2563eb;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --success: #16a34a;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 16px; }
+    .container { max-width: 1100px; margin: 0 auto; background: var(--card); padding: 24px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h1 { color: var(--primary); margin-top: 0; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
+    .menu-card { background: #f1f5f9; padding: 24px; border-radius: 8px; text-align: center; cursor: pointer; border: 2px solid #cbd5e1; font-weight: bold; color: var(--primary); transition: border-color 0.2s, background 0.2s; }
+    .menu-card:hover { border-color: var(--primary); background: #e2e8f0; }
+    .section-content { display: none; margin-top: 20px; }
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
+    @media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } .full-width-input { grid-column: 1 / -1; } }
+    input, select, textarea, button { width: 100%; padding: 10px; margin-top: 4px; margin-bottom: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+    textarea { resize: vertical; height: 80px; }
+    button.action-btn { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+    .back-btn { background: #64748b; width: auto; padding: 8px 16px; color: white; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
+    
+    .item-card { background: #f8fafc; border-left: 4px solid var(--primary); padding: 14px; margin-top: 10px; border-radius: 6px; }
+    .item-card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .item-card-title { font-size: 1.05rem; font-weight: bold; cursor: pointer; }
+    .btn-group { display: flex; gap: 6px; }
+    .btn-delete { width: auto; padding: 6px 12px; margin: 0; background: var(--danger); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+    .btn-edit { width: auto; padding: 6px 12px; margin: 0; background: var(--warning); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
 
-<div class="container">
-  <h1 id="pageTitle">Firemný Portál</h1>
-  <p id="pageSub">Vitajte v systéme</p>
-
-  <!-- HLAVNÉ MENU -->
-  <div id="mainMenu" class="menu-grid">
-    <div class="menu-card" onclick="showSection('clientsSec')">👥 Klienti</div>
-    <div class="menu-card" onclick="showSection('montazSec')">🔧 Montáže</div>
-    <div class="menu-card" onclick="showSection('teamSec')">🛡️ Tím</div>
-  </div>
-
-  <!-- SEKCIA KLIENTI -->
-  <div id="clientsSec" class="section">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť</button>
-    <h2>Správa klientov</h2>
-    <div>
-      <input type="text" id="cMeno" placeholder="Meno">
-      <input type="text" id="cPriezvisko" placeholder="Priezvisko">
-      <input type="text" id="cAdresa" placeholder="Adresa">
-      <input type="text" id="cTelefon" placeholder="Telefón">
-      <input type="text" id="cZariadenie" placeholder="Zariadenie (napr. Daikin)">
-      <input type="text" id="cVyrobneCislo" placeholder="Výrobné číslo">
-      <input type="date" id="cDatumMontaze">
-      <select id="cZarukaRoky">
-        <option value="">-- Záruka v rokoch --</option>
-        <option value="1">1 rok</option>
-        <option value="2">2 roky</option>
-        <option value="3">3 roky</option>
-        <option value="5">5 rokov</option>
-      </select>
-      <textarea id="cPoznamky" placeholder="Poznámky"></textarea>
-      <button class="btn" onclick="saveClient()">Uložiť klienta</button>
-    </div>
-    <h3>Zoznam klientov</h3>
-    <div id="clientsList">Načítavam...</div>
-  </div>
-
-  <!-- SEKCIA MONTÁŽE -->
-  <div id="montazSec" class="section">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť</button>
-    <h2>Montáže</h2>
-    <div>
-      <input type="text" id="mTitle" placeholder="Názov montáže">
-      <input type="date" id="mDate">
-      <button class="btn" onclick="saveMontaz()">Uložiť montáž</button>
-    </div>
-    <h3>Zoznam montáží</h3>
-    <div id="montazList">Načítavam...
+    .calendar-grid { display: grid; grid-template-columns
