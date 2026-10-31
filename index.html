@@ -134,7 +134,8 @@ function getKey(){
   try{return localStorage.getItem('portal_key')}catch(e){return null}
 }
 function setKey(){
-  var v=$('keyInput').value.trim().replace(/^.*k=/,'');
+  var v=$('keyInput').value.replace(/[\u200B-\u200D\uFEFF]/g,'').trim().replace(/[\u2010-\u2015\u2212]/g,'-').replace(/^.*k=/,'');
+  if(/\s/.test(v)){toast('Kľúč obsahuje medzeru. Skopírujte odkaz znova celý.');return}
   if(!/^[A-Za-z0-9_-]{16,}$/.test(v)){toast('Neplatný kľúč');return}
   try{localStorage.setItem('portal_key',v)}catch(e){}
   location.reload();
@@ -164,6 +165,16 @@ function delItem(c,id){
   col(c).doc(id).delete().catch(function(){toast('Mazanie zlyhalo!')});
   if(c==='clients'&&$('editingClientId').value===id)clearClient();
   if(c==='obhliadky'&&$('editingObhliadkaId').value===id)clearObhliadka();
+}
+
+// ---------- Odkaz pre kolegu ----------
+function shareLink(){
+  if(!KEY){toast('Kľúč nie je k dispozícii');return}
+  var url=location.origin+location.pathname+'#k='+KEY;
+  if(navigator.share){navigator.share({title:'Firemný Portál',url:url}).catch(function(){});return}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(function(){toast('Odkaz skopírovaný')}).catch(function(){prompt('Skopírujte odkaz:',url)});
+  }else prompt('Skopírujte odkaz:',url);
 }
 
 // ---------- Záloha ----------
@@ -464,7 +475,7 @@ window.onload=function(){
   <div id="keyBox" style="display:none">
     <h1>Firemný Portál</h1>
     <p>Otvorte portál cez odkaz, ktorý ste dostali od správcu, alebo sem vložte kľúč z odkazu.</p>
-    <input type="text" id="keyInput" placeholder="Kľúč (časť odkazu za #k=)">
+    <input type="text" id="keyInput" placeholder="Kľúč (časť odkazu za #k=)" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false">
     <button class="action-btn" onclick="setKey()">Pripojiť</button>
   </div>
 
@@ -472,6 +483,7 @@ window.onload=function(){
   <div class="status-bar" id="statusBar">
     <span id="st">🟡 Pripájam sa k databáze…</span>
     <div style="display:flex;gap:6px">
+      <button onclick="shareLink()" style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:#16a34a;color:#fff;border:none;border-radius:4px;cursor:pointer">🔗 Odkaz pre kolegu</button>
       <button onclick="exportData()" style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:var(--primary);color:#fff;border:none;border-radius:4px;cursor:pointer">💾 Stiahnuť zálohu</button>
       <label style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:#475569;color:#fff;border-radius:4px;cursor:pointer;display:inline-block">📂 Nahrať dáta <input type="file" accept=".json,application/json" style="display:none" onchange="importData(event)"></label>
     </div>
