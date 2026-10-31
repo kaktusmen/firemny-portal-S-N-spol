@@ -13,6 +13,7 @@
       --primary: #2563eb;
       --danger: #dc2626;
       --warning: #d97706;
+      --success: #16a34a;
       --bg: #f8fafc;
       --card: #ffffff;
       --text: #1e293b;
@@ -47,13 +48,25 @@
     input, select, textarea, button { width: 100%; padding: 10px; margin-top: 4px; margin-bottom: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
     textarea { resize: vertical; height: 80px; }
     button.action-btn { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+    
     .item-card { background: #f1f5f9; border-left: 4px solid var(--primary); padding: 16px; border-radius: 8px; margin-top: 12px; }
     .item-card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-    .item-card-title { font-size: 1.1rem; font-weight: bold; color: var(--text); }
+    .item-card-title { font-size: 1.1rem; font-weight: bold; color: var(--text); cursor: pointer; }
     .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
     .btn-delete { width: auto; padding: 6px 12px; margin: 0; background: var(--danger); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
     .btn-edit { width: auto; padding: 6px 12px; margin: 0; background: var(--warning); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
-    
+    .btn-detail { width: auto; padding: 6px 12px; margin: 0; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+
+    /* Karta klienta / Detail */
+    .client-details-card {
+      display: none; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;
+      padding: 16px; margin-top: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .detail-grid { display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.95rem; }
+    @media (min-width: 600px) { .detail-grid { grid-template-columns: 1fr 1fr; } }
+    .detail-item { padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
+    .detail-item strong { color: #475569; }
+
     .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
     .calendar-day-name { text-align: center; font-weight: bold; color: #64748b; padding: 8px 0; font-size: 0.9rem; }
@@ -100,6 +113,7 @@
     </div>
   </div>
 
+  <!-- KLIENTI -->
   <div id="clientsSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
     <h2 id="clientFormTitle">Pridať nového klienta</h2>
@@ -107,9 +121,16 @@
     <div class="form-grid">
       <input type="text" id="cMeno" placeholder="Meno">
       <input type="text" id="cPriezvisko" placeholder="Priezvisko">
-      <input type="text" id="cTelefon" placeholder="Telefón">
+      <input type="text" id="cAdresa" placeholder="Adresa" class="full-width-input">
+      <input type="text" id="cTelefon" placeholder="Telefónne číslo">
       <input type="email" id="cEmail" placeholder="E-mail">
-      <input type="text" id="cZariadenie" placeholder="Zariadenie" class="full-width-input">
+      <input type="text" id="cDruhZariadenia" placeholder="Druh zariadenia (napr. Klimatizácia)">
+      <input type="text" id="cZnacka" placeholder="Značka zariadenia (napr. Daikin)">
+      <input type="text" id="cSNVnutorna" placeholder="Výrobné číslo (vnútorná jednotka)">
+      <input type="text" id="cSNVonkajsia" placeholder="Výrobné číslo (vonkajšia jednotka)">
+      <input type="date" id="cDatumMontaze" placeholder="Dátum montáže">
+      <input type="text" id="cZarucnyServis" placeholder="Záručný servis (napr. 3 roky / stav)">
+      <input type="text" id="cPozarucnyServis" placeholder="Pozáručný servis (poznámky / história)" class="full-width-input">
     </div>
     <button class="action-btn" id="clientSubmitBtn" onclick="saveClient()">Uložiť klienta</button>
     <button id="clientCancelBtn" style="background: #64748b; display: none;" onclick="resetClientForm()">Zrušiť úpravu</button>
@@ -117,6 +138,7 @@
     <div id="clientsList">Načítavam...</div>
   </div>
 
+  <!-- KALENDÁR -->
   <div id="calendarSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
     <div class="calendar-header">
@@ -130,6 +152,7 @@
     <div id="calendarDaysGrid" class="calendar-grid" style="margin-top: 4px;"></div>
   </div>
 
+  <!-- TÍM -->
   <div id="teamSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
     <h2 id="teamFormTitle">Pridať člena tímu</h2>
@@ -144,6 +167,7 @@
     <div id="membersList">Načítavam...</div>
   </div>
 
+  <!-- MONTÁŽ -->
   <div id="montazSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
     <h2 id="montazFormTitle">Nová montáž</h2>
@@ -158,6 +182,7 @@
     <div id="montazList">Načítavam...</div>
   </div>
 
+  <!-- OBHLIADKY -->
   <div id="obhliadkaSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
     <h2 id="obhliadkaFormTitle">Nová obhliadka</h2>
@@ -172,6 +197,7 @@
     <div id="obhliadkaList">Načítavam...</div>
   </div>
 
+  <!-- SPRÁVY -->
   <div id="spravySection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
     <h2>Nová správa</h2>
@@ -266,12 +292,27 @@
     } catch(err) {}
   }
 
+  // --- SPRÁVA KLIENTOV ---
   function saveClient() {
     var editId = document.getElementById('clientEditId').value;
     var meno = document.getElementById('cMeno').value.trim();
     var priezvisko = document.getElementById('cPriezvisko').value.trim();
     if ((meno || priezvisko) && db) {
-      var data = { meno: meno, priezvisko: priezvisko, telefon: document.getElementById('cTelefon').value.trim(), email: document.getElementById('cEmail').value.trim(), zariadenie: document.getElementById('cZariadenie').value.trim(), name: (meno + ' ' + priezvisko).trim() };
+      var data = {
+        meno: meno,
+        priezvisko: priezvisko,
+        name: (meno + ' ' + priezvisko).trim(),
+        adresa: document.getElementById('cAdresa').value.trim(),
+        telefon: document.getElementById('cTelefon').value.trim(),
+        email: document.getElementById('cEmail').value.trim(),
+        druhZariadenia: document.getElementById('cDruhZariadenia').value.trim(),
+        znacka: document.getElementById('cZnacka').value.trim(),
+        snVnutorna: document.getElementById('cSNVnutorna').value.trim(),
+        snVonkajsia: document.getElementById('cSNVonkajsia').value.trim(),
+        datumMontaze: document.getElementById('cDatumMontaze').value,
+        zarucnyServis: document.getElementById('cZarucnyServis').value.trim(),
+        pozarucnyServis: document.getElementById('cPozarucnyServis').value.trim()
+      };
       if (editId) {
         db.collection('clients').doc(editId).update(data).then(function() { resetClientForm(); });
       } else {
@@ -279,27 +320,51 @@
       }
     }
   }
-  function editClient(id, meno, priezvisko, telefon, email, zariadenie) {
-    document.getElementById('clientEditId').value = id;
-    document.getElementById('cMeno').value = meno || '';
-    document.getElementById('cPriezvisko').value = priezvisko || '';
-    document.getElementById('cTelefon').value = telefon || '';
-    document.getElementById('cEmail').value = email || '';
-    document.getElementById('cZariadenie').value = zariadenie || '';
+
+  function toggleClientCard(id) {
+    var card = document.getElementById('client-card-' + id);
+    if (card) {
+      card.style.display = (card.style.display === 'block') ? 'none' : 'block';
+    }
+  }
+
+  function editClient(id) {
+    var c = clients.find(function(item) { return item.id === id; });
+    if (!c) return;
+
+    document.getElementById('clientEditId').value = c.id;
+    document.getElementById('cMeno').value = c.meno || '';
+    document.getElementById('cPriezvisko').value = c.priezvisko || '';
+    document.getElementById('cAdresa').value = c.adresa || '';
+    document.getElementById('cTelefon').value = c.telefon || '';
+    document.getElementById('cEmail').value = c.email || '';
+    document.getElementById('cDruhZariadenia').value = c.druhZariadenia || '';
+    document.getElementById('cZnacka').value = c.znacka || '';
+    document.getElementById('cSNVnutorna').value = c.snVnutorna || '';
+    document.getElementById('cSNVonkajsia').value = c.snVonkajsia || '';
+    document.getElementById('cDatumMontaze').value = c.datumMontaze || '';
+    document.getElementById('cZarucnyServis').value = c.zarucnyServis || '';
+    document.getElementById('cPozarucnyServis').value = c.pozarucnyServis || '';
+
     document.getElementById('clientFormTitle').innerText = 'Upraviť klienta';
     document.getElementById('clientSubmitBtn').innerText = 'Aktualizovať klienta';
     document.getElementById('clientCancelBtn').style.display = 'inline-block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
   function resetClientForm() {
     document.getElementById('clientEditId').value = '';
-    ['cMeno','cPriezvisko','cTelefon','cEmail','cZariadenie'].forEach(function(id){ document.getElementById(id).value = ''; });
+    ['cMeno','cPriezvisko','cAdresa','cTelefon','cEmail','cDruhZariadenia','cZnacka','cSNVnutorna','cSNVonkajsia','cDatumMontaze','cZarucnyServis','cPozarucnyServis'].forEach(function(id){ 
+      document.getElementById(id).value = ''; 
+    });
     document.getElementById('clientFormTitle').innerText = 'Pridať nového klienta';
     document.getElementById('clientSubmitBtn').innerText = 'Uložiť klienta';
     document.getElementById('clientCancelBtn').style.display = 'none';
   }
+
   function deleteClient(id) { if(db) db.collection('clients').doc(id).delete(); }
 
+  // --- TÍM ---
   function saveTeamMember() {
     var editId = document.getElementById('teamEditId').value;
     var meno = document.getElementById('tMeno').value.trim();
@@ -331,6 +396,7 @@
   }
   function deleteMember(id) { if(db) db.collection('members').doc(id).delete(); }
 
+  // --- MONTÁŽE ---
   function saveMontaz() {
     var editId = document.getElementById('montazEditId').value;
     var title = document.getElementById('mTitle').value.trim();
@@ -363,6 +429,7 @@
   }
   function deleteMontaz(id) { if(db) db.collection('montaze').doc(id).delete(); }
 
+  // --- OBHLIADKY ---
   function saveObhliadka() {
     var editId = document.getElementById('obhliadkaEditId').value;
     var name = document.getElementById('oName').value.trim();
@@ -406,16 +473,39 @@
   }
   function deleteSprava(id) { if(db) db.collection('spravy').doc(id).delete(); }
 
+  // --- RENDEROVANIE ---
   function renderClients() {
     var el = document.getElementById('clientsList');
     if(!el) return;
     el.innerHTML = clients.map(function(c) { 
-      var m = (c.meno || '').replace(/'/g, "\\'");
-      var p = (c.priezvisko || '').replace(/'/g, "\\'");
-      var t = (c.telefon || '').replace(/'/g, "\\'");
-      var e = (c.email || '').replace(/'/g, "\\'");
-      var z = (c.zariadenie || '').replace(/'/g, "\\'");
-      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">👤 ' + (c.name || 'Klient') + ' (' + (c.telefon || 'bez tel.') + ')</span><div class="btn-group"><button class="btn-edit" onclick="editClient(\'' + c.id + '\', \'' + m + '\', \'' + p + '\', \'' + t + '\', \'' + e + '\', \'' + z + '\')">Upraviť</button><button class="btn-delete" onclick="deleteClient(\'' + c.id + '\')">Zmazať</button></div></div></div>'; 
+      var displayName = c.name || ((c.meno || '') + ' ' + (c.priezvisko || '')).trim() || 'Klient';
+      var displayTel = c.telefon ? ' – ' + c.telefon : '';
+
+      return '<div class="item-card">' +
+        '<div class="item-card-header">' +
+          '<span class="item-card-title" onclick="toggleClientCard(\'' + c.id + '\')">👤 ' + displayName + displayTel + '</span>' +
+          '<div class="btn-group">' +
+            '<button class="btn-detail" onclick="toggleClientCard(\'' + c.id + '\')">📋 Karta klienta</button>' +
+            '<button class="btn-edit" onclick="editClient(\'' + c.id + '\')">Upraviť</button>' +
+            '<button class="btn-delete" onclick="deleteClient(\'' + c.id + '\')">Zmazať</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="client-details-card" id="client-card-' + c.id + '">' +
+          '<h3 style="margin-top:0; color:var(--primary); border-bottom: 1px solid #e2e8f0; padding-bottom:4px;">Karta klienta: ' + displayName + '</h3>' +
+          '<div class="detail-grid">' +
+            '<div class="detail-item"><strong>Adresa:</strong> ' + (c.adresa || '-') + '</div>' +
+            '<div class="detail-item"><strong>E-mail:</strong> ' + (c.email || '-') + '</div>' +
+            '<div class="detail-item"><strong>Telefónne číslo:</strong> ' + (c.telefon || '-') + '</div>' +
+            '<div class="detail-item"><strong>Druh zariadenia:</strong> ' + (c.druhZariadenia || '-') + '</div>' +
+            '<div class="detail-item"><strong>Značka zariadenia:</strong> ' + (c.znacka || '-') + '</div>' +
+            '<div class="detail-item"><strong>Vnútorná jednotka (S/N):</strong> ' + (c.snVnutorna || '-') + '</div>' +
+            '<div class="detail-item"><strong>Vonkajšia jednotka (S/N):</strong> ' + (c.snVonkajsia || '-') + '</div>' +
+            '<div class="detail-item"><strong>Dátum montáže:</strong> ' + (c.datumMontaze || '-') + '</div>' +
+            '<div class="detail-item"><strong>Záručný servis:</strong> ' + (c.zarucnyServis || '-') + '</div>' +
+            '<div class="detail-item" style="grid-column: 1 / -1;"><strong>Pozáručný servis:</strong> ' + (c.pozarucnyServis || '-') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     }).join('') || 'Žiadni klienti.';
   }
 
@@ -425,7 +515,9 @@
     el.innerHTML = members.map(function(m) { 
       var name = (m.name || '').replace(/'/g, "\\'");
       var tel = (m.telefon || '').replace(/'/g, "\\'");
-      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🛡️ ' + (m.name || 'Člen') + ' (' + (m.telefon || 'bez tel.') + ')</span><div class="btn-group"><button class="btn-edit" onclick="editMember(\'' + m.id + '\', \'' + name + '\', \'' + tel + '\')">Upraviť</button><button class="btn-delete" onclick="deleteMember(\'' + m.id + '\')">Zmazať</button></div></div></div>'; 
+      var displayName = (m.name || 'Člen');
+      var displayTel = m.telefon ? ' – ' + m.telefon : '';
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🛡️ ' + displayName + displayTel + '</span><div class="btn-group"><button class="btn-edit" onclick="editMember(\'' + m.id + '\', \'' + name + '\', \'' + tel + '\')">Upraviť</button><button class="btn-delete" onclick="deleteMember(\'' + m.id + '\')">Zmazať</button></div></div></div>'; 
     }).join('') || 'Žiadni členovia.';
   }
 
