@@ -10,37 +10,45 @@
 
   <script>
     window.openSection = function(secId, title) {
-      var mainMenu = document.getElementById('mainMenu');
-      var titleEl = document.getElementById('pageHeaderTitle');
-      var subtitleEl = document.getElementById('pageHeaderSubtitle');
-      
-      if (mainMenu) mainMenu.style.display = 'none';
-      if (titleEl) titleEl.innerText = title;
-      if (subtitleEl) subtitleEl.style.display = 'none';
+      try {
+        var mainMenu = document.getElementById('mainMenu');
+        var titleEl = document.getElementById('pageHeaderTitle');
+        var subtitleEl = document.getElementById('pageHeaderSubtitle');
+        
+        if (mainMenu) mainMenu.style.display = 'none';
+        if (titleEl) titleEl.innerText = title;
+        if (subtitleEl) subtitleEl.style.display = 'none';
 
-      var sections = document.querySelectorAll('.section-content');
-      for (var i = 0; i < sections.length; i++) {
-        sections[i].style.display = 'none';
+        var sections = document.querySelectorAll('.section-content');
+        for (var i = 0; i < sections.length; i++) {
+          sections[i].style.display = 'none';
+        }
+        var target = document.getElementById(secId);
+        if (target) target.style.display = 'block';
+        if (secId === 'calendarSection' && typeof renderCalendar === 'function') renderCalendar();
+        if (secId === 'clientsSection' && typeof updateMontazSelectOptions === 'function') updateMontazSelectOptions();
+        if (secId === 'montazSection' && typeof updateClientDropdown === 'function') updateClientDropdown();
+      } catch(err) {
+        console.error("OpenSection error:", err);
       }
-      var target = document.getElementById(secId);
-      if (target) target.style.display = 'block';
-      if (secId === 'calendarSection') { if (typeof renderCalendar === 'function') renderCalendar(); }
-      if (secId === 'clientsSection') { if (typeof updateMontazSelectOptions === 'function') updateMontazSelectOptions(); }
-      if (secId === 'montazSection') { if (typeof updateClientDropdown === 'function') updateClientDropdown(); }
     };
 
     window.goHome = function() {
-      var sections = document.querySelectorAll('.section-content');
-      for (var i = 0; i < sections.length; i++) {
-        sections[i].style.display = 'none';
-      }
-      var mainMenu = document.getElementById('mainMenu');
-      var titleEl = document.getElementById('pageHeaderTitle');
-      var subtitleEl = document.getElementById('pageHeaderSubtitle');
+      try {
+        var sections = document.querySelectorAll('.section-content');
+        for (var i = 0; i < sections.length; i++) {
+          sections[i].style.display = 'none';
+        }
+        var mainMenu = document.getElementById('mainMenu');
+        var titleEl = document.getElementById('pageHeaderTitle');
+        var subtitleEl = document.getElementById('pageHeaderSubtitle');
 
-      if (mainMenu) mainMenu.style.display = 'grid';
-      if (titleEl) titleEl.innerText = 'Firemný Portál';
-      if (subtitleEl) subtitleEl.style.display = 'block';
+        if (mainMenu) mainMenu.style.display = 'grid';
+        if (titleEl) titleEl.innerText = 'Firemný Portál';
+        if (subtitleEl) subtitleEl.style.display = 'block';
+      } catch(err) {
+        console.error("GoHome error:", err);
+      }
     };
   </script>
 
@@ -70,4 +78,29 @@
       border: 2px solid #e2e8f0; transition: border-color 0.2s;
     }
     .menu-card:hover { border-color: var(--primary); }
-    .menu-card h3 { margin: 0 0 8px 0
+    .menu-card h3 { margin: 0 0 8px 0; color: var(--primary); font-size: 1.3rem; }
+    .menu-card p { margin: 0; color: #64748b; font-size: 0.95rem; }
+    
+    .section-content {
+      display: none; background: var(--card); padding: 24px;
+      border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-top: 20px;
+    }
+    .back-btn { background: #64748b; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 20px; }
+    h2 { margin-top: 0; font-size: 1.4rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
+    @media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } .full-width-input { grid-column: 1 / -1; } }
+    input, select, textarea, button { width: 100%; padding: 10px; margin-top: 4px; margin-bottom: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+    textarea { resize: vertical; height: 80px; }
+    button.action-btn { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+    
+    .item-card { background: #f1f5f9; border-left: 4px solid var(--primary); padding: 16px; border-radius: 8px; margin-top: 12px; }
+    .item-card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .item-card-title { font-size: 1.1rem; font-weight: bold; color: var(--text); cursor: pointer; }
+    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-delete { width: auto; padding: 6px 12px; margin: 0; background: var(--danger); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+    .btn-edit { width: auto; padding: 6px 12px; margin: 0; background: var(--warning); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+    .btn-detail { width: auto; padding: 6px 12px; margin: 0; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+
+    .client-details-card {
+      display: none; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;
+      padding: 16px; margin-top: 12px; box-shadow: inset 0 2px 4px rgba(0,
