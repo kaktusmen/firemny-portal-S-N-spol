@@ -191,8 +191,7 @@
         <option value="Iná značka">Iná značka</option>
       </select>
 
-      <input type="text" id="cSNVnutorna" placeholder="Výrobné číslo (vnútorná jednotka)">
-      <input type="text" id="cSNVonkajsia" placeholder="Výrobné číslo (vonkajšia jednotka)">
+      <input type="text" id="cVyrobneCislo" placeholder="Výrobné číslo">
       
       <div>
         <label style="font-size: 0.85rem; color: #64748b; display: block; margin-bottom: 2px;">Dátum montáže (vyberte z montáží alebo zadajte):</label>
@@ -202,16 +201,16 @@
       </div>
       <input type="date" id="cDatumMontaze" placeholder="Dátum montáže">
 
-      <select id="cZarucnyServis">
-        <option value="">-- Vyberte záručný servis --</option>
-        <option value="Servis každých 340 dní (1 rok)">Servis každých 340 dní (1 rok)</option>
-        <option value="Servis každých 340 dní (2 roky)">Servis každých 340 dní (2 roky)</option>
-        <option value="Servis každých 340 dní (3 roky)">Servis každých 340 dní (3 roky)</option>
-        <option value="Servis každých 340 dní (5 rokov)">Servis každých 340 dní (5 rokov)</option>
-        <option value="Iná záručná doba">Iná záručná doba</option>
+      <select id="cZarukaRoky">
+        <option value="">-- Vyberte záruku (roky) --</option>
+        <option value="1">1 rok</option>
+        <option value="2">2 roky</option>
+        <option value="3">3 roky</option>
+        <option value="5">5 rokov</option>
+        <option value="Iná">Iná záručná doba</option>
       </select>
 
-      <input type="text" id="cPozarucnyServis" placeholder="Pozáručný servis (poznámky / história)" class="full-width-input">
+      <input type="text" id="cPoznamky" placeholder="Poznámky / servis" class="full-width-input">
     </div>
     <button class="action-btn" id="clientSubmitBtn" onclick="saveClient()">Uložiť klienta</button>
     <button id="clientCancelBtn" style="background: #64748b; display: none;" onclick="resetClientForm()">Zrušiť úpravu</button>
@@ -406,13 +405,12 @@
       adresa: document.getElementById('cAdresa').value.trim(),
       telefon: document.getElementById('cTelefon').value.trim(),
       email: document.getElementById('cEmail').value.trim(),
-      druhZariadenia: document.getElementById('cDruhZariadenia').value,
+      zariadenie: document.getElementById('cDruhZariadenia').value,
       znacka: document.getElementById('cZnacka').value,
-      snVnutorna: document.getElementById('cSNVnutorna').value.trim(),
-      snVonkajsia: document.getElementById('cSNVonkajsia').value.trim(),
+      vyrobneCislo: document.getElementById('cVyrobneCislo').value.trim(),
       datumMontaze: document.getElementById('cDatumMontaze').value,
-      zarucnyServis: document.getElementById('cZarucnyServis').value,
-      pozarucnyServis: document.getElementById('cPozarucnyServis').value.trim()
+      zarukaRoky: document.getElementById('cZarukaRoky').value,
+      poznamky: document.getElementById('cPoznamky').value.trim()
     };
 
     if (editId) {
@@ -447,13 +445,12 @@
     document.getElementById('cAdresa').value = c.adresa || '';
     document.getElementById('cTelefon').value = c.telefon || '';
     document.getElementById('cEmail').value = c.email || '';
-    document.getElementById('cDruhZariadenia').value = c.druhZariadenia || '';
+    document.getElementById('cDruhZariadenia').value = c.zariadenie || '';
     document.getElementById('cZnacka').value = c.znacka || '';
-    document.getElementById('cSNVnutorna').value = c.snVnutorna || '';
-    document.getElementById('cSNVonkajsia').value = c.snVonkajsia || '';
+    document.getElementById('cVyrobneCislo').value = c.vyrobneCislo || '';
     document.getElementById('cDatumMontaze').value = c.datumMontaze || '';
-    document.getElementById('cZarucnyServis').value = c.zarucnyServis || '';
-    document.getElementById('cPozarucnyServis').value = c.pozarucnyServis || '';
+    document.getElementById('cZarukaRoky').value = c.zarukaRoky || '';
+    document.getElementById('cPoznamky').value = c.poznamky || '';
 
     document.getElementById('clientFormTitle').innerText = 'Upraviť klienta';
     document.getElementById('clientSubmitBtn').innerText = 'Aktualizovať klienta';
@@ -463,7 +460,7 @@
 
   window.resetClientForm = function() {
     document.getElementById('clientEditId').value = '';
-    var fields = ['cMeno','cPriezvisko','cAdresa','cTelefon','cEmail','cDruhZariadenia','cZnacka','cSNVnutorna','cSNVonkajsia','cDatumMontaze','cZarucnyServis','cPozarucnyServis','cDatumMontazeSelect'];
+    var fields = ['cMeno','cPriezvisko','cAdresa','cTelefon','cEmail','cDruhZariadenia','cZnacka','cVyrobneCislo','cDatumMontaze','cZarukaRoky','cPoznamky','cDatumMontazeSelect'];
     for(var i=0; i<fields.length; i++) {
       var el = document.getElementById(fields[i]);
       if(el) el.value = '';
@@ -534,40 +531,4 @@
     document.getElementById('mDate').value = date || '';
     document.getElementById('mTime').value = time || '';
     document.getElementById('montazFormTitle').innerText = 'Upraviť montáž';
-    document.getElementById('montazSubmitBtn').innerText = 'Aktualizovať montáž';
-    document.getElementById('montazCancelBtn').style.display = 'inline-block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-  window.resetMontazForm = function() {
-    document.getElementById('montazEditId').value = '';
-    document.getElementById('mTitle').value = '';
-    document.getElementById('mClientName').value = '';
-    document.getElementById('mDate').value = '';
-    document.getElementById('mTime').value = '';
-    document.getElementById('montazFormTitle').innerText = 'Nová montáž';
-    document.getElementById('montazSubmitBtn').innerText = 'Uložiť montáž';
-    document.getElementById('montazCancelBtn').style.display = 'none';
-  };
-  window.deleteMontaz = function(id) { if(db) db.collection('montaze').doc(id).delete(); };
-
-  // --- OBHLIADKY ---
-  window.saveObhliadka = function() {
-    var editId = document.getElementById('obhliadkaEditId').value;
-    var name = document.getElementById('oName').value.trim();
-    var date = document.getElementById('oDate').value;
-    if (name && db) {
-      var data = { name: name, date: date };
-      if (editId) {
-        db.collection('obhliadky').doc(editId).update(data).then(function() { resetObhliadkaForm(); });
-      } else {
-        db.collection('obhliadky').add(data).then(function() { resetObhliadkaForm(); });
-      }
-    }
-  };
-  window.editObhliadka = function(id, name, date) {
-    document.getElementById('obhliadkaEditId').value = id;
-    document.getElementById('oName').value = name || '';
-    document.getElementById('oDate').value = date || '';
-    document.getElementById('obhliadkaFormTitle').innerText = 'Upraviť obhliadku';
-    document.getElementById('obhliadkaSubmitBtn').innerText = 'Aktualizovať obhliadku';
-    document.getElementById('obhliadkaCancelBtn').style.display = 'inline-block';
+    document.getElementById('montazSubmitBtn').
