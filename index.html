@@ -231,7 +231,7 @@ var V={
       obhliadkaBody(o),'editObhliadka',true,
       o.klientId?'':'<button class="btn-edit" style="background:#16a34a" onclick="convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>')}],
   spravy:['spravyList','Žiadne správy.',function(a,b){return (b.ts||0)-(a.ts||0)},function(s){
-    return card('spravy',s,'💬 '+esc(s.author||'Anonym'),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':''))}]
+    return card('spravy',s,'💬 Od: '+esc(s.author||'Anonym')+(s.toNames&&s.toNames.length?' → Pre: '+s.toNames.map(esc).join(', '):''),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':''))}]
 };
 function render(){
   COLS.forEach(function(c){
@@ -240,6 +240,7 @@ function render(){
   });
   renderCalendar();
   fillMontazSelects();
+  fillSpravySelects();
 }
 
 // ---------- Klienti ----------
@@ -358,10 +359,36 @@ function convertObhliadka(id){
   toast('Klient vytvorený – doplňte záruku a značku');
   openSection('clientsSection','Správa klientov');
 }
+var sTo=[];
+function fillSpravySelects(){
+  var f=$('sFrom'),t=$('sTo');if(!f||!t)return;
+  var fv=f.value,tv=t.value,opts=dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){
+    return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');
+  f.innerHTML='<option value="">-- Od koho --</option>'+opts;
+  t.innerHTML='<option value="">-- Pre koho --</option><option value="__all">Všetci</option>'+opts;
+  f.value=fv;t.value=tv;
+}
+function renderSpravaChips(){
+  $('sToChips').innerHTML=sTo.map(function(x,i){return '<span class="chip">'+esc(x.name)+'<b onclick="removeSpravaTo('+i+')">×</b></span>'}).join('');
+}
+function addSpravaTo(){
+  var v=$('sTo').value;if(!v){toast('Vyberte príjemcu');return}
+  if(v==='__all'){sTo=[{id:'__all',name:'Všetci'}]}
+  else{
+    var m=findById('members',v);if(!m)return;
+    sTo=sTo.filter(function(x){return x.id!=='__all'});
+    if(sTo.some(function(x){return x.id===v})){toast('Príjemca je už pridaný');return}
+    sTo.push({id:v,name:m.name||''});
+  }
+  $('sTo').value='';renderSpravaChips();
+}
+function removeSpravaTo(i){sTo.splice(i,1);renderSpravaChips()}
 function saveSprava(){
+  var fm=findById('members',$('sFrom').value);if(!fm){toast(dbData.members.length?'Vyberte, od koho správa je':'Najprv pridajte členov tímu');return}
+  if(!sTo.length){toast('Pridajte aspoň jedného príjemcu');return}
   var t=$('sText').value.trim();if(!t){toast('Napíšte text správy');return}
-  put('spravy',{author:$('sAuthor').value.trim()||'Anonym',text:t,ts:Date.now(),timestamp:new Date().toLocaleString('sk-SK')});
-  $('sText').value='';toast('Správa odoslaná!');
+  put('spravy',{author:fm.name||'Anonym',fromId:fm.id,toNames:sTo.map(function(x){return x.name}),toIds:sTo.map(function(x){return x.id}),text:t,ts:Date.now(),timestamp:new Date().toLocaleString('sk-SK')});
+  $('sText').value='';$('sTo').value='';sTo=[];renderSpravaChips();toast('Správa odoslaná!');
 }
 
 // ---------- Kalendár ----------
@@ -550,7 +577,13 @@ window.onload=function(){
   <div id="spravySection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
     <h2>Správy pre tím</h2>
-    <div class="form-grid"><input type="text" id="sAuthor" placeholder="Vaše meno"><textarea id="sText" placeholder="Text správy..." class="full-width-input"></textarea></div>
+    <div class="form-grid">
+      <select id="sFrom" class="full-width-input"></select>
+      <select id="sTo"></select>
+      <button type="button" onclick="addSpravaTo()">➕ Pridať príjemcu</button>
+    </div>
+    <div id="sToChips" class="chips"></div>
+    <div class="form-grid"><textarea id="sText" placeholder="Text správy..." class="full-width-input"></textarea></div>
     <button class="action-btn" onclick="saveSprava()">Odoslať správu</button>
     <h3>História správ</h3><div id="spravyList">Načítavam...</div>
   </div>
