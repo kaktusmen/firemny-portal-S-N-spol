@@ -1,4 +1,3 @@
-<!-- update 1 -->
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -8,6 +7,42 @@
   
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+  <script>
+    // GLOBÁLNE FUNKCIE DEFINOVANÉ OKAMŽITE NA ZAČIATKU
+    function openSection(secId, title) {
+      var mainMenu = document.getElementById('mainMenu');
+      var titleEl = document.getElementById('pageHeaderTitle');
+      var subtitleEl = document.getElementById('pageHeaderSubtitle');
+      
+      if (mainMenu) mainMenu.style.display = 'none';
+      if (titleEl) titleEl.innerText = title;
+      if (subtitleEl) subtitleEl.style.display = 'none';
+
+      var sections = document.querySelectorAll('.section-content');
+      for (var i = 0; i < sections.length; i++) {
+        sections[i].style.display = 'none';
+      }
+      var target = document.getElementById(secId);
+      if (target) target.style.display = 'block';
+      if (secId === 'calendarSection') { if (typeof renderCalendar === 'function') renderCalendar(); }
+      if (secId === 'clientsSection') { if (typeof updateMontazSelectOptions === 'function') updateMontazSelectOptions(); }
+    }
+
+    function goHome() {
+      var sections = document.querySelectorAll('.section-content');
+      for (var i = 0; i < sections.length; i++) {
+        sections[i].style.display = 'none';
+      }
+      var mainMenu = document.getElementById('mainMenu');
+      var titleEl = document.getElementById('pageHeaderTitle');
+      var subtitleEl = document.getElementById('pageHeaderSubtitle');
+
+      if (mainMenu) mainMenu.style.display = 'grid';
+      if (titleEl) titleEl.innerText = 'Firemný Portál';
+      if (subtitleEl) subtitleEl.style.display = 'block';
+    }
+  </script>
 
   <style>
     :root {
@@ -249,40 +284,6 @@
 </div>
 
 <script>
-  // ZÁKLADNÉ NAVIGAČNÉ FUNKCIE (DEFINOVANÉ HNEĎ NA ZAČIATKU)
-  function openSection(secId, title) {
-    var mainMenu = document.getElementById('mainMenu');
-    var titleEl = document.getElementById('pageHeaderTitle');
-    var subtitleEl = document.getElementById('pageHeaderSubtitle');
-    
-    if (mainMenu) mainMenu.style.display = 'none';
-    if (titleEl) titleEl.innerText = title;
-    if (subtitleEl) subtitleEl.style.display = 'none';
-
-    var sections = document.querySelectorAll('.section-content');
-    for (var i = 0; i < sections.length; i++) {
-      sections[i].style.display = 'none';
-    }
-    var target = document.getElementById(secId);
-    if (target) target.style.display = 'block';
-    if (secId === 'calendarSection') renderCalendar();
-    if (secId === 'clientsSection') updateMontazSelectOptions();
-  }
-
-  function goHome() {
-    var sections = document.querySelectorAll('.section-content');
-    for (var i = 0; i < sections.length; i++) {
-      sections[i].style.display = 'none';
-    }
-    var mainMenu = document.getElementById('mainMenu');
-    var titleEl = document.getElementById('pageHeaderTitle');
-    var subtitleEl = document.getElementById('pageHeaderSubtitle');
-
-    if (mainMenu) mainMenu.style.display = 'grid';
-    if (titleEl) titleEl.innerText = 'Firemný Portál';
-    if (subtitleEl) subtitleEl.style.display = 'block';
-  }
-
   var firebaseConfig = {
     apiKey: "AIzaSyBoUcM_hApyuOMDWIgIE8t0glxQfL0V9w8",
     authDomain: "sandnspol-15db0.firebaseapp.com",
@@ -511,4 +512,131 @@
     document.getElementById('oDate').value = '';
     document.getElementById('obhliadkaFormTitle').innerText = 'Nová obhliadka';
     document.getElementById('obhliadkaSubmitBtn').innerText = 'Uložiť obhliadku';
-    document.getElementById('obhliadkaCancelBtn
+    document.getElementById('obhliadkaCancelBtn').style.display = 'none';
+  }
+  function deleteObhliadka(id) { if(db) db.collection('obhliadky').doc(id).delete(); }
+
+  function saveSprava() {
+    var author = document.getElementById('sAuthor').value.trim();
+    var text = document.getElementById('sText').value.trim();
+    if (text && db) {
+      db.collection('spravy').add({ author: author || 'Anonym', text: text, timestamp: new Date().toLocaleString('sk-SK') }).then(function() {
+        document.getElementById('sText').value = ''; document.getElementById('sAuthor').value = '';
+      });
+    }
+  }
+  function deleteSprava(id) { if(db) db.collection('spravy').doc(id).delete(); }
+
+  // --- RENDEROVANIE ---
+  function renderClients() {
+    var el = document.getElementById('clientsList');
+    if(!el) return;
+    el.innerHTML = clients.map(function(c) { 
+      var displayName = c.name || ((c.meno || '') + ' ' + (c.priezvisko || '')).trim() || 'Klient';
+      var displayTel = c.telefon ? ' – ' + c.telefon : '';
+
+      return '<div class="item-card">' +
+        '<div class="item-card-header">' +
+          '<span class="item-card-title" onclick="toggleClientCard(\'' + c.id + '\')">👤 ' + displayName + displayTel + '</span>' +
+          '<div class="btn-group">' +
+            '<button class="btn-detail" onclick="toggleClientCard(\'' + c.id + '\')">📋 Karta klienta</button>' +
+            '<button class="btn-edit" onclick="editClient(\'' + c.id + '\')">Upraviť</button>' +
+            '<button class="btn-delete" onclick="deleteClient(\'' + c.id + '\')">Zmazať</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="client-details-card" id="client-card-' + c.id + '">' +
+          '<h3 style="margin-top:0; color:var(--primary); border-bottom: 1px solid #e2e8f0; padding-bottom:4px;">Karta klienta: ' + displayName + '</h3>' +
+          '<div class="detail-grid">' +
+            '<div class="detail-item"><strong>Adresa:</strong> ' + (c.adresa || '-') + '</div>' +
+            '<div class="detail-item"><strong>E-mail:</strong> ' + (c.email || '-') + '</div>' +
+            '<div class="detail-item"><strong>Telefónne číslo:</strong> ' + (c.telefon || '-') + '</div>' +
+            '<div class="detail-item"><strong>Druh zariadenia:</strong> ' + (c.druhZariadenia || '-') + '</div>' +
+            '<div class="detail-item"><strong>Značka zariadenia:</strong> ' + (c.znacka || '-') + '</div>' +
+            '<div class="detail-item"><strong>Vnútorná jednotka (S/N):</strong> ' + (c.snVnutorna || '-') + '</div>' +
+            '<div class="detail-item"><strong>Vonkajšia jednotka (S/N):</strong> ' + (c.snVonkajsia || '-') + '</div>' +
+            '<div class="detail-item"><strong>Dátum montáže:</strong> ' + (c.datumMontaze || '-') + '</div>' +
+            '<div class="detail-item"><strong>Záručný servis:</strong> ' + (c.zarucnyServis || '-') + '</div>' +
+            '<div class="detail-item" style="grid-column: 1 / -1;"><strong>Pozáručný servis:</strong> ' + (c.pozarucnyServis || '-') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('') || 'Žiadni klienti.';
+  }
+
+  function renderMembers() {
+    var el = document.getElementById('membersList');
+    if(!el) return;
+    el.innerHTML = members.map(function(m) { 
+      var name = (m.name || '').replace(/'/g, "\\'");
+      var tel = (m.telefon || '').replace(/'/g, "\\'");
+      var displayName = (m.name || 'Člen');
+      var displayTel = m.telefon ? ' – ' + m.telefon : '';
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🛡️ ' + displayName + displayTel + '</span><div class="btn-group"><button class="btn-edit" onclick="editMember(\'' + m.id + '\', \'' + name + '\', \'' + tel + '\')">Upraviť</button><button class="btn-delete" onclick="deleteMember(\'' + m.id + '\')">Zmazať</button></div></div></div>'; 
+    }).join('') || 'Žiadni členovia.';
+  }
+
+  function renderMontaze() {
+    var el = document.getElementById('montazList');
+    if(!el) return;
+    el.innerHTML = montaze.map(function(m) { 
+      var title = (m.title || '').replace(/'/g, "\\'");
+      var date = m.date || '';
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🔧 ' + (m.title || 'Montáž') + ' (' + (m.date || 'bez dátumu') + ')</span><div class="btn-group"><button class="btn-edit" onclick="editMontaz(\'' + m.id + '\', \'' + title + '\', \'' + date + '\')">Upraviť</button><button class="btn-delete" onclick="deleteMontaz(\'' + m.id + '\')">Zmazať</button></div></div></div>'; 
+    }).join('') || 'Žiadne montáže.';
+  }
+
+  function renderObhliadky() {
+    var el = document.getElementById('obhliadkaList');
+    if(!el) return;
+    el.innerHTML = obhliadky.map(function(o) { 
+      var name = (o.name || '').replace(/'/g, "\\'");
+      var date = o.date || '';
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🔍 ' + (o.name || 'Obhliadka') + ' (' + (o.date || 'bez dátumu') + ')</span><div class="btn-group"><button class="btn-edit" onclick="editObhliadka(\'' + o.id + '\', \'' + name + '\', \'' + date + '\')">Upraviť</button><button class="btn-delete" onclick="deleteObhliadka(\'' + o.id + '\')">Zmazať</button></div></div></div>'; 
+    }).join('') || 'Žiadne obhliadky.';
+  }
+
+  function renderSpravy() {
+    var el = document.getElementById('spravyList');
+    if(!el) return;
+    el.innerHTML = spravy.map(function(s) { 
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">💬 ' + (s.author || 'Anonym') + ' <small>(' + (s.timestamp || '') + ')</small></span><button class="btn-delete" onclick="deleteSprava(\'' + s.id + '\')">Zmazať</button></div><div class="item-details">' + (s.text || '') + '</div></div>'; 
+    }).join('') || 'Žiadne správy.';
+  }
+
+  function renderCalendar() {
+    var year = currentMonthDate.getFullYear();
+    var month = currentMonthDate.getMonth();
+    var monthNames = ["Január", "Február", "Marec", "Apríl", "Máj", "Jún", "Júl", "August", "September", "Október", "November", "December"];
+    var titleEl = document.getElementById('calendarMonthTitle');
+    if(titleEl) titleEl.innerText = monthNames[month] + ' ' + year;
+
+    var firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
+    var totalDays = new Date(year, month + 1, 0).getDate();
+    var gridHtml = '';
+    for (var i = 0; i < firstDayIndex; i++) gridHtml += '<div class="calendar-cell empty"></div>';
+
+    for (var day = 1; day <= totalDays; day++) {
+      var dayStr = String(day).padStart(2, '0');
+      var monthStr = String(month + 1).padStart(2, '0');
+      var dateString = year + '-' + monthStr + '-' + dayStr;
+      var dayCards = '';
+
+      montaze.filter(function(m){ return m.date === dateString; }).forEach(function(m){
+        dayCards += '<div class="cal-event-card" style="background:#0d9488;">🔧 ' + m.title + '</div>';
+      });
+
+      obhliadky.filter(function(o){ return o.date === dateString; }).forEach(function(o){
+        dayCards += '<div class="cal-event-card" style="background:#7c3aed;">🔍 ' + o.name + '</div>';
+      });
+
+      gridHtml += '<div class="calendar-cell"><div class="calendar-day-number">' + day + '</div>' + dayCards + '</div>';
+    }
+    var daysGrid = document.getElementById('calendarDaysGrid');
+    if(daysGrid) daysGrid.innerHTML = gridHtml;
+  }
+
+  function changeMonth(dir) { currentMonthDate.setMonth(currentMonthDate.getMonth() + dir); renderCalendar(); }
+</script>
+
+</body>
+</html>
