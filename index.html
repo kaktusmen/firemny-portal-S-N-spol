@@ -249,35 +249,4 @@
     }
     document.getElementById('mainMenu').style.display = 'grid';
     document.getElementById('pageTitle').innerText = 'Firemný Portál';
-    document.getElementById('pageSub').style.display = 'block';
-  }
-
-  function refreshAllViews() {
-    var cHtml = '';
-    (dbData.clients || []).forEach(function(c, index) {
-      var name = c.name || ((c.meno || '') + ' ' + (c.priezvisko || '')).trim() || 'Klient';
-      cHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">👤 ' + name + ' (' + (c.telefon || '-') + ')</span><div class="btn-group"><button class="btn-edit" onclick="editClient(' + index + ')">Upraviť</button><button class="btn-delete" onclick="deleteItem(\'clients\', ' + index + ')">Zmazať</button></div></div><div><strong>Zariadenie:</strong> ' + (c.zariadenie || '-') + ' (' + (c.znacka || '-') + ') | <strong>S/N:</strong> ' + (c.vyrobneCislo || '-') + '</div></div>';
-    });
-    var cList = document.getElementById('clientsList');
-    if(cList) cList.innerHTML = cHtml || 'Žiadni klienti.';
-
-    var mHtml = '';
-    (dbData.montaze || []).forEach(function(m, index) {
-      mHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🔧 ' + (m.title || 'Montáž') + ' (' + (m.date || 'bez dátumu') + ')</span><button class="btn-delete" onclick="deleteItem(\'montaze\', ' + index + ')">Zmazať</button></div></div>';
-    });
-    var mList = document.getElementById('montazList');
-    if(mList) mList.innerHTML = mHtml || 'Žiadne montáže.';
-
-    var tHtml = '';
-    (dbData.members || []).forEach(function(t, index) {
-      tHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🛡️ ' + (t.name || '') + '</span><button class="btn-delete" onclick="deleteItem(\'members\', ' + index + ')">Zmazať</button></div><div>Tel: ' + (t.telefon || '-') + '</div></div>';
-    });
-    var tList = document.getElementById('teamList');
-    if(tList) tList.innerHTML = tHtml || 'Žiadni členovia.';
-
-    var oHtml = '';
-    (dbData.obhliadky || []).forEach(function(o, index) {
-      oHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🔍 ' + (o.name || '') + ' (' + (o.date || '') + ')</span><button class="btn-delete" onclick="deleteItem(\'obhliadky\', ' + index + ')">Zmazať</button></div></div>';
-    });
-    var oList = document.getElementById('obhliadkaList');
-    if(oList) oList.innerHTML = oHtml || 'Žiadne ob
+    document.getElementById('pageSub').style.display = 'block
