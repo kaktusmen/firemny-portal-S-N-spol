@@ -1,1 +1,349 @@
 
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firemný Portál</title>
+<style>
+:root{--primary:#2563eb;--danger:#dc2626;--warning:#d97706;--bg:#f8fafc;--card:#fff;--text:#1e293b}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:16px}
+.container{max-width:1100px;margin:0 auto;background:var(--card);padding:24px;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+h1{color:var(--primary);margin-top:0}
+.status-bar{padding:10px 14px;border-radius:6px;font-size:.85rem;font-weight:bold;margin-bottom:15px;background:#dcfce7;color:#166534;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.status-bar.bad{background:#fee2e2;color:#991b1b}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:20px}
+.menu-card{background:#f1f5f9;padding:24px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #cbd5e1;font-weight:bold;color:var(--primary)}
+.menu-card:hover{border-color:var(--primary);background:#e2e8f0}
+.section-content{display:none;margin-top:20px}
+.form-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:12px}
+@media(min-width:600px){.form-grid{grid-template-columns:1fr 1fr}.full-width-input{grid-column:1/-1}}
+input,select,textarea,button{width:100%;padding:10px;margin-top:4px;margin-bottom:8px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;font-size:1rem}
+textarea{resize:vertical;height:80px}
+button.action-btn{background:var(--primary);color:#fff;border:none;font-weight:bold;cursor:pointer}
+.back-btn{background:#64748b;width:auto;padding:8px 16px;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:15px;font-weight:bold}
+.item-card{background:#f8fafc;border-left:4px solid var(--primary);padding:14px;margin-top:10px;border-radius:6px}
+.item-card-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.item-card-title{font-size:1.05rem;font-weight:bold}
+.item-note{margin-top:6px;color:#475569;font-size:.9rem;white-space:pre-wrap}
+.btn-group{display:flex;gap:6px}
+.btn-delete,.btn-edit{width:auto;padding:6px 12px;margin:0;color:#fff;border:none;border-radius:4px;font-size:.85rem;cursor:pointer}
+.btn-delete{background:var(--danger)}.btn-edit{background:var(--warning)}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.cal-nav button{width:auto;padding:6px 14px;margin:0;background:#64748b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
+.cal-title{font-weight:bold;font-size:1.1rem}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.calendar-day-name{text-align:center;font-weight:bold;color:#64748b;padding:8px 0;font-size:.9rem}
+.calendar-cell{background:#fff;border:1px solid #cbd5e1;min-height:90px;padding:6px;border-radius:8px;box-sizing:border-box;overflow:hidden}
+.calendar-cell.empty{background:#f1f5f9;opacity:.4}
+.calendar-cell.today{border:2px solid var(--primary)}
+.calendar-day-number{font-weight:bold;font-size:.85rem;margin-bottom:4px;border-bottom:1px solid #f1f5f9}
+.cal-event-card{padding:3px 5px;border-radius:4px;margin-bottom:3px;font-size:.75rem;color:#fff;word-break:break-word}
+.cal-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;margin-top:10px}
+.cal-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-2px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 18px;border-radius:8px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .25s;z-index:1000;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyC45Ejbu35zL2OHjAMEPp62ZzQuBT3UwL0",
+  authDomain:"sandnspol.firebaseapp.com",
+  projectId:"sandnspol",
+  storageBucket:"sandnspol.firebasestorage.app",
+  messagingSenderId:"624016618780",
+  appId:"1:624016618780:web:619e0bbb945e479b6576d9"
+});
+var fs=firebase.firestore();
+var COLS=['clients','montaze','members','obhliadky','spravy'];
+var dbData={clients:[],montaze:[],members:[],obhliadky:[],spravy:[]};
+var KEY=null;
+var MONTHS=['Január','Február','Marec','Apríl','Máj','Jún','Júl','August','September','Október','November','December'];
+var viewYear=new Date().getFullYear(),viewMonth=new Date().getMonth();
+var CF=['Meno','Priezvisko','Adresa','Telefon','Email','Zariadenie','Znacka','SnVnutorna','SnVonkajsia','DatumMontaze','ZarukaRoky','Poznamky'];
+
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function lf(n){return n.charAt(0).toLowerCase()+n.slice(1)}
+function nm(c){return c.name||((c.meno||'')+' '+(c.priezvisko||'')).trim()||'Klient'}
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('show')},2200)}
+
+// ---------- Kľúč z odkazu ----------
+function getKey(){
+  var m=location.hash.match(/k=([A-Za-z0-9_-]+)/);
+  if(m){try{localStorage.setItem('portal_key',m[1])}catch(e){}history.replaceState(null,'',location.pathname+location.search);return m[1]}
+  try{return localStorage.getItem('portal_key')}catch(e){return null}
+}
+function setKey(){
+  var v=$('keyInput').value.trim().replace(/^.*k=/,'');
+  if(!/^[A-Za-z0-9_-]{16,}$/.test(v)){toast('Neplatný kľúč');return}
+  try{localStorage.setItem('portal_key',v)}catch(e){}
+  location.reload();
+}
+function col(c){return fs.collection('portals').doc(KEY).collection(c)}
+
+// ---------- Synchronizácia ----------
+function setStatus(ok){
+  $('statusBar').className='status-bar'+(ok?'':' bad');
+  $('st').textContent=ok?'🟢 Synchronizované s databázou':'🔴 Chyba pripojenia (skontrolujte internet alebo odkaz)';
+}
+function start(){
+  COLS.forEach(function(c){
+    col(c).onSnapshot(function(s){
+      dbData[c]=s.docs.map(function(d){var o=d.data();o.id=d.id;return o});
+      setStatus(true);render();
+    },function(){setStatus(false)});
+  });
+}
+function put(c,o,id){
+  id=id||col(c).doc().id;
+  delete o.id;
+  return col(c).doc(id).set(o).catch(function(){toast('Uloženie zlyhalo!')});
+}
+function delItem(c,id){
+  if(!confirm('Naozaj zmazať túto položku?'))return;
+  col(c).doc(id).delete().catch(function(){toast('Mazanie zlyhalo!')});
+  if(c==='clients'&&$('editingClientId').value===id)clearClient();
+}
+
+// ---------- Záloha ----------
+function exportData(){
+  var a=document.createElement('a');
+  a.href='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(dbData));
+  a.download='portal_zaloha.json';document.body.appendChild(a);a.click();a.remove();
+}
+function importData(ev){
+  var inp=ev.target,f=inp.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      var p=JSON.parse(e.target.result);
+      if(!COLS.some(function(k){return Array.isArray(p[k])}))throw 1;
+      if(!confirm('Pridať dáta zo súboru do databázy? (Položky sa pridajú k existujúcim. Ten istý súbor nahrávajte iba raz, inak vzniknú duplikáty.)')){inp.value='';return}
+      var ops=[];
+      COLS.forEach(function(c){(Array.isArray(p[c])?p[c]:[]).forEach(function(o){if(o&&typeof o==='object'){var id=o.id;delete o.id;ops.push([c,id||col(c).doc().id,o])}})});
+      var chain=Promise.resolve();
+      for(var i=0;i<ops.length;i+=400){(function(part){
+        chain=chain.then(function(){var b=fs.batch();part.forEach(function(x){b.set(col(x[0]).doc(x[1]),x[2])});return b.commit()});
+      })(ops.slice(i,i+400))}
+      chain.then(function(){toast('Dáta nahrané ('+ops.length+' položiek)')}).catch(function(){toast('Nahrávanie zlyhalo!')});
+    }catch(err){toast('Súbor nemá správny formát!')}
+    inp.value='';
+  };
+  r.readAsText(f);
+}
+
+// ---------- Navigácia ----------
+function openSection(id,title){
+  $('mainMenu').style.display='none';$('pageTitle').innerText=title;$('pageSub').style.display='none';
+  document.querySelectorAll('.section-content').forEach(function(s){s.style.display='none'});
+  $(id).style.display='block';render();
+}
+function goHome(){
+  document.querySelectorAll('.section-content').forEach(function(s){s.style.display='none'});
+  $('mainMenu').style.display='grid';$('pageTitle').innerText='Firemný Portál';$('pageSub').style.display='block';
+}
+
+// ---------- Zobrazenie ----------
+function card(c,o,title,body,edit){
+  var id=esc(o.id);
+  return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">'+title+'</span><div class="btn-group">'+
+    (edit?'<button class="btn-edit" onclick="editClient(\''+id+'\')">Upraviť</button>':'')+
+    '<button class="btn-delete" onclick="delItem(\''+c+'\',\''+id+'\')">Zmazať</button></div></div>'+
+    (body?'<div class="item-note">'+body+'</div>':'')+'</div>';
+}
+var V={
+  clients:['clientsList','Žiadni klienti.',function(a,b){return nm(a).localeCompare(nm(b))},function(c){
+    return card('clients',c,'👤 '+esc(nm(c))+' ('+esc(c.telefon||'-')+')',
+      '<strong>Adresa:</strong> '+esc(c.adresa||'-')+' | <strong>E-mail:</strong> '+esc(c.email||'-')+'\n'+
+      '<strong>Zariadenie:</strong> '+esc(c.zariadenie||'-')+' ('+esc(c.znacka||'-')+')\n'+
+      '<strong>S/N vnút.:</strong> '+esc(c.snVnutorna||c.vyrobneCislo||'-')+' | <strong>S/N von.:</strong> '+esc(c.snVonkajsia||'-')+'\n'+
+      '<strong>Záruka:</strong> '+(c.zarukaRoky?esc(c.zarukaRoky)+' r.':'-')+' | <strong>Montáž:</strong> '+esc(c.datumMontaze||'-')+
+      (c.poznamky?'\n📝 '+esc(c.poznamky):''),true)}],
+  montaze:['montazList','Žiadne montáže.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(m){
+    return card('montaze',m,'🔧 '+esc(m.title||'Montáž')+(m.clientName?' – '+esc(m.clientName):'')+' ('+esc(m.date||'bez dátumu')+')','')}],
+  members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
+    return card('members',t,'🛡️ '+esc(t.name||''),'Tel: '+esc(t.telefon||'-'))}],
+  obhliadky:['obhliadkaList','Žiadne obhliadky.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(o){
+    return card('obhliadky',o,'🔍 '+esc(o.name||'')+' ('+esc(o.date||'')+')','')}],
+  spravy:['spravyList','Žiadne správy.',function(a,b){return (b.ts||0)-(a.ts||0)},function(s){
+    return card('spravy',s,'💬 '+esc(s.author||'Anonym'),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':''))}]
+};
+function render(){
+  COLS.forEach(function(c){
+    var v=V[c],el=$(v[0]);if(!el)return;
+    el.innerHTML=dbData[c].slice().sort(v[2]).map(v[3]).join('')||v[1];
+  });
+  renderCalendar();
+}
+
+// ---------- Klienti ----------
+function clearClient(){
+  CF.forEach(function(n){$('c'+n).value=''});
+  $('editingClientId').value='';$('clientSaveBtn').innerText='Uložiť klienta';
+}
+function saveClient(){
+  var o={};
+  CF.forEach(function(n){o[lf(n)]=$('c'+n).value.trim()});
+  o.name=(o.meno+' '+o.priezvisko).trim();
+  if(!o.name){toast('Zadajte meno alebo priezvisko');return}
+  put('clients',o,$('editingClientId').value||null);
+  clearClient();toast('Klient uložený!');
+}
+function editClient(id){
+  var c=dbData.clients.filter(function(x){return x.id===id})[0];if(!c)return;
+  openSection('clientsSection','Správa klientov');
+  CF.forEach(function(n){$('c'+n).value=c[lf(n)]||''});
+  if(!$('cSnVnutorna').value)$('cSnVnutorna').value=c.vyrobneCislo||'';
+  $('editingClientId').value=c.id;$('clientSaveBtn').innerText='Aktualizovať klienta';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ---------- Ostatné formuláre ----------
+function saveMontaz(){
+  var t=$('mTitle').value.trim();if(!t){toast('Zadajte názov montáže');return}
+  put('montaze',{title:t,clientName:$('mClientName').value.trim(),date:$('mDate').value});
+  ['mTitle','mClientName','mDate'].forEach(function(i){$(i).value=''});toast('Montáž uložená!');
+}
+function saveTeam(){
+  var n=$('tName').value.trim();if(!n){toast('Zadajte meno člena');return}
+  put('members',{name:n,telefon:$('tTel').value.trim()});
+  $('tName').value='';$('tTel').value='';toast('Člen uložený!');
+}
+function saveObhliadka(){
+  var n=$('oName').value.trim();if(!n){toast('Zadajte meno klienta / opis');return}
+  put('obhliadky',{name:n,date:$('oDate').value});
+  $('oName').value='';$('oDate').value='';toast('Obhliadka uložená!');
+}
+function saveSprava(){
+  var t=$('sText').value.trim();if(!t){toast('Napíšte text správy');return}
+  put('spravy',{author:$('sAuthor').value.trim()||'Anonym',text:t,ts:Date.now(),timestamp:new Date().toLocaleString('sk-SK')});
+  $('sText').value='';toast('Správa odoslaná!');
+}
+
+// ---------- Kalendár ----------
+function changeMonth(d){viewMonth+=d;if(viewMonth<0){viewMonth=11;viewYear--}if(viewMonth>11){viewMonth=0;viewYear++}renderCalendar()}
+function goToday(){var n=new Date();viewYear=n.getFullYear();viewMonth=n.getMonth();renderCalendar()}
+function renderCalendar(){
+  var g=$('calendarDaysGrid');if(!g)return;
+  $('calTitle').textContent=MONTHS[viewMonth]+' '+viewYear;
+  var n=new Date(),p=function(x){return String(x).padStart(2,'0')};
+  var today=n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate());
+  var first=(new Date(viewYear,viewMonth,1).getDay()+6)%7,total=new Date(viewYear,viewMonth+1,0).getDate(),h='';
+  for(var i=0;i<first;i++)h+='<div class="calendar-cell empty"></div>';
+  for(var d=1;d<=total;d++){
+    var ds=viewYear+'-'+p(viewMonth+1)+'-'+p(d),ev='';
+    dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:#0d9488">🔧 '+esc(m.title)+'</div>'});
+    dbData.obhliadky.forEach(function(o){if(o.date===ds)ev+='<div class="cal-event-card" style="background:#7c3aed">🔍 '+esc(o.name)+'</div>'});
+    dbData.clients.forEach(function(c){if(c.datumMontaze===ds)ev+='<div class="cal-event-card" style="background:#d97706">👤 '+esc(nm(c))+'</div>'});
+    h+='<div class="calendar-cell'+(ds===today?' today':'')+'"><div class="calendar-day-number">'+d+'</div>'+ev+'</div>';
+  }
+  g.innerHTML=h;
+}
+
+window.onload=function(){
+  KEY=getKey();
+  if(!KEY){$('app').style.display='none';$('keyBox').style.display='block';return}
+  start();
+};
+</script>
+</head>
+<body>
+<div class="container">
+  <div id="keyBox" style="display:none">
+    <h1>Firemný Portál</h1>
+    <p>Otvorte portál cez odkaz, ktorý ste dostali od správcu, alebo sem vložte kľúč z odkazu.</p>
+    <input type="text" id="keyInput" placeholder="Kľúč (časť odkazu za #k=)">
+    <button class="action-btn" onclick="setKey()">Pripojiť</button>
+  </div>
+
+  <div id="app">
+  <div class="status-bar" id="statusBar">
+    <span id="st">🟡 Pripájam sa k databáze…</span>
+    <div style="display:flex;gap:6px">
+      <button onclick="exportData()" style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:var(--primary);color:#fff;border:none;border-radius:4px;cursor:pointer">💾 Stiahnuť zálohu</button>
+      <label style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:#475569;color:#fff;border-radius:4px;cursor:pointer;display:inline-block">📂 Nahrať dáta <input type="file" accept=".json,application/json" style="display:none" onchange="importData(event)"></label>
+    </div>
+  </div>
+
+  <h1 id="pageTitle">Firemný Portál</h1>
+  <p id="pageSub">Vyberte sekciu z menu</p>
+
+  <div id="mainMenu" class="menu-grid">
+    <div class="menu-card" onclick="openSection('clientsSection','Správa klientov')">👥 Klienti</div>
+    <div class="menu-card" onclick="openSection('calendarSection','Kalendár udalostí')">📅 Kalendár</div>
+    <div class="menu-card" onclick="openSection('teamSection','Správa tímu')">🛡️ Tím</div>
+    <div class="menu-card" onclick="openSection('montazSection','Montáže')">🔧 Montáže</div>
+    <div class="menu-card" onclick="openSection('obhliadkaSection','Obhliadky')">🔍 Obhliadky</div>
+    <div class="menu-card" onclick="openSection('spravySection','Správy pre tím')">💬 Správy</div>
+  </div>
+
+  <div id="clientsSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Správa klientov</h2>
+    <input type="hidden" id="editingClientId" value="">
+    <div class="form-grid">
+      <input type="text" id="cMeno" placeholder="Meno">
+      <input type="text" id="cPriezvisko" placeholder="Priezvisko">
+      <input type="text" id="cAdresa" placeholder="Adresa" class="full-width-input">
+      <input type="text" id="cTelefon" placeholder="Telefónne číslo">
+      <input type="email" id="cEmail" placeholder="E-mail">
+      <select id="cZariadenie"><option value="">-- Vyberte druh zariadenia --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option><option>Rekuperácia</option><option>Iné zariadenie</option></select>
+      <select id="cZnacka"><option value="">-- Vyberte značku --</option><option>Daikin</option><option>Mitsubishi</option><option>Panasonic</option><option>Toshiba</option><option>Samsung</option><option>LG</option><option>Midea</option><option>Gree</option><option>Iná značka</option></select>
+      <input type="text" id="cSnVnutorna" placeholder="Výrobné číslo (S/N) vnútornej jednotky">
+      <input type="text" id="cSnVonkajsia" placeholder="Výrobné číslo (S/N) vonkajšej jednotky">
+      <input type="date" id="cDatumMontaze">
+      <select id="cZarukaRoky"><option value="">-- Záruka v rokoch --</option><option value="1">1 rok</option><option value="2">2 roky</option><option value="3">3 roky</option><option value="5">5 rokov</option></select>
+      <input type="text" id="cPoznamky" placeholder="Poznámky / servisné záznamy" class="full-width-input">
+    </div>
+    <button class="action-btn" id="clientSaveBtn" onclick="saveClient()">Uložiť klienta</button>
+    <h3>Zoznam klientov</h3>
+    <div id="clientsList">Načítavam...</div>
+  </div>
+
+  <div id="calendarSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Kalendár udalostí</h2>
+    <div class="cal-nav"><button onclick="changeMonth(-1)">◀</button><span class="cal-title" id="calTitle"></span><button onclick="goToday()">Dnes</button><button onclick="changeMonth(1)">▶</button></div>
+    <div class="calendar-grid"><div class="calendar-day-name">Po</div><div class="calendar-day-name">Ut</div><div class="calendar-day-name">St</div><div class="calendar-day-name">Št</div><div class="calendar-day-name">Pi</div><div class="calendar-day-name">So</div><div class="calendar-day-name">Ne</div></div>
+    <div id="calendarDaysGrid" class="calendar-grid" style="margin-top:4px"></div>
+    <div class="cal-legend"><span><i style="background:#0d9488"></i>Montáž</span><span><i style="background:#7c3aed"></i>Obhliadka</span><span><i style="background:#d97706"></i>Montáž klienta</span></div>
+  </div>
+
+  <div id="teamSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Správa tímu</h2>
+    <div class="form-grid"><input type="text" id="tName" placeholder="Meno a priezvisko člena"><input type="text" id="tTel" placeholder="Telefón"></div>
+    <button class="action-btn" onclick="saveTeam()">Uložiť člena</button>
+    <h3>Zoznam členov</h3><div id="teamList">Načítavam...</div>
+  </div>
+
+  <div id="montazSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Montáže</h2>
+    <div class="form-grid"><input type="text" id="mTitle" placeholder="Názov montáže / zariadenia" class="full-width-input"><input type="text" id="mClientName" placeholder="Meno klienta"><input type="date" id="mDate"></div>
+    <button class="action-btn" onclick="saveMontaz()">Uložiť montáž</button>
+    <h3>Zoznam montáží</h3><div id="montazList">Načítavam...</div>
+  </div>
+
+  <div id="obhliadkaSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Obhliadky</h2>
+    <div class="form-grid"><input type="text" id="oName" placeholder="Meno klienta / opis"><input type="date" id="oDate"></div>
+    <button class="action-btn" onclick="saveObhliadka()">Uložiť obhliadku</button>
+    <h3>Zoznam obhliadok</h3><div id="obhliadkaList">Načítavam...</div>
+  </div>
+
+  <div id="spravySection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Správy pre tím</h2>
+    <div class="form-grid"><input type="text" id="sAuthor" placeholder="Vaše meno"><textarea id="sText" placeholder="Text správy..." class="full-width-input"></textarea></div>
+    <button class="action-btn" onclick="saveSprava()">Odoslať správu</button>
+    <h3>História správ</h3><div id="spravyList">Načítavam...</div>
+  </div>
+  </div>
+</div>
+<div id="toast"></div>
+</body>
+</html>
