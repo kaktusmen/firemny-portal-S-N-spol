@@ -13,7 +13,6 @@
       --primary: #2563eb;
       --danger: #dc2626;
       --warning: #d97706;
-      --success: #16a34a;
       --bg: #f8fafc;
       --card: #ffffff;
       --text: #1e293b;
@@ -34,9 +33,55 @@
     
     .item-card { background: #f8fafc; border-left: 4px solid var(--primary); padding: 14px; margin-top: 10px; border-radius: 6px; }
     .item-card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-    .item-card-title { font-size: 1.05rem; font-weight: bold; cursor: pointer; }
-    .btn-group { display: flex; gap: 6px; }
+    .item-card-title { font-size: 1.05rem; font-weight: bold; }
     .btn-delete { width: auto; padding: 6px 12px; margin: 0; background: var(--danger); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
-    .btn-edit { width: auto; padding: 6px 12px; margin: 0; background: var(--warning); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
 
-    .calendar-grid { display: grid; grid-template-columns
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .calendar-day-name { text-align: center; font-weight: bold; color: #64748b; padding: 8px 0; font-size: 0.9rem; }
+    .calendar-cell { background: #ffffff; border: 1px solid #cbd5e1; min-height: 90px; padding: 6px; border-radius: 8px; box-sizing: border-box; }
+    .calendar-cell.empty { background: #f1f5f9; opacity: 0.4; }
+    .calendar-day-number { font-weight: bold; font-size: 0.85rem; margin-bottom: 4px; border-bottom: 1px solid #f1f5f9; }
+    .cal-event-card { padding: 3px 5px; border-radius: 4px; margin-bottom: 3px; font-size: 0.75rem; color: white; background: #2563eb; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1 id="pageTitle">Firemný Portál</h1>
+  <p id="pageSub">Vyberte sekciu z menu</p>
+
+  <!-- HLAVNÉ MENU -->
+  <div id="mainMenu" class="menu-grid">
+    <div class="menu-card" onclick="openSection('clientsSection', 'Správa klientov')">👥 Klienti</div>
+    <div class="menu-card" onclick="openSection('calendarSection', 'Kalendár udalostí')">📅 Kalendár</div>
+    <div class="menu-card" onclick="openSection('teamSection', 'Správa tímu')">🛡️ Tím</div>
+    <div class="menu-card" onclick="openSection('montazSection', 'Montáže')">🔧 Montáže</div>
+    <div class="menu-card" onclick="openSection('obhliadkaSection', 'Obhliadky')">🔍 Obhliadky</div>
+    <div class="menu-card" onclick="openSection('spravySection', 'Správy pre tím')">💬 Správy</div>
+  </div>
+
+  <!-- KLIENTI -->
+  <div id="clientsSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Správa klientov</h2>
+    <div class="form-grid">
+      <input type="text" id="cMeno" placeholder="Meno">
+      <input type="text" id="cPriezvisko" placeholder="Priezvisko">
+      <input type="text" id="cAdresa" placeholder="Adresa" class="full-width-input">
+      <input type="text" id="cTelefon" placeholder="Telefónne číslo">
+      <input type="email" id="cEmail" placeholder="E-mail">
+      <input type="text" id="cZariadenie" placeholder="Druh zariadenia (napr. Klimatizácia)">
+      <input type="text" id="cZnacka" placeholder="Značka (napr. Daikin)">
+      <input type="text" id="cVyrobneCislo" placeholder="Výrobné číslo">
+      <input type="date" id="cDatumMontaze" placeholder="Dátum montáže">
+      <select id="cZarukaRoky">
+        <option value="">-- Záruka v rokoch --</option>
+        <option value="1">1 rok</option>
+        <option value="2">2 roky</option>
+        <option value="3">3 roky</option>
+        <option value="5">5 rokov</option>
+      </select>
+      <input type="text" id="cPoznamky" placeholder="Poznámky / servis" class="full-width-input">
+    </div>
+    <button class="action-btn" onclick="saveClient()">Uložiť klienta</button>
+    <h3>Zoz
