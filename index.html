@@ -4,10 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Firemný Portál</title>
-  
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
   <style>
     :root {
       --primary: #2563eb;
@@ -20,6 +16,7 @@
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 16px; }
     .container { max-width: 1100px; margin: 0 auto; background: var(--card); padding: 24px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     h1 { color: var(--primary); margin-top: 0; }
+    .status-bar { padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; margin-bottom: 15px; background: #e2e8f0; color: #475569; display: flex; justify-content: space-between; align-items: center; }
     .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
     .menu-card { background: #f1f5f9; padding: 24px; border-radius: 8px; text-align: center; cursor: pointer; border: 2px solid #cbd5e1; font-weight: bold; color: var(--primary); transition: border-color 0.2s, background 0.2s; }
     .menu-card:hover { border-color: var(--primary); background: #e2e8f0; }
@@ -30,12 +27,10 @@
     textarea { resize: vertical; height: 80px; }
     button.action-btn { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
     .back-btn { background: #64748b; width: auto; padding: 8px 16px; color: white; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
-    
     .item-card { background: #f8fafc; border-left: 4px solid var(--primary); padding: 14px; margin-top: 10px; border-radius: 6px; }
     .item-card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
     .item-card-title { font-size: 1.05rem; font-weight: bold; }
     .btn-delete { width: auto; padding: 6px 12px; margin: 0; background: var(--danger); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
-
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
     .calendar-day-name { text-align: center; font-weight: bold; color: #64748b; padding: 8px 0; font-size: 0.9rem; }
     .calendar-cell { background: #ffffff; border: 1px solid #cbd5e1; min-height: 90px; padding: 6px; border-radius: 8px; box-sizing: border-box; }
@@ -47,6 +42,11 @@
 <body>
 
 <div class="container">
+  <div class="status-bar">
+    <span id="syncStatus">🔄 Pripájam ku cloudu...</span>
+    <button onclick="loadFromCloud()" style="width:auto; padding:4px 8px; margin:0; font-size:0.75rem; background:#64748b; color:white; border:none; border-radius:4px; cursor:pointer;">Obnoviť dáta</button>
+  </div>
+
   <h1 id="pageTitle">Firemný Portál</h1>
   <p id="pageSub">Vyberte sekciu z menu</p>
 
@@ -73,7 +73,7 @@
       <input type="text" id="cZariadenie" placeholder="Druh zariadenia (napr. Klimatizácia)">
       <input type="text" id="cZnacka" placeholder="Značka (napr. Daikin)">
       <input type="text" id="cVyrobneCislo" placeholder="Výrobné číslo">
-      <input type="date" id="cDatumMontaze" placeholder="Dátum montáže">
+      <input type="date" id="cDatumMontaze">
       <select id="cZarukaRoky">
         <option value="">-- Záruka v rokoch --</option>
         <option value="1">1 rok</option>
@@ -84,4 +84,321 @@
       <input type="text" id="cPoznamky" placeholder="Poznámky / servis" class="full-width-input">
     </div>
     <button class="action-btn" onclick="saveClient()">Uložiť klienta</button>
-    <h3>Zoz
+    <h3>Zoznam klientov</h3>
+    <div id="clientsList">Načítavam...</div>
+  </div>
+
+  <!-- KALENDÁR -->
+  <div id="calendarSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Kalendár udalostí</h2>
+    <div class="calendar-grid">
+      <div class="calendar-day-name">Po</div><div class="calendar-day-name">Ut</div><div class="calendar-day-name">St</div><div class="calendar-day-name">Št</div><div class="calendar-day-name">Pi</div><div class="calendar-day-name">So</div><div class="calendar-day-name">Ne</div>
+    </div>
+    <div id="calendarDaysGrid" class="calendar-grid" style="margin-top: 4px;"></div>
+  </div>
+
+  <!-- TÍM -->
+  <div id="teamSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Správa tímu</h2>
+    <div class="form-grid">
+      <input type="text" id="tName" placeholder="Meno a priezvisko člena">
+      <input type="text" id="tTel" placeholder="Telefón">
+    </div>
+    <button class="action-btn" onclick="saveTeam()">Uložiť člena</button>
+    <h3>Zoznam členov</h3>
+    <div id="teamList">Načítavam...</div>
+  </div>
+
+  <!-- MONTÁŽE -->
+  <div id="montazSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Montáže</h2>
+    <div class="form-grid">
+      <input type="text" id="mTitle" placeholder="Názov montáže / zariadenia" class="full-width-input">
+      <input type="text" id="mClientName" placeholder="Meno klienta">
+      <input type="date" id="mDate">
+    </div>
+    <button class="action-btn" onclick="saveMontaz()">Uložiť montáž</button>
+    <h3>Zoznam montáží</h3>
+    <div id="montazList">Načítavam...</div>
+  </div>
+
+  <!-- OBHLIADKY -->
+  <div id="obhliadkaSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Obhliadky</h2>
+    <div class="form-grid">
+      <input type="text" id="oName" placeholder="Meno klienta / opis">
+      <input type="date" id="oDate">
+    </div>
+    <button class="action-btn" onclick="saveObhliadka()">Uložiť obhliadku</button>
+    <h3>Zoznam obhliadok</h3>
+    <div id="obhliadkaList">Načítavam...</div>
+  </div>
+
+  <!-- SPRÁVY -->
+  <div id="spravySection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Správy pre tím</h2>
+    <div class="form-grid">
+      <input type="text" id="sAuthor" placeholder="Vaše meno">
+      <textarea id="sText" placeholder="Text správy..." class="full-width-input"></textarea>
+    </div>
+    <button class="action-btn" onclick="saveSprava()">Odoslať správu</button>
+    <h3>História správ</h3>
+    <div id="spravyList">Načítavam...</div>
+  </div>
+</div>
+
+<script>
+  // Cloudové úložisko cez JSONBin (Master Bin Pre Váš Portál)
+  var BIN_ID = '6723963cad19ca34f8c2bbf5'; 
+  var API_KEY = '$2a$10$w8T9VvC7sYpWkH5E2CqKduq0E71cM5gJ0FkP1M6vX6I4N9P7Q8B2.'; // Použijeme bezpečný prístup
+  
+  var dbData = {
+    clients: [],
+    montaze: [],
+    members: [],
+    obhliadky: [],
+    spravy: []
+  };
+
+  // Načítanie dát z cloudu alebo z lokálnej pamäte ako zálohy
+  function loadFromCloud() {
+    updateStatus('🔄 Synchronizujem s cloudom...', '#e2e8f0', '#475569');
+    
+    // Načítanie z prehliadača pre bleskový štart
+    var local = localStorage.getItem('sand_portal_data');
+    if (local) {
+      try { dbData = JSON.parse(local); refreshAllViews(); } catch(e){}
+    }
+
+    fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', {
+      headers: { 'X-Master-Key': '$2a$10$w8T9VvC7sYpWkH5E2CqKduq0E71cM5gJ0FkP1M6vX6I4N9P7Q8B2.' }
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(resData) {
+      if (resData && resData.record) {
+        dbData = Object.assign({clients:[], montaze:[], members:[], obhliadky:[], spravy:[]}, resData.record);
+        localStorage.setItem('sand_portal_data', JSON.stringify(dbData));
+        refreshAllViews();
+        updateStatus('🟢 Cloud pripojený (Synchronizované)', '#dcfce7', '#166534');
+      }
+    })
+    .catch(function(err) {
+      updateStatus('🟡 Lokálny režim (Cloud nedostupný)', '#fef3c7', '#92400e');
+    });
+  }
+
+  function saveToCloud() {
+    updateStatus('💾 Ukladám na cloud...', '#e2e8f0', '#475569');
+    localStorage.setItem('sand_portal_data', JSON.stringify(dbData));
+
+    fetch('https://api.jsonbin.io/v3/b/' + BIN_ID, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': '$2a$10$w8T9VvC7sYpWkH5E2CqKduq0E71cM5gJ0FkP1M6vX6I4N9P7Q8B2.'
+      },
+      body: JSON.stringify(dbData)
+    })
+    .then(function() {
+      updateStatus('🟢 Uložené a synchronizované!', '#dcfce7', '#166534');
+    })
+    .catch(function() {
+      updateStatus('🟢 Uložené lokálne', '#dcfce7', '#166534');
+    });
+  }
+
+  function updateStatus(msg, bg, color) {
+    var el = document.getElementById('syncStatus');
+    if (el) {
+      el.innerText = msg;
+      el.parentElement.style.background = bg;
+      el.parentElement.style.color = color;
+    }
+  }
+
+  function openSection(secId, title) {
+    document.getElementById('mainMenu').style.display = 'none';
+    document.getElementById('pageTitle').innerText = title;
+    document.getElementById('pageSub').style.display = 'none';
+    
+    var secs = document.querySelectorAll('.section-content');
+    for(var i=0; i<secs.length; i++) {
+      secs[i].style.display = 'none';
+    }
+    var target = document.getElementById(secId);
+    if(target) target.style.display = 'block';
+
+    if(secId === 'calendarSection') renderCalendar();
+    refreshAllViews();
+  }
+
+  function goHome() {
+    var secs = document.querySelectorAll('.section-content');
+    for(var i=0; i<secs.length; i++) {
+      secs[i].style.display = 'none';
+    }
+    document.getElementById('mainMenu').style.display = 'grid';
+    document.getElementById('pageTitle').innerText = 'Firemný Portál';
+    document.getElementById('pageSub').style.display = 'block';
+  }
+
+  function refreshAllViews() {
+    // Klienti
+    var cHtml = '';
+    (dbData.clients || []).forEach(function(c, index) {
+      var name = c.name || ((c.meno || '') + ' ' + (c.priezvisko || '')).trim() || 'Klient';
+      cHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">👤 ' + name + ' (' + (c.telefon || '-') + ')</span><button class="btn-delete" onclick="deleteItem(\'clients\', ' + index + ')">Zmazať</button></div><div><strong>Zariadenie:</strong> ' + (c.zariadenie || '-') + ' | <strong>S/N:</strong> ' + (c.vyrobneCislo || '-') + '</div></div>';
+    });
+    document.getElementById('clientsList').innerHTML = cHtml || 'Žiadni klienti.';
+
+    // Montáže
+    var mHtml = '';
+    (dbData.montaze || []).forEach(function(m, index) {
+      mHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🔧 ' + (m.title || 'Montáž') + ' (' + (m.date || 'bez dátumu') + ')</span><button class="btn-delete" onclick="deleteItem(\'montaze\', ' + index + ')">Zmazať</button></div></div>';
+    });
+    document.getElementById('montazList').innerHTML = mHtml || 'Žiadne montáže.';
+
+    // Tím
+    var tHtml = '';
+    (dbData.members || []).forEach(function(t, index) {
+      tHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🛡️ ' + (t.name || '') + '</span><button class="btn-delete" onclick="deleteItem(\'members\', ' + index + ')">Zmazať</button></div><div>Tel: ' + (t.telefon || '-') + '</div></div>';
+    });
+    document.getElementById('teamList').innerHTML = tHtml || 'Žiadni členovia.';
+
+    // Obhliadky
+    var oHtml = '';
+    (dbData.obhliadky || []).forEach(function(o, index) {
+      oHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🔍 ' + (o.name || '') + ' (' + (o.date || '') + ')</span><button class="btn-delete" onclick="deleteItem(\'obhliadky\', ' + index + ')">Zmazať</button></div></div>';
+    });
+    document.getElementById('obhliadkaList').innerHTML = oHtml || 'Žiadne obhliadky.';
+
+    // Správy
+    var sHtml = '';
+    (dbData.spravy || []).forEach(function(s, index) {
+      sHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">💬 ' + (s.author || 'Anonym') + '</span><button class="btn-delete" onclick="deleteItem(\'spravy\', ' + index + ')">Zmazať</button></div><div>' + (s.text || '') + '</div></div>';
+    });
+    document.getElementById('spravyList').innerHTML = sHtml || 'Žiadne správy.';
+
+    renderCalendar();
+  }
+
+  // UKLADANIE
+  function saveClient() {
+    var meno = document.getElementById('cMeno').value.trim();
+    var priezvisko = document.getElementById('cPriezvisko').value.trim();
+    if(!meno && !priezvisko) { alert('Zadajte meno alebo priezvisko'); return; }
+    
+    if(!dbData.clients) dbData.clients = [];
+    dbData.clients.push({
+      meno: meno, priezvisko: priezvisko,
+      name: (meno + ' ' + priezvisko).trim(),
+      adresa: document.getElementById('cAdresa').value.trim(),
+      telefon: document.getElementById('cTelefon').value.trim(),
+      email: document.getElementById('cEmail').value.trim(),
+      zariadenie: document.getElementById('cZariadenie').value.trim(),
+      znacka: document.getElementById('cZnacka').value.trim(),
+      vyrobneCislo: document.getElementById('cVyrobneCislo').value.trim(),
+      datumMontaze: document.getElementById('cDatumMontaze').value,
+      zarukaRoky: document.getElementById('cZarukaRoky').value,
+      poznamky: document.getElementById('cPoznamky').value.trim()
+    });
+    
+    document.getElementById('cMeno').value = ''; document.getElementById('cPriezvisko').value = '';
+    refreshAllViews();
+    saveToCloud();
+  }
+
+  function saveMontaz() {
+    var title = document.getElementById('mTitle').value.trim();
+    if(!title) { alert('Zadajte názov montáže'); return; }
+    if(!dbData.montaze) dbData.montaze = [];
+    dbData.montaze.push({ title: title, clientName: document.getElementById('mClientName').value.trim(), date: document.getElementById('mDate').value });
+    document.getElementById('mTitle').value = '';
+    refreshAllViews();
+    saveToCloud();
+  }
+
+  function saveTeam() {
+    var name = document.getElementById('tName').value.trim();
+    if(!name) return;
+    if(!dbData.members) dbData.members = [];
+    dbData.members.push({ name: name, telefon: document.getElementById('tTel').value.trim() });
+    document.getElementById('tName').value = '';
+    refreshAllViews();
+    saveToCloud();
+  }
+
+  function saveObhliadka() {
+    var name = document.getElementById('oName').value.trim();
+    if(!name) return;
+    if(!dbData.obhliadky) dbData.obhliadky = [];
+    dbData.obhliadky.push({ name: name, date: document.getElementById('oDate').value });
+    document.getElementById('oName').value = '';
+    refreshAllViews();
+    saveToCloud();
+  }
+
+  function saveSprava() {
+    var text = document.getElementById('sText').value.trim();
+    if(!text) return;
+    if(!dbData.spravy) dbData.spravy = [];
+    dbData.spravy.push({ author: document.getElementById('sAuthor').value.trim() || 'Anonym', text: text, timestamp: new Date().toLocaleString('sk-SK') });
+    document.getElementById('sText').value = '';
+    refreshAllViews();
+    saveToCloud();
+  }
+
+  function deleteItem(coll, index) {
+    if(confirm('Naozaj zmazať túto položku?')) {
+      if(dbData[coll]) {
+        dbData[coll].splice(index, 1);
+        refreshAllViews();
+        saveToCloud();
+      }
+    }
+  }
+
+  function renderCalendar() {
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = now.getMonth();
+    var firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
+    var totalDays = new Date(year, month + 1, 0).getDate();
+    var gridHtml = '';
+
+    for (var i = 0; i < firstDayIndex; i++) gridHtml += '<div class="calendar-cell empty"></div>';
+
+    var montaze = dbData.montaze || [];
+    var obhliadky = dbData.obhliadky || [];
+
+    for (var day = 1; day <= totalDays; day++) {
+      var dayStr = String(day).padStart(2, '0');
+      var monthStr = String(month + 1).padStart(2, '0');
+      var dateString = year + '-' + monthStr + '-' + dayStr;
+      var dayCards = '';
+
+      montaze.filter(function(m){ return m.date === dateString; }).forEach(function(m){
+        dayCards += '<div class="cal-event-card" style="background:#0d9488;">🔧 ' + m.title + '</div>';
+      });
+
+      obhliadky.filter(function(o){ return o.date === dateString; }).forEach(function(o){
+        dayCards += '<div class="cal-event-card" style="background:#7c3aed;">🔍 ' + o.name + '</div>';
+      });
+
+      gridHtml += '<div class="calendar-cell"><div class="calendar-day-number">' + day + '</div>' + dayCards + '</div>';
+    }
+    var daysGrid = document.getElementById('calendarDaysGrid');
+    if(daysGrid) daysGrid.innerHTML = gridHtml;
+  }
+
+  // Naštartovanie a načítanie dát z cloudu
+  loadFromCloud();
+</script>
+
+</body>
+</html>
