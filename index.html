@@ -248,25 +248,7 @@
 </div>
 
 <script>
-  var firebaseConfig = {
-    apiKey: "AIzaSyBoUcM_hApyuOMDWIgIE8t0glxQfL0V9w8",
-    authDomain: "sandnspol-15db0.firebaseapp.com",
-    projectId: "sandnspol-15db0",
-    storageBucket: "sandnspol-15db0.firebasestorage.app",
-    messagingSenderId: "1047987666074",
-    appId: "1:1047987666074:web:20a6fe5583838d18b1b323",
-    measurementId: "G-3R61MVJ665"
-  };
-
-  var db = null;
-  try {
-    if (typeof firebase !== 'undefined') {
-      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-      db = firebase.firestore();
-      initListeners();
-    }
-  } catch(e) { console.log("Init error:", e); }
-
+  // ZÁKLADNÉ NAVIGAČNÉ FUNKCIE (DEFINOVANÉ HNEĎ NA ZAČIATKU)
   function openSection(secId, title) {
     var mainMenu = document.getElementById('mainMenu');
     var titleEl = document.getElementById('pageHeaderTitle');
@@ -299,6 +281,25 @@
     if (titleEl) titleEl.innerText = 'Firemný Portál';
     if (subtitleEl) subtitleEl.style.display = 'block';
   }
+
+  var firebaseConfig = {
+    apiKey: "AIzaSyBoUcM_hApyuOMDWIgIE8t0glxQfL0V9w8",
+    authDomain: "sandnspol-15db0.firebaseapp.com",
+    projectId: "sandnspol-15db0",
+    storageBucket: "sandnspol-15db0.firebasestorage.app",
+    messagingSenderId: "1047987666074",
+    appId: "1:1047987666074:web:20a6fe5583838d18b1b323",
+    measurementId: "G-3R61MVJ665"
+  };
+
+  var db = null;
+  try {
+    if (typeof firebase !== 'undefined') {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      initListeners();
+    }
+  } catch(e) { console.log("Init error:", e); }
 
   var clients = [], members = [], montaze = [], obhliadky = [], spravy = [];
   var currentMonthDate = new Date();
@@ -468,4 +469,45 @@
     document.getElementById('montazFormTitle').innerText = 'Upraviť montáž';
     document.getElementById('montazSubmitBtn').innerText = 'Aktualizovať montáž';
     document.getElementById('montazCancelBtn').style.display = 'inline-block';
-    window.scrollTo({ top: 0, behavior: '
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function resetMontazForm() {
+    document.getElementById('montazEditId').value = '';
+    document.getElementById('mTitle').value = '';
+    document.getElementById('mDate').value = '';
+    document.getElementById('montazFormTitle').innerText = 'Nová montáž';
+    document.getElementById('montazSubmitBtn').innerText = 'Uložiť montáž';
+    document.getElementById('montazCancelBtn').style.display = 'none';
+  }
+  function deleteMontaz(id) { if(db) db.collection('montaze').doc(id).delete(); }
+
+  // --- OBHLIADKY ---
+  function saveObhliadka() {
+    var editId = document.getElementById('obhliadkaEditId').value;
+    var name = document.getElementById('oName').value.trim();
+    var date = document.getElementById('oDate').value;
+    if (name && db) {
+      var data = { name: name, date: date };
+      if (editId) {
+        db.collection('obhliadky').doc(editId).update(data).then(function() { resetObhliadkaForm(); });
+      } else {
+        db.collection('obhliadky').add(data).then(function() { resetObhliadkaForm(); });
+      }
+    }
+  }
+  function editObhliadka(id, name, date) {
+    document.getElementById('obhliadkaEditId').value = id;
+    document.getElementById('oName').value = name || '';
+    document.getElementById('oDate').value = date || '';
+    document.getElementById('obhliadkaFormTitle').innerText = 'Upraviť obhliadku';
+    document.getElementById('obhliadkaSubmitBtn').innerText = 'Aktualizovať obhliadku';
+    document.getElementById('obhliadkaCancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function resetObhliadkaForm() {
+    document.getElementById('obhliadkaEditId').value = '';
+    document.getElementById('oName').value = '';
+    document.getElementById('oDate').value = '';
+    document.getElementById('obhliadkaFormTitle').innerText = 'Nová obhliadka';
+    document.getElementById('obhliadkaSubmitBtn').innerText = 'Uložiť obhliadku';
+    document.getElementById('obhliadkaCancelBtn
