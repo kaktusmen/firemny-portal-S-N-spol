@@ -59,4 +59,287 @@
     .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
     .calendar-day-name { text-align: center; font-weight: bold; color: #64748b; padding: 8px 0; font-size: 0.9rem; }
-    .calendar-cell { background: #ffffff; border
+    .calendar-cell { background: #ffffff; border: 1px solid #cbd5e1; min-height: 110px; padding: 6px; border-radius: 8px; box-sizing: border-box; overflow-y: auto; }
+    .calendar-cell.empty { background: #f1f5f9; border-color: #e2e8f0; opacity: 0.4; }
+    .calendar-day-number { font-weight: bold; font-size: 0.9rem; color: #1e293b; margin-bottom: 6px; border-bottom: 1px solid #f1f5f9; padding-bottom: 2px; }
+    .cal-event-card { padding: 4px 6px; border-radius: 6px; margin-bottom: 4px; font-size: 0.75rem; color: white; background: #2563eb; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="appContent">
+  <div class="top-bar">
+    <div>
+      <h1 id="pageHeaderTitle" style="margin: 0;">Firemný Portál</h1>
+      <p id="pageHeaderSubtitle" style="color: #64748b; margin: 0;">Vyberte sekciu z menu</p>
+    </div>
+  </div>
+
+  <div id="mainMenu" class="menu-grid">
+    <div class="menu-card" onclick="openSection('clientsSection', 'Správa klientov')">
+      <h3>👥 Klienti</h3>
+      <p>Karty klientov, záruky a servis</p>
+    </div>
+    <div class="menu-card" onclick="openSection('calendarSection', 'Kalendár udalostí')">
+      <h3>📅 Kalendár</h3>
+      <p>Mesačná mriežka a termíny</p>
+    </div>
+    <div class="menu-card" onclick="openSection('teamSection', 'Správa tímu')">
+      <h3>🛡️ Tím</h3>
+      <p>Členovia pracovného tímu</p>
+    </div>
+    <div class="menu-card" onclick="openSection('montazSection', 'Montáže')">
+      <h3>🔧 Montáž</h3>
+      <p>Plánovanie montáží</p>
+    </div>
+    <div class="menu-card" onclick="openSection('obhliadkaSection', 'Obhliadky')">
+      <h3>🔍 Obhliadky</h3>
+      <p>Správa obhliadok</p>
+    </div>
+    <div class="menu-card" onclick="openSection('spravySection', 'Správy pre tím')">
+      <h3>💬 Správy</h3>
+      <p>Oznámenia pre kolegov</p>
+    </div>
+  </div>
+
+  <div id="clientsSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2 id="clientFormTitle">Pridať nového klienta</h2>
+    <input type="hidden" id="clientEditId" value="">
+    <div class="form-grid">
+      <input type="text" id="cMeno" placeholder="Meno">
+      <input type="text" id="cPriezvisko" placeholder="Priezvisko">
+      <input type="text" id="cTelefon" placeholder="Telefón">
+      <input type="email" id="cEmail" placeholder="E-mail">
+      <input type="text" id="cZariadenie" placeholder="Zariadenie" class="full-width-input">
+    </div>
+    <button class="action-btn" id="clientSubmitBtn" onclick="saveClient()">Uložiť klienta</button>
+    <button id="clientCancelBtn" style="background: #64748b; display: none;" onclick="resetClientForm()">Zrušiť úpravu</button>
+    <h2 style="margin-top: 30px;">Zoznam klientov</h2>
+    <div id="clientsList">Načítavam...</div>
+  </div>
+
+  <div id="calendarSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <div class="calendar-header">
+      <button style="width: auto; padding: 6px 12px; margin:0;" onclick="changeMonth(-1)">◀ Predchádzajúci</button>
+      <h2 id="calendarMonthTitle" style="margin: 0; border: none;">Mesiac Rok</h2>
+      <button style="width: auto; padding: 6px 12px; margin:0;" onclick="changeMonth(1)">Nasledujúci ▶</button>
+    </div>
+    <div class="calendar-grid">
+      <div class="calendar-day-name">Po</div><div class="calendar-day-name">Ut</div><div class="calendar-day-name">St</div><div class="calendar-day-name">Št</div><div class="calendar-day-name">Pi</div><div class="calendar-day-name">So</div><div class="calendar-day-name">Ne</div>
+    </div>
+    <div id="calendarDaysGrid" class="calendar-grid" style="margin-top: 4px;"></div>
+  </div>
+
+  <div id="teamSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2 id="teamFormTitle">Pridať člena tímu</h2>
+    <input type="hidden" id="teamEditId" value="">
+    <div class="form-grid">
+      <input type="text" id="tMeno" placeholder="Meno a priezvisko">
+      <input type="text" id="tTelefon" placeholder="Telefón">
+    </div>
+    <button class="action-btn" id="teamSubmitBtn" onclick="saveTeamMember()">Uložiť člena</button>
+    <button id="teamCancelBtn" style="background: #64748b; display: none;" onclick="resetTeamForm()">Zrušiť úpravu</button>
+    <h2 style="margin-top: 30px;">Zoznam členov</h2>
+    <div id="membersList">Načítavam...</div>
+  </div>
+
+  <div id="montazSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2 id="montazFormTitle">Nová montáž</h2>
+    <input type="hidden" id="montazEditId" value="">
+    <div class="form-grid">
+      <input type="text" id="mTitle" placeholder="Názov montáže" class="full-width-input">
+      <input type="date" id="mDate">
+    </div>
+    <button class="action-btn" id="montazSubmitBtn" onclick="saveMontaz()">Uložiť montáž</button>
+    <button id="montazCancelBtn" style="background: #64748b; display: none;" onclick="resetMontazForm()">Zrušiť úpravu</button>
+    <h2 style="margin-top: 30px;">Zoznam montáží</h2>
+    <div id="montazList">Načítavam...</div>
+  </div>
+
+  <div id="obhliadkaSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2 id="obhliadkaFormTitle">Nová obhliadka</h2>
+    <input type="hidden" id="obhliadkaEditId" value="">
+    <div class="form-grid">
+      <input type="text" id="oName" placeholder="Meno klienta">
+      <input type="date" id="oDate">
+    </div>
+    <button class="action-btn" id="obhliadkaSubmitBtn" onclick="saveObhliadka()">Uložiť obhliadku</button>
+    <button id="obhliadkaCancelBtn" style="background: #64748b; display: none;" onclick="resetObhliadkaForm()">Zrušiť úpravu</button>
+    <h2 style="margin-top: 30px;">Zoznam obhliadok</h2>
+    <div id="obhliadkaList">Načítavam...</div>
+  </div>
+
+  <div id="spravySection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <h2>Nová správa</h2>
+    <div class="form-grid">
+      <input type="text" id="sAuthor" placeholder="Vaše meno">
+      <textarea id="sText" placeholder="Text správy..." class="full-width-input"></textarea>
+    </div>
+    <button class="action-btn" onclick="saveSprava()">Odoslať správu</button>
+    <h2 style="margin-top: 30px;">História správ</h2>
+    <div id="spravyList">Načítavam...</div>
+  </div>
+</div>
+
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyBoUcM_hApyuOMDWIgIE8t0glxQfL0V9w8",
+    authDomain: "sandnspol-15db0.firebaseapp.com",
+    projectId: "sandnspol-15db0",
+    storageBucket: "sandnspol-15db0.firebasestorage.app",
+    messagingSenderId: "1047987666074",
+    appId: "1:1047987666074:web:20a6fe5583838d18b1b323",
+    measurementId: "G-3R61MVJ665"
+  };
+
+  var db = null;
+  try {
+    if (typeof firebase !== 'undefined') {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      initListeners();
+    }
+  } catch(e) { console.log("Init error:", e); }
+
+  function openSection(secId, title) {
+    document.getElementById('mainMenu').style.display = 'none';
+    document.getElementById('pageHeaderTitle').innerText = title;
+    document.getElementById('pageHeaderSubtitle').style.display = 'none';
+    var sections = document.querySelectorAll('.section-content');
+    for (var i = 0; i < sections.length; i++) sections[i].style.display = 'none';
+    var target = document.getElementById(secId);
+    if (target) target.style.display = 'block';
+    if (secId === 'calendarSection') renderCalendar();
+  }
+
+  function goHome() {
+    var sections = document.querySelectorAll('.section-content');
+    for (var i = 0; i < sections.length; i++) sections[i].style.display = 'none';
+    document.getElementById('mainMenu').style.display = 'grid';
+    document.getElementById('pageHeaderTitle').innerText = 'Firemný Portál';
+    document.getElementById('pageHeaderSubtitle').style.display = 'block';
+  }
+
+  var clients = [], members = [], events = [], montaze = [], obhliadky = [], spravy = [];
+  var currentMonthDate = new Date();
+
+  function initListeners() {
+    if (!db) return;
+    try {
+      db.collection('clients').onSnapshot(function(snap) {
+        clients = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderClients();
+      }, function(e){});
+      db.collection('members').onSnapshot(function(snap) {
+        members = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderMembers();
+      }, function(e){});
+      db.collection('montaze').onSnapshot(function(snap) {
+        montaze = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderMontaze(); renderCalendar();
+      }, function(e){});
+      db.collection('obhliadky').onSnapshot(function(snap) {
+        obhliadky = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderObhliadky(); renderCalendar();
+      }, function(e){});
+      db.collection('spravy').onSnapshot(function(snap) {
+        spravy = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderSpravy();
+      }, function(e){});
+      db.collection('events').onSnapshot(function(snap) {
+        events = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+        renderCalendar();
+      }, function(e){});
+    } catch(err) {}
+  }
+
+  function saveClient() {
+    var editId = document.getElementById('clientEditId').value;
+    var meno = document.getElementById('cMeno').value.trim();
+    var priezvisko = document.getElementById('cPriezvisko').value.trim();
+    if ((meno || priezvisko) && db) {
+      var data = { meno: meno, priezvisko: priezvisko, telefon: document.getElementById('cTelefon').value.trim(), email: document.getElementById('cEmail').value.trim(), zariadenie: document.getElementById('cZariadenie').value.trim(), name: (meno + ' ' + priezvisko).trim() };
+      if (editId) {
+        db.collection('clients').doc(editId).update(data).then(function() { resetClientForm(); });
+      } else {
+        db.collection('clients').add(data).then(function() { resetClientForm(); });
+      }
+    }
+  }
+  function editClient(id, meno, priezvisko, telefon, email, zariadenie) {
+    document.getElementById('clientEditId').value = id;
+    document.getElementById('cMeno').value = meno || '';
+    document.getElementById('cPriezvisko').value = priezvisko || '';
+    document.getElementById('cTelefon').value = telefon || '';
+    document.getElementById('cEmail').value = email || '';
+    document.getElementById('cZariadenie').value = zariadenie || '';
+    document.getElementById('clientFormTitle').innerText = 'Upraviť klienta';
+    document.getElementById('clientSubmitBtn').innerText = 'Aktualizovať klienta';
+    document.getElementById('clientCancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function resetClientForm() {
+    document.getElementById('clientEditId').value = '';
+    ['cMeno','cPriezvisko','cTelefon','cEmail','cZariadenie'].forEach(function(id){ document.getElementById(id).value = ''; });
+    document.getElementById('clientFormTitle').innerText = 'Pridať nového klienta';
+    document.getElementById('clientSubmitBtn').innerText = 'Uložiť klienta';
+    document.getElementById('clientCancelBtn').style.display = 'none';
+  }
+  function deleteClient(id) { if(db) db.collection('clients').doc(id).delete(); }
+
+  function saveTeamMember() {
+    var editId = document.getElementById('teamEditId').value;
+    var meno = document.getElementById('tMeno').value.trim();
+    if (meno && db) {
+      var data = { name: meno, telefon: document.getElementById('tTelefon').value.trim() };
+      if (editId) {
+        db.collection('members').doc(editId).update(data).then(function() { resetTeamForm(); });
+      } else {
+        db.collection('members').add(data).then(function() { resetTeamForm(); });
+      }
+    }
+  }
+  function editMember(id, name, telefon) {
+    document.getElementById('teamEditId').value = id;
+    document.getElementById('tMeno').value = name || '';
+    document.getElementById('tTelefon').value = telefon || '';
+    document.getElementById('teamFormTitle').innerText = 'Upraviť člena tímu';
+    document.getElementById('teamSubmitBtn').innerText = 'Aktualizovať člena';
+    document.getElementById('teamCancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function resetTeamForm() {
+    document.getElementById('teamEditId').value = '';
+    document.getElementById('tMeno').value = '';
+    document.getElementById('tTelefon').value = '';
+    document.getElementById('teamFormTitle').innerText = 'Pridať člena tímu';
+    document.getElementById('teamSubmitBtn').innerText = 'Uložiť člena';
+    document.getElementById('teamCancelBtn').style.display = 'none';
+  }
+  function deleteMember(id) { if(db) db.collection('members').doc(id).delete(); }
+
+  function saveMontaz() {
+    var editId = document.getElementById('montazEditId').value;
+    var title = document.getElementById('mTitle').value.trim();
+    var date = document.getElementById('mDate').value;
+    if (title && db) {
+      var data = { title: title, date: date };
+      if (editId) {
+        db.collection('montaze').doc(editId).update(data).then(function() { resetMontazForm(); });
+      } else {
+        db.collection('montaze').add(data).then(function() { resetMontazForm(); });
+      }
+    }
+  }
+  function editMontaz(id, title, date) {
+    document.getElementById('montazEditId').value = id;
+    document.getElementById('mTitle').value = title || '';
+    document.getElementById('mDate').value = date || '';
+    document.getElementById('montazFormTitle').innerText = 'Upraviť montáž';
+    document.getElementById('montaz
