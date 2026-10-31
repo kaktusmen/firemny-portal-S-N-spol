@@ -41,6 +41,7 @@ button.action-btn{background:var(--primary);color:#fff;border:none;font-weight:b
 .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000}
 .modal-box{background:#fff;border-radius:12px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
 .modal-box h3{margin-top:0;color:var(--primary)}
+.item-note a,.modal-row a{color:var(--primary);font-weight:600;text-decoration:none}
 .modal-row{margin:6px 0;font-size:.95rem;color:#334155}
 .modal-sep{border-top:1px solid #e2e8f0;margin:12px 0}
 .modal-actions{display:flex;gap:8px;margin-top:14px}
@@ -75,6 +76,13 @@ function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function lf(n){return n.charAt(0).toLowerCase()+n.slice(1)}
 function nm(c){return c.name||((c.meno||'')+' '+(c.priezvisko||'')).trim()||'Klient'}
+function telA(v){if(!v)return '-';return '<a href="tel:'+esc(String(v).replace(/[^\d+]/g,''))+'">'+esc(v)+'</a>'}
+function mailA(v){if(!v)return '-';return '<a href="mailto:'+esc(v)+'">'+esc(v)+'</a>'}
+function mapA(c){
+  if(!c.adresa)return '-';
+  var q=encodeURIComponent(c.adresa+(c.obec?', '+c.obec:'')),apple=/iPhone|iPad|Macintosh|Mac OS/i.test(navigator.userAgent);
+  return '<a href="'+(apple?'https://maps.apple.com/?q=':'https://www.google.com/maps/search/?api=1&query=')+q+'" target="_blank" rel="noopener">📍 '+esc(c.adresa)+'</a>';
+}
 function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('show')},2200)}
 
 // ---------- Kľúč z odkazu ----------
@@ -165,7 +173,7 @@ function card(c,o,title,body,edit,collapsed){
 var V={
   clients:['clientsList','Žiadni klienti.',function(a,b){return nm(a).localeCompare(nm(b))},function(c){
     return card('clients',c,'👤 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):''),
-      '<strong>Telefón:</strong> '+esc(c.telefon||'-')+' | <strong>Adresa:</strong> '+esc(c.adresa||'-')+' | <strong>E-mail:</strong> '+esc(c.email||'-')+'\n'+
+      '<strong>Telefón:</strong> '+telA(c.telefon)+' | <strong>Adresa:</strong> '+mapA(c)+' | <strong>E-mail:</strong> '+mailA(c.email)+'\n'+
       '<strong>Zariadenie:</strong> '+esc(c.zariadenie||'-')+' ('+esc(c.znacka||'-')+')\n'+
       '<strong>S/N vnút.:</strong> '+esc(c.snVnutorna||c.vyrobneCislo||'-')+' | <strong>S/N von.:</strong> '+esc(c.snVonkajsia||'-')+'\n'+
       '<strong>Záruka:</strong> '+(c.zarukaRoky?esc(c.zarukaRoky)+' r.':'-')+' | <strong>Montáž:</strong> '+esc(c.datumMontaze||'-')+
@@ -274,8 +282,9 @@ function goToday(){var n=new Date();viewYear=n.getFullYear();viewMonth=n.getMont
 function findById(c,id){return dbData[c].filter(function(x){return x.id===id})[0]}
 function clientDetail(c){
   var r=function(l,v){return '<div class="modal-row"><strong>'+l+':</strong> '+esc(v||'-')+'</div>'};
+  var rh=function(l,h){return '<div class="modal-row"><strong>'+l+':</strong> '+h+'</div>'};
   return '<h3>👤 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):'')+'</h3>'+
-    r('Telefón',c.telefon)+r('E-mail',c.email)+r('Adresa',c.adresa)+
+    rh('Telefón',telA(c.telefon))+rh('E-mail',mailA(c.email))+rh('Adresa',mapA(c))+
     r('Zariadenie',(c.zariadenie||'-')+(c.znacka?' ('+c.znacka+')':''))+
     r('S/N vnútornej',c.snVnutorna||c.vyrobneCislo)+r('S/N vonkajšej',c.snVonkajsia)+
     r('Záruka',c.zarukaRoky?c.zarukaRoky+' r.':'')+r('Dátum montáže',c.datumMontaze)+
