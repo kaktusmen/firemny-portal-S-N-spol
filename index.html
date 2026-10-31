@@ -9,6 +9,7 @@
       --primary: #2563eb;
       --danger: #dc2626;
       --warning: #d97706;
+      --success: #16a34a;
       --bg: #f8fafc;
       --card: #ffffff;
       --text: #1e293b;
@@ -16,7 +17,7 @@
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 16px; }
     .container { max-width: 1100px; margin: 0 auto; background: var(--card); padding: 24px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     h1 { color: var(--primary); margin-top: 0; }
-    .status-bar { padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; margin-bottom: 15px; background: #e2e8f0; color: #475569; display: flex; justify-content: space-between; align-items: center; }
+    .status-bar { padding: 10px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; margin-bottom: 15px; background: #dcfce7; color: #166534; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
     .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
     .menu-card { background: #f1f5f9; padding: 24px; border-radius: 8px; text-align: center; cursor: pointer; border: 2px solid #cbd5e1; font-weight: bold; color: var(--primary); transition: border-color 0.2s, background 0.2s; }
     .menu-card:hover { border-color: var(--primary); background: #e2e8f0; }
@@ -45,8 +46,13 @@
 
 <div class="container">
   <div class="status-bar">
-    <span id="syncStatus">🔄 Pripájam ku cloudu...</span>
-    <button onclick="loadFromCloud()" style="width:auto; padding:4px 8px; margin:0; font-size:0.75rem; background:#64748b; color:white; border:none; border-radius:4px; cursor:pointer;">Obnoviť dáta</button>
+    <span>🟢 Systém je pripravený a plne funkčný</span>
+    <div style="display:flex; gap:6px;">
+      <button onclick="exportData()" style="width:auto; padding:4px 10px; margin:0; font-size:0.75rem; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer;">💾 Stiahnuť zálohu</button>
+      <label style="width:auto; padding:4px 10px; margin:0; font-size:0.75rem; background:#475569; color:white; border-radius:4px; cursor:pointer; display:inline-block;">
+        📂 Nahrať dáta <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+      </label>
+    </div>
   </div>
 
   <h1 id="pageTitle">Firemný Portál</h1>
@@ -156,8 +162,6 @@
 </div>
 
 <script>
-  var BIN_ID = '6723963cad19ca34f8c2bbf5'; 
-  
   var dbData = {
     clients: [],
     montaze: [],
@@ -166,57 +170,43 @@
     spravy: []
   };
 
-  function loadFromCloud() {
-    updateStatus('🔄 Synchronizujem s cloudom...', '#e2e8f0', '#475569');
+  function loadLocalData() {
     var local = localStorage.getItem('sand_portal_data');
     if (local) {
-      try { dbData = JSON.parse(local); refreshAllViews(); } catch(e){}
+      try { dbData = JSON.parse(local); } catch(e){}
     }
-
-    fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', {
-      headers: { 'X-Master-Key': '$2a$10$w8T9VvC7sYpWkH5E2CqKduq0E71cM5gJ0FkP1M6vX6I4N9P7Q8B2.' }
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(resData) {
-      if (resData && resData.record) {
-        dbData = Object.assign({clients:[], montaze:[], members:[], obhliadky:[], spravy:[]}, resData.record);
-        localStorage.setItem('sand_portal_data', JSON.stringify(dbData));
-        refreshAllViews();
-        updateStatus('🟢 Cloud pripojený (Synchronizované)', '#dcfce7', '#166534');
-      }
-    })
-    .catch(function(err) {
-      updateStatus('🟡 Lokálny režim (Cloud nedostupný)', '#fef3c7', '#92400e');
-    });
+    refreshAllViews();
   }
 
-  function saveToCloud() {
-    updateStatus('💾 Ukladám na cloud...', '#e2e8f0', '#475569');
+  function saveLocalData() {
     localStorage.setItem('sand_portal_data', JSON.stringify(dbData));
-
-    fetch('https://api.jsonbin.io/v3/b/' + BIN_ID, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': '$2a$10$w8T9VvC7sYpWkH5E2CqKduq0E71cM5gJ0FkP1M6vX6I4N9P7Q8B2.'
-      },
-      body: JSON.stringify(dbData)
-    })
-    .then(function() {
-      updateStatus('🟢 Uložené a synchronizované!', '#dcfce7', '#166534');
-    })
-    .catch(function() {
-      updateStatus('🟢 Uložené lokálne', '#dcfce7', '#166534');
-    });
+    refreshAllViews();
   }
 
-  function updateStatus(msg, bg, color) {
-    var el = document.getElementById('syncStatus');
-    if (el) {
-      el.innerText = msg;
-      el.parentElement.style.background = bg;
-      el.parentElement.style.color = color;
-    }
+  function exportData() {
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dbData));
+    var downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "portal_zaloha.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  function importData(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        dbData = JSON.parse(e.target.result);
+        saveLocalData();
+        alert('Dáta úspešne nahrané!');
+      } catch(err) {
+        alert('Chyba pri čítaní súboru!');
+      }
+    };
+    reader.readAsText(file);
   }
 
   function openSection(secId, title) {
@@ -264,4 +254,177 @@
     // Tím
     var tHtml = '';
     (dbData.members || []).forEach(function(t, index) {
-      tHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🛡️ ' + (t.name ||
+      tHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🛡️ ' + (t.name || '') + '</span><button class="btn-delete" onclick="deleteItem(\'members\', ' + index + ')">Zmazať</button></div><div>Tel: ' + (t.telefon || '-') + '</div></div>';
+    });
+    document.getElementById('teamList').innerHTML = tHtml || 'Žiadni členovia.';
+
+    // Obhliadky
+    var oHtml = '';
+    (dbData.obhliadky || []).forEach(function(o, index) {
+      oHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🔍 ' + (o.name || '') + ' (' + (o.date || '') + ')</span><button class="btn-delete" onclick="deleteItem(\'obhliadky\', ' + index + ')">Zmazať</button></div></div>';
+    });
+    document.getElementById('obhliadkaList').innerHTML = oHtml || 'Žiadne obhliadky.';
+
+    // Správy
+    var sHtml = '';
+    (dbData.spravy || []).forEach(function(s, index) {
+      sHtml += '<div class="item-card"><div class="item-card-header"><span class="item-card-title">💬 ' + (s.author || 'Anonym') + '</span><button class="btn-delete" onclick="deleteItem(\'spravy\', ' + index + ')">Zmazať</button></div><div>' + (s.text || '') + '</div></div>';
+    });
+    document.getElementById('spravyList').innerHTML = sHtml || 'Žiadne správy.';
+
+    renderCalendar();
+  }
+
+  function saveClient() {
+    var meno = document.getElementById('cMeno').value.trim();
+    var priezvisko = document.getElementById('cPriezvisko').value.trim();
+    if(!meno && !priezvisko) { alert('Zadajte meno alebo priezvisko'); return; }
+    
+    if(!dbData.clients) dbData.clients = [];
+    
+    var clientData = {
+      meno: meno, priezvisko: priezvisko,
+      name: (meno + ' ' + priezvisko).trim(),
+      adresa: document.getElementById('cAdresa').value.trim(),
+      telefon: document.getElementById('cTelefon').value.trim(),
+      email: document.getElementById('cEmail').value.trim(),
+      zariadenie: document.getElementById('cZariadenie').value.trim(),
+      znacka: document.getElementById('cZnacka').value.trim(),
+      vyrobneCislo: document.getElementById('cVyrobneCislo').value.trim(),
+      datumMontaze: document.getElementById('cDatumMontaze').value,
+      zarukaRoky: document.getElementById('cZarukaRoky').value,
+      poznamky: document.getElementById('cPoznamky').value.trim()
+    };
+
+    var editIndex = document.getElementById('editingClientIndex').value;
+    if (editIndex !== "") {
+      dbData.clients[editIndex] = clientData;
+      document.getElementById('editingClientIndex').value = "";
+      document.getElementById('clientSaveBtn').innerText = "Uložiť klienta";
+    } else {
+      dbData.clients.push(clientData);
+    }
+    
+    document.getElementById('cMeno').value = ''; 
+    document.getElementById('cPriezvisko').value = '';
+    document.getElementById('cAdresa').value = '';
+    document.getElementById('cTelefon').value = '';
+    document.getElementById('cEmail').value = '';
+    document.getElementById('cZariadenie').value = '';
+    document.getElementById('cZnacka').value = '';
+    document.getElementById('cVyrobneCislo').value = '';
+    document.getElementById('cDatumMontaze').value = '';
+    document.getElementById('cZarukaRoky').value = '';
+    document.getElementById('cPoznamky').value = '';
+
+    saveLocalData();
+    alert('Klient úspešne uložený!');
+  }
+
+  function editClient(index) {
+    var c = dbData.clients[index];
+    if (!c) return;
+    document.getElementById('cMeno').value = c.meno || '';
+    document.getElementById('cPriezvisko').value = c.priezvisko || '';
+    document.getElementById('cAdresa').value = c.adresa || '';
+    document.getElementById('cTelefon').value = c.telefon || '';
+    document.getElementById('cEmail').value = c.email || '';
+    document.getElementById('cZariadenie').value = c.zariadenie || '';
+    document.getElementById('cZnacka').value = c.znacka || '';
+    document.getElementById('cVyrobneCislo').value = c.vyrobneCislo || '';
+    document.getElementById('cDatumMontaze').value = c.datumMontaze || '';
+    document.getElementById('cZarukaRoky').value = c.zarukaRoky || '';
+    document.getElementById('cPoznamky').value = c.poznamky || '';
+
+    document.getElementById('editingClientIndex').value = index;
+    document.getElementById('clientSaveBtn').innerText = "Aktualizovať klienta";
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function saveMontaz() {
+    var title = document.getElementById('mTitle').value.trim();
+    if(!title) { alert('Zadajte názov montáže'); return; }
+    if(!dbData.montaze) dbData.montaze = [];
+    dbData.montaze.push({ title: title, clientName: document.getElementById('mClientName').value.trim(), date: document.getElementById('mDate').value });
+    document.getElementById('mTitle').value = '';
+    saveLocalData();
+    alert('Montáž uložená!');
+  }
+
+  function saveTeam() {
+    var name = document.getElementById('tName').value.trim();
+    if(!name) return;
+    if(!dbData.members) dbData.members = [];
+    dbData.members.push({ name: name, telefon: document.getElementById('tTel').value.trim() });
+    document.getElementById('tName').value = '';
+    saveLocalData();
+    alert('Člen uložený!');
+  }
+
+  function saveObhliadka() {
+    var name = document.getElementById('oName').value.trim();
+    if(!name) return;
+    if(!dbData.obhliadky) dbData.obhliadky = [];
+    dbData.obhliadky.push({ name: name, date: document.getElementById('oDate').value });
+    document.getElementById('oName').value = '';
+    saveLocalData();
+    alert('Obhliadka uložená!');
+  }
+
+  function saveSprava() {
+    var text = document.getElementById('sText').value.trim();
+    if(!text) return;
+    if(!dbData.spravy) dbData.spravy = [];
+    dbData.spravy.push({ author: document.getElementById('sAuthor').value.trim() || 'Anonym', text: text, timestamp: new Date().toLocaleString('sk-SK') });
+    document.getElementById('sText').value = '';
+    saveLocalData();
+    alert('Správa odoslaná!');
+  }
+
+  function deleteItem(coll, index) {
+    if(confirm('Naozaj zmazať túto položku?')) {
+      if(dbData[coll]) {
+        dbData[coll].splice(index, 1);
+        saveLocalData();
+      }
+    }
+  }
+
+  function renderCalendar() {
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = now.getMonth();
+    var firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
+    var totalDays = new Date(year, month + 1, 0).getDate();
+    var gridHtml = '';
+
+    for (var i = 0; i < firstDayIndex; i++) gridHtml += '<div class="calendar-cell empty"></div>';
+
+    var montaze = dbData.montaze || [];
+    var obhliadky = dbData.obhliadky || [];
+
+    for (var day = 1; day <= totalDays; day++) {
+      var dayStr = String(day).padStart(2, '0');
+      var monthStr = String(month + 1).padStart(2, '0');
+      var dateString = year + '-' + monthStr + '-' + dayStr;
+      var dayCards = '';
+
+      montaze.filter(function(m){ return m.date === dateString; }).forEach(function(m){
+        dayCards += '<div class="cal-event-card" style="background:#0d9488;">🔧 ' + m.title + '</div>';
+      });
+
+      obhliadky.filter(function(o){ return o.date === dateString; }).forEach(function(o){
+        dayCards += '<div class="cal-event-card" style="background:#7c3aed;">🔍 ' + o.name + '</div>';
+      });
+
+      gridHtml += '<div class="calendar-cell"><div class="calendar-day-number">' + day + '</div>' + dayCards + '</div>';
+    }
+    var daysGrid = document.getElementById('calendarDaysGrid');
+    if(daysGrid) daysGrid.innerHTML = gridHtml;
+  }
+
+  loadLocalData();
+</script>
+
+</body>
+</html>
