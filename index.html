@@ -76,6 +76,20 @@ function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function lf(n){return n.charAt(0).toLowerCase()+n.slice(1)}
 function nm(c){return c.name||((c.meno||'')+' '+(c.priezvisko||'')).trim()||'Klient'}
+var SERVIS_PRVY=340,SERVIS_INTERVAL=365;
+function pad2(x){return String(x).padStart(2,'0')}
+function serviceDates(c){
+  var y=parseInt(c.zarukaRoky,10),m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(c.datumMontaze||'');
+  if(!m||!y||y<1)return [];
+  var out=[];
+  for(var k=0;k<y;k++){
+    var d=new Date(+m[1],+m[2]-1,+m[3]+SERVIS_PRVY+k*SERVIS_INTERVAL);
+    out.push(d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()));
+  }
+  return out;
+}
+function fmtD(ds){var a=ds.split('-');return +a[2]+'.'+ +a[1]+'.'+a[0]}
+function serviceText(c){var a=serviceDates(c);return a.length?a.map(fmtD).join(', '):'-'}
 function telA(v){if(!v)return '-';return '<a href="tel:'+esc(String(v).replace(/[^\d+]/g,''))+'">'+esc(v)+'</a>'}
 function mailA(v){if(!v)return '-';return '<a href="mailto:'+esc(v)+'">'+esc(v)+'</a>'}
 function mapA(c){
@@ -176,7 +190,7 @@ var V={
       '<strong>Telefón:</strong> '+telA(c.telefon)+' | <strong>Adresa:</strong> '+mapA(c)+' | <strong>E-mail:</strong> '+mailA(c.email)+'\n'+
       '<strong>Zariadenie:</strong> '+esc(c.zariadenie||'-')+' ('+esc(c.znacka||'-')+')\n'+
       '<strong>S/N vnút.:</strong> '+esc(c.snVnutorna||c.vyrobneCislo||'-')+' | <strong>S/N von.:</strong> '+esc(c.snVonkajsia||'-')+'\n'+
-      '<strong>Záruka:</strong> '+(c.zarukaRoky?esc(c.zarukaRoky)+' r.':'-')+' | <strong>Montáž:</strong> '+esc(c.datumMontaze||'-')+
+      '<strong>Záruka:</strong> '+(c.zarukaRoky?esc(c.zarukaRoky)+' r.':'-')+' | <strong>Montáž:</strong> '+esc(c.datumMontaze||'-')+'\n<strong>🛠 Servis:</strong> '+esc(serviceText(c))+
       (c.poznamky?'\n📝 '+esc(c.poznamky):''),true,true)}],
   montaze:['montazList','Žiadne montáže.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(m){
     return card('montaze',m,'🔧 '+esc(m.title||'Montáž')+(m.clientName?' – '+esc(m.clientName):'')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')',
@@ -287,7 +301,7 @@ function clientDetail(c){
     rh('Telefón',telA(c.telefon))+rh('E-mail',mailA(c.email))+rh('Adresa',mapA(c))+
     r('Zariadenie',(c.zariadenie||'-')+(c.znacka?' ('+c.znacka+')':''))+
     r('S/N vnútornej',c.snVnutorna||c.vyrobneCislo)+r('S/N vonkajšej',c.snVonkajsia)+
-    r('Záruka',c.zarukaRoky?c.zarukaRoky+' r.':'')+r('Dátum montáže',c.datumMontaze)+
+    r('Záruka',c.zarukaRoky?c.zarukaRoky+' r.':'')+r('Dátum montáže',c.datumMontaze)+r('🛠 Servis',serviceText(c)==='-'?'':serviceText(c))+
     (c.poznamky?r('Poznámky',c.poznamky):'');
 }
 function showEvent(type,id){
@@ -325,6 +339,7 @@ function renderCalendar(){
     dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:#0d9488" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">🔧 '+(m.time?esc(m.time)+' ':'')+esc(m.title)+'</div>'});
     dbData.obhliadky.forEach(function(o){if(o.date===ds)ev+='<div class="cal-event-card" style="background:#7c3aed" onclick="showEvent(\'obhliadky\',\''+esc(o.id)+'\')">🔍 '+esc(o.name)+'</div>'});
     dbData.clients.forEach(function(c){if(c.datumMontaze===ds)ev+='<div class="cal-event-card" style="background:#d97706" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">👤 '+esc(nm(c))+'</div>'});
+    dbData.clients.forEach(function(c){if(serviceDates(c).indexOf(ds)>-1)ev+='<div class="cal-event-card" style="background:#dc2626" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">🛠 Servis: '+esc(nm(c))+'</div>'});
     h+='<div class="calendar-cell'+(ds===today?' today':'')+'"><div class="calendar-day-number">'+d+'</div>'+ev+'</div>';
   }
   g.innerHTML=h;
@@ -397,7 +412,7 @@ window.onload=function(){
     <div class="cal-nav"><button onclick="changeMonth(-1)">◀</button><span class="cal-title" id="calTitle"></span><button onclick="goToday()">Dnes</button><button onclick="changeMonth(1)">▶</button></div>
     <div class="calendar-grid"><div class="calendar-day-name">Po</div><div class="calendar-day-name">Ut</div><div class="calendar-day-name">St</div><div class="calendar-day-name">Št</div><div class="calendar-day-name">Pi</div><div class="calendar-day-name">So</div><div class="calendar-day-name">Ne</div></div>
     <div id="calendarDaysGrid" class="calendar-grid" style="margin-top:4px"></div>
-    <div class="cal-legend"><span><i style="background:#0d9488"></i>Montáž</span><span><i style="background:#7c3aed"></i>Obhliadka</span><span><i style="background:#d97706"></i>Montáž klienta</span></div>
+    <div class="cal-legend"><span><i style="background:#0d9488"></i>Montáž</span><span><i style="background:#7c3aed"></i>Obhliadka</span><span><i style="background:#d97706"></i>Montáž klienta</span><span><i style="background:#dc2626"></i>Servis</span></div>
   </div>
 
   <div id="teamSection" class="section-content">
