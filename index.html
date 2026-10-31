@@ -106,6 +106,25 @@ function mapA(c){
   var q=encodeURIComponent(c.adresa+(c.obec?', '+c.obec:'')),apple=/iPhone|iPad|Macintosh|Mac OS/i.test(navigator.userAgent);
   return '<a href="'+(apple?'https://maps.apple.com/?q=':'https://www.google.com/maps/search/?api=1&query=')+q+'" target="_blank" rel="noopener">📍 '+esc(c.adresa)+'</a>';
 }
+function syncIny(id){var e=$(id),x=$(id+'Iny');if(!x)return;x.style.display=e.value==='__iny'?'block':'none';if(e.value!=='__iny')x.value=''}
+function gv(id){var e=$(id);if(e.tagName==='SELECT'&&e.value==='__iny'){var x=$(id+'Iny');return x?x.value.trim():''}return e.value.trim()}
+function sv(id,v){
+  var e=$(id);v=v==null?'':String(v);
+  if(e.tagName!=='SELECT'){e.value=v;return}
+  var has=Array.prototype.some.call(e.options,function(o){return o.value===v&&o.value!=='__iny'});
+  if(!v||has){e.value=v;syncIny(id)}
+  else if($(id+'Iny')){e.value='__iny';syncIny(id);$(id+'Iny').value=v}
+  else e.value=v;
+}
+function initIny(){
+  document.querySelectorAll('select[data-iny]').forEach(function(e){
+    var o=document.createElement('option');o.value='__iny';o.textContent='Iné…';e.appendChild(o);
+    var x=document.createElement('input');x.type='text';x.id=e.id+'Iny';x.className='full-width-input';x.style.display='none';
+    x.placeholder=e.getAttribute('data-iny-ph')||'Zadajte iné…';
+    e.parentNode.insertBefore(x,e.nextSibling);
+    e.addEventListener('change',function(){syncIny(e.id);if(e.value==='__iny')x.focus()});
+  });
+}
 function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('show')},2200)}
 
 // ---------- Kľúč z odkazu ----------
@@ -225,12 +244,12 @@ function render(){
 
 // ---------- Klienti ----------
 function clearClient(){
-  CF.forEach(function(n){$('c'+n).value=''});
+  CF.forEach(function(n){sv('c'+n,'')});
   $('editingClientId').value='';$('clientSaveBtn').innerText='Uložiť klienta';
 }
 function saveClient(){
   var o={};
-  CF.forEach(function(n){o[lf(n)]=$('c'+n).value.trim()});
+  CF.forEach(function(n){o[lf(n)]=gv('c'+n)});
   o.name=(o.meno+' '+o.priezvisko).trim();
   if(!o.name){toast('Zadajte meno alebo priezvisko');return}
   put('clients',o,$('editingClientId').value||null);
@@ -239,7 +258,7 @@ function saveClient(){
 function editClient(id){
   var c=dbData.clients.filter(function(x){return x.id===id})[0];if(!c)return;
   openSection('clientsSection','Správa klientov');
-  CF.forEach(function(n){$('c'+n).value=c[lf(n)]||''});
+  CF.forEach(function(n){sv('c'+n,c[lf(n)]||'')});
   if(!$('cSnVnutorna').value)$('cSnVnutorna').value=c.vyrobneCislo||'';
   $('editingClientId').value=c.id;$('clientSaveBtn').innerText='Aktualizovať klienta';
   window.scrollTo({top:0,behavior:'smooth'});
@@ -302,12 +321,12 @@ function obhliadkaBody(o){
     OL.map(function(x){return o[x[0]]?'\n<strong>'+x[1]+':</strong> '+esc(o[x[0]]):''}).join('');
 }
 function clearObhliadka(){
-  OF.forEach(function(n){$('o'+n).value=''});$('oDate').value='';
+  OF.forEach(function(n){sv('o'+n,'')});$('oDate').value='';
   $('editingObhliadkaId').value='';$('obhliadkaSaveBtn').innerText='Uložiť obhliadku';$('obhliadkaCancelBtn').style.display='none';
 }
 function saveObhliadka(){
   var o={};
-  OF.forEach(function(n){o[lf(n)]=$('o'+n).value.trim()});
+  OF.forEach(function(n){o[lf(n)]=gv('o'+n)});
   o.name=(o.meno+' '+o.priezvisko).trim();
   if(!o.name){toast('Zadajte meno alebo priezvisko');return}
   o.date=$('oDate').value;
@@ -319,7 +338,7 @@ function saveObhliadka(){
 function editObhliadka(id){
   var o=findById('obhliadky',id);if(!o)return;
   openSection('obhliadkaSection','Obhliadky');
-  OF.forEach(function(n){$('o'+n).value=o[lf(n)]||''});
+  OF.forEach(function(n){sv('o'+n,o[lf(n)]||'')});
   if(!o.meno&&!o.priezvisko)$('oMeno').value=o.name||'';
   $('oDate').value=o.date||'';
   $('editingObhliadkaId').value=o.id;$('obhliadkaSaveBtn').innerText='Aktualizovať obhliadku';$('obhliadkaCancelBtn').style.display='block';
@@ -406,6 +425,7 @@ function renderCalendar(){
 }
 
 window.onload=function(){
+  initIny();
   KEY=getKey();
   if(!KEY){$('app').style.display='none';$('keyBox').style.display='block';return}
   start();
@@ -453,12 +473,12 @@ window.onload=function(){
       <input type="text" id="cAdresa" placeholder="Adresa" class="full-width-input">
       <input type="text" id="cTelefon" placeholder="Telefónne číslo">
       <input type="email" id="cEmail" placeholder="E-mail">
-      <select id="cZariadenie"><option value="">-- Vyberte druh zariadenia --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option><option>Rekuperácia</option><option>Iné zariadenie</option></select>
-      <select id="cZnacka"><option value="">-- Vyberte značku --</option><option>Daikin</option><option>Mitsubishi</option><option>Panasonic</option><option>Toshiba</option><option>Samsung</option><option>LG</option><option>Midea</option><option>Gree</option><option>Iná značka</option></select>
+      <select id="cZariadenie" data-iny><option value="">-- Vyberte druh zariadenia --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option><option>Rekuperácia</option></select>
+      <select id="cZnacka" data-iny><option value="">-- Vyberte značku --</option><option>Daikin</option><option>Mitsubishi</option><option>Panasonic</option><option>Toshiba</option><option>Samsung</option><option>LG</option><option>Midea</option><option>Gree</option></select>
       <input type="text" id="cSnVnutorna" placeholder="Výrobné číslo (S/N) vnútornej jednotky">
       <input type="text" id="cSnVonkajsia" placeholder="Výrobné číslo (S/N) vonkajšej jednotky">
       <input type="date" id="cDatumMontaze">
-      <select id="cZarukaRoky"><option value="">-- Záruka v rokoch --</option><option value="1">1 rok</option><option value="2">2 roky</option><option value="3">3 roky</option><option value="5">5 rokov</option></select>
+      <select id="cZarukaRoky" data-iny data-iny-ph="Počet rokov (číslo)"><option value="">-- Záruka v rokoch --</option><option value="1">1 rok</option><option value="2">2 roky</option><option value="3">3 roky</option><option value="5">5 rokov</option></select>
       <input type="text" id="cPoznamky" placeholder="Poznámky / servisné záznamy" class="full-width-input">
     </div>
     <button class="action-btn" id="clientSaveBtn" onclick="saveClient()">Uložiť klienta</button>
@@ -514,13 +534,13 @@ window.onload=function(){
       <input type="text" id="oObec" placeholder="Obec">
       <input type="text" id="oAdresa" placeholder="Adresa">
       <input type="date" id="oDate" title="Dátum obhliadky" class="full-width-input">
-      <select id="oZariadenie"><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option></select>
-      <select id="oBudova"><option value="">-- Typ budovy --</option><option>Dom</option><option>Byt</option></select>
-      <select id="oStena"><option value="">-- Stena --</option><option>Betón</option><option>Tehla</option></select>
-      <select id="oVnutorna"><option value="">-- Miesto zabudovania vnútornej jednotky --</option><option>Obývacia izba</option><option>Kuchyňa</option><option>Detská izba</option></select>
-      <select id="oVonkajsia"><option value="">-- Vonkajšia jednotka --</option><option>Pod okno</option><option>Na konzolu</option><option>Na nohy</option></select>
-      <select id="oElektro"><option value="">-- Elektrické pripojenie --</option><option>Na istič</option><option>Na zásuvku</option></select>
-      <select id="oOdvod"><option value="">-- Odvod kondenzátu --</option><option>Do zbernej nádoby</option><option>Exteriér</option><option>Interiér</option></select>
+      <select id="oZariadenie" data-iny><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option></select>
+      <select id="oBudova" data-iny><option value="">-- Typ budovy --</option><option>Dom</option><option>Byt</option></select>
+      <select id="oStena" data-iny><option value="">-- Stena --</option><option>Betón</option><option>Tehla</option></select>
+      <select id="oVnutorna" data-iny><option value="">-- Miesto zabudovania vnútornej jednotky --</option><option>Obývacia izba</option><option>Kuchyňa</option><option>Detská izba</option></select>
+      <select id="oVonkajsia" data-iny><option value="">-- Vonkajšia jednotka --</option><option>Pod okno</option><option>Na konzolu</option><option>Na nohy</option></select>
+      <select id="oElektro" data-iny><option value="">-- Elektrické pripojenie --</option><option>Na istič</option><option>Na zásuvku</option></select>
+      <select id="oOdvod" data-iny><option value="">-- Odvod kondenzátu --</option><option>Do zbernej nádoby</option><option>Exteriér</option><option>Interiér</option></select>
     </div>
     <button class="action-btn" id="obhliadkaSaveBtn" onclick="saveObhliadka()">Uložiť obhliadku</button>
     <button class="back-btn" id="obhliadkaCancelBtn" style="display:none" onclick="clearObhliadka()">✖ Zrušiť úpravu</button>
