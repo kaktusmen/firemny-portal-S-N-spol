@@ -52,7 +52,6 @@
     .item-card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
     .item-card-title { font-size: 1.1rem; font-weight: bold; color: var(--text); }
     .item-details { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; font-size: 0.95rem; color: #475569; line-height: 1.5; }
-    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
     .btn-delete { width: auto; padding: 6px 12px; margin: 0; background: var(--danger); color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
     
     /* KALENDÁR */
@@ -106,7 +105,16 @@
   <!-- 1. KLIENTI -->
   <div id="clientsSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
-    <h2>Zoznam klientov</h2>
+    <h2>Pridať nového klienta</h2>
+    <div class="form-grid">
+      <input type="text" id="cMeno" placeholder="Meno">
+      <input type="text" id="cPriezvisko" placeholder="Priezvisko">
+      <input type="text" id="cTelefon" placeholder="Telefón">
+      <input type="email" id="cEmail" placeholder="E-mail">
+      <input type="text" id="cZariadenie" placeholder="Zariadenie" class="full-width-input">
+    </div>
+    <button class="action-btn" onclick="saveClient()">Uložiť klienta</button>
+    <h2 style="margin-top: 30px;">Zoznam klientov</h2>
     <div id="clientsList">Načítavam...</div>
   </div>
 
@@ -127,28 +135,52 @@
   <!-- 3. TÍM -->
   <div id="teamSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
-    <h2>Členovia tímu</h2>
+    <h2>Pridať člena tímu</h2>
+    <div class="form-grid">
+      <input type="text" id="tMeno" placeholder="Meno a priezvisko">
+      <input type="text" id="tTelefon" placeholder="Telefón">
+    </div>
+    <button class="action-btn" onclick="saveTeamMember()">Uložiť člena</button>
+    <h2 style="margin-top: 30px;">Zoznam členov</h2>
     <div id="membersList">Načítavam...</div>
   </div>
 
   <!-- 4. MONTÁŽ -->
   <div id="montazSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
-    <h2>Montáže</h2>
+    <h2>Nová montáž</h2>
+    <div class="form-grid">
+      <input type="text" id="mTitle" placeholder="Názov montáže" class="full-width-input">
+      <input type="date" id="mDate">
+    </div>
+    <button class="action-btn" onclick="saveMontaz()">Uložiť montáž</button>
+    <h2 style="margin-top: 30px;">Zoznam montáží</h2>
     <div id="montazList">Načítavam...</div>
   </div>
 
   <!-- 5. OBHLIADKY -->
   <div id="obhliadkaSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
-    <h2>Obhliadky</h2>
+    <h2>Nová obhliadka</h2>
+    <div class="form-grid">
+      <input type="text" id="oName" placeholder="Meno klienta">
+      <input type="date" id="oDate">
+    </div>
+    <button class="action-btn" onclick="saveObhliadka()">Uložiť obhliadku</button>
+    <h2 style="margin-top: 30px;">Zoznam obhliadok</h2>
     <div id="obhliadkaList">Načítavam...</div>
   </div>
 
   <!-- 6. SPRÁVY -->
   <div id="spravySection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
-    <h2>Správy pre tím</h2>
+    <h2>Nová správa</h2>
+    <div class="form-grid">
+      <input type="text" id="sAuthor" placeholder="Vaše meno">
+      <textarea id="sText" placeholder="Text správy..." class="full-width-input"></textarea>
+    </div>
+    <button class="action-btn" onclick="saveSprava()">Odoslať správu</button>
+    <h2 style="margin-top: 30px;">História správ</h2>
     <div id="spravyList">Načítavam...</div>
   </div>
 </div>
@@ -200,59 +232,131 @@
     try {
       db.collection('clients').onSnapshot(function(snap) {
         clients = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
-        renderClients(); renderCalendar();
-      }, function(e){});
+        renderClients();
+      });
 
       db.collection('members').onSnapshot(function(snap) {
         members = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
         renderMembers();
-      }, function(e){});
+      });
 
       db.collection('montaze').onSnapshot(function(snap) {
         montaze = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
         renderMontaze(); renderCalendar();
-      }, function(e){});
+      });
 
       db.collection('obhliadky').onSnapshot(function(snap) {
         obhliadky = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
         renderObhliadky(); renderCalendar();
-      }, function(e){});
+      });
 
       db.collection('spravy').onSnapshot(function(snap) {
         spravy = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
         renderSpravy();
-      }, function(e){});
+      });
 
       db.collection('events').onSnapshot(function(snap) {
         events = snap.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
         renderCalendar();
-      }, function(e){});
+      });
     } catch(err) {}
   }
 
+  // --- UKLADANIE A MAZANIE ---
+  function saveClient() {
+    var meno = document.getElementById('cMeno').value.trim();
+    var priezvisko = document.getElementById('cPriezvisko').value.trim();
+    if ((meno || priezvisko) && db) {
+      db.collection('clients').add({
+        meno: meno, priezvisko: priezvisko,
+        telefon: document.getElementById('cTelefon').value.trim(),
+        email: document.getElementById('cEmail').value.trim(),
+        zariadenie: document.getElementById('cZariadenie').value.trim(),
+        name: (meno + ' ' + priezvisko).trim()
+      }).then(function() {
+        ['cMeno','cPriezvisko','cTelefon','cEmail','cZariadenie'].forEach(function(id){ document.getElementById(id).value = ''; });
+      });
+    }
+  }
+  function deleteClient(id) { if(db) db.collection('clients').doc(id).delete(); }
+
+  function saveTeamMember() {
+    var meno = document.getElementById('tMeno').value.trim();
+    if (meno && db) {
+      db.collection('members').add({ name: meno, telefon: document.getElementById('tTelefon').value.trim() }).then(function() {
+        document.getElementById('tMeno').value = ''; document.getElementById('tTelefon').value = '';
+      });
+    }
+  }
+  function deleteMember(id) { if(db) db.collection('members').doc(id).delete(); }
+
+  function saveMontaz() {
+    var title = document.getElementById('mTitle').value.trim();
+    var date = document.getElementById('mDate').value;
+    if (title && db) {
+      db.collection('montaze').add({ title: title, date: date }).then(function() {
+        document.getElementById('mTitle').value = ''; document.getElementById('mDate').value = '';
+      });
+    }
+  }
+  function deleteMontaz(id) { if(db) db.collection('montaze').doc(id).delete(); }
+
+  function saveObhliadka() {
+    var name = document.getElementById('oName').value.trim();
+    var date = document.getElementById('oDate').value;
+    if (name && db) {
+      db.collection('obhliadky').add({ name: name, date: date }).then(function() {
+        document.getElementById('oName').value = ''; document.getElementById('oDate').value = '';
+      });
+    }
+  }
+  function deleteObhliadka(id) { if(db) db.collection('obhliadky').doc(id).delete(); }
+
+  function saveSprava() {
+    var author = document.getElementById('sAuthor').value.trim();
+    var text = document.getElementById('sText').value.trim();
+    if (text && db) {
+      db.collection('spravy').add({ author: author || 'Anonym', text: text, timestamp: new Date().toLocaleString('sk-SK') }).then(function() {
+        document.getElementById('sText').value = '';
+      });
+    }
+  }
+  function deleteSprava(id) { if(db) db.collection('spravy').doc(id).delete(); }
+
+  // --- RENDER FUNKCIE ---
   function renderClients() {
     var el = document.getElementById('clientsList');
-    if(el) el.innerHTML = clients.map(function(c) { return '<div class="item-card"><div class="item-card-title">👤 ' + (c.name || 'Klient') + '</div></div>'; }).join('') || 'Žiadni klienti.';
+    if(el) el.innerHTML = clients.map(function(c) { 
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">👤 ' + (c.name || 'Klient') + ' (' + (c.telefon || 'bez tel.') + ')</span><button class="btn-delete" onclick="deleteClient(\'' + c.id + '\')">Zmazať</button></div></div>'; 
+    }).join('') || 'Žiadni klienti.';
   }
 
   function renderMembers() {
     var el = document.getElementById('membersList');
-    if(el) el.innerHTML = members.map(function(m) { return '<div class="item-card"><div class="item-card-title">🛡️ ' + (m.name || 'Člen') + '</div></div>'; }).join('') || 'Žiadni členovia.';
+    if(el) el.innerHTML = members.map(function(m) { 
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🛡️ ' + (m.name || 'Člen') + '</span><button class="btn-delete" onclick="deleteMember(\'' + m.id + '\')">Zmazať</button></div></div>'; 
+    }).join('') || 'Žiadni členovia.';
   }
 
   function renderMontaze() {
     var el = document.getElementById('montazList');
-    if(el) el.innerHTML = montaze.map(function(m) { return '<div class="item-card"><div class="item-card-title">🔧 ' + (m.title || 'Montáž') + '</div></div>'; }).join('') || 'Žiadne montáže.';
+    if(el) el.innerHTML = montaze.map(function(m) { 
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🔧 ' + (m.title || 'Montáž') + ' (' + (m.date || 'bez dátumu') + ')</span><button class="btn-delete" onclick="deleteMontaz(\'' + m.id + '\')">Zmazať</button></div></div>'; 
+    }).join('') || 'Žiadne montáže.';
   }
 
   function renderObhliadky() {
     var el = document.getElementById('obhliadkaList');
-    if(el) el.innerHTML = obhliadky.map(function(o) { return '<div class="item-card"><div class="item-card-title">🔍 ' + (o.name || 'Obhliadka') + '</div></div>'; }).join('') || 'Žiadne obhliadky.';
+    if(el) el.innerHTML = obhliadky.map(function(o) { 
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🔍 ' + (o.name || 'Obhliadka') + ' (' + (o.date || 'bez dátumu') + ')</span><button class="btn-delete" onclick="deleteObhliadka(\'' + o.id + '\')">Zmazať</button></div></div>'; 
+    }).join('') || 'Žiadne obhliadky.';
   }
 
   function renderSpravy() {
     var el = document.getElementById('spravyList');
-    if(el) el.innerHTML = spravy.map(function(s) { return '<div class="item-card"><div class="item-card-title">💬 ' + (s.author || 'Správa') + '</div><div class="item-details">' + (s.text || '') + '</div></div>'; }).join('') || 'Žiadne správy.';
+    if(el) el.innerHTML = spravy.map(function(s) { 
+      return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">💬 ' + (s.author || 'Anonym') + ' <small>(' + (s.timestamp || '') + ')</small></span><button class="btn-delete" onclick="deleteSprava(\'' + s.id + '\')">Zmazať</button></div><div class="item-details">' + (s.text || '') + '</div></div>'; 
+    }).join('') || 'Žiadne správy.';
   }
 
   function renderCalendar() {
@@ -273,12 +377,12 @@
       var dateString = year + '-' + monthStr + '-' + dayStr;
       var dayCards = '';
 
-      events.filter(function(e){ return e.date === dateString; }).forEach(function(e){
-        dayCards += '<div class="cal-event-card">📅 ' + e.title + '</div>';
-      });
-
       montaze.filter(function(m){ return m.date === dateString; }).forEach(function(m){
         dayCards += '<div class="cal-event-card" style="background:#0d9488;">🔧 ' + m.title + '</div>';
+      });
+
+      obhliadky.filter(function(o){ return o.date === dateString; }).forEach(function(o){
+        dayCards += '<div class="cal-event-card" style="background:#7c3aed;">🔍 ' + o.name + '</div>';
       });
 
       gridHtml += '<div class="calendar-cell"><div class="calendar-day-number">' + day + '</div>' + dayCards + '</div>';
