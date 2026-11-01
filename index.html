@@ -255,7 +255,7 @@ var V={
       (c.poznamky?'\n📝 '+esc(c.poznamky):''),true,true)}],
   montaze:['montazList','Žiadne montáže.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(m){
     if(m.kind)return card('montaze',m,(m.servisType==='Oprava'?'🔨 ':'🧹 ')+esc(m.title||'Servis')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')',
-      '<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):'')+(m.memberNames&&m.memberNames.length?'\n<strong>👷 Na servis idú:</strong> '+m.memberNames.map(esc).join(', '):''),'editServis');
+      '<strong>Telefón:</strong> '+telA(m.telefon)+' | <strong>E-mail:</strong> '+mailA(m.email)+'\n'+'<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):'')+(m.memberNames&&m.memberNames.length?'\n<strong>👷 Na servis idú:</strong> '+m.memberNames.map(esc).join(', '):''),'editServis');
     return card('montaze',m,'🔧 '+esc(m.title||'Montáž')+(m.clientName?' – '+esc(m.clientName):'')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')',
       (m.memberNames&&m.memberNames.length?'<strong>👷 Na montáž idú:</strong> '+m.memberNames.map(esc).join(', '):''),'editMontaz')}],
   members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
@@ -373,6 +373,7 @@ function sugPick(p,id){
   var c=findById('clients',id);if(!c)return;
   $(p+'Name').value=nm(c);$(p+'ClientId').value=c.id;$(p+'Addr').value=clientAddr(c);
   if(p==='cl')$('clDevice').value=[c.zariadenie,c.znacka].filter(Boolean).join(' ');
+  $(p+'Phone').value=c.telefon||'';$(p+'Email').value=c.email||'';
   $(p+'Sug').style.display='none';
 }
 var sTeam={cl:[],rp:[]};
@@ -398,6 +399,7 @@ function removeServisMember(p,i){sTeam[p].splice(i,1);renderServisChips(p)}
 function clearServis(p){
   sTeam[p]=[];renderServisChips(p);$(p+'Member').value='';
   ['Name','Addr','Date','Time','ClientId','EditId'].forEach(function(f){$(p+f).value=''});
+  $(p+'Phone').value='';$(p+'Email').value='';
   if(p==='cl')$('clDevice').value='';else $('rpDesc').value='';
   $(p+'Sug').style.display='none';
   $(p+'SaveBtn').innerText=p==='cl'?'Uložiť čistenie':'Uložiť opravu';$(p+'CancelBtn').style.display='none';
@@ -412,6 +414,7 @@ function saveServis(p){
   var o={kind:'servis',servisType:type,title:type+' – '+cname,clientId:c?c.id:'',clientName:cname,
     address:$(p+'Addr').value.trim()||(c?clientAddr(c):''),date:$(p+'Date').value,time:$(p+'Time').value,
     memberIds:sTeam[p].map(function(x){return x.id}),memberNames:sTeam[p].map(function(x){return x.name})};
+  o.telefon=$(p+'Phone').value.trim()||(c&&c.telefon)||'';o.email=$(p+'Email').value.trim()||(c&&c.email)||'';
   if(p==='cl')o.zariadenie=$('clDevice').value.trim()||(c?[c.zariadenie,c.znacka].filter(Boolean).join(' '):'');
   else o.popis=$('rpDesc').value.trim();
   var eid=$(p+'EditId').value||null;
@@ -425,6 +428,7 @@ function editServis(id){
   showMS(p==='cl'?'clean':'repair');
   $(p+'Name').value=m.clientName||'';$(p+'ClientId').value=m.clientId||'';$(p+'Addr').value=m.address||'';
   $(p+'Date').value=m.date||'';$(p+'Time').value=m.time||'';
+  $(p+'Phone').value=m.telefon||'';$(p+'Email').value=m.email||'';
   if(p==='cl')$('clDevice').value=m.zariadenie||'';else $('rpDesc').value=m.popis||'';
   sTeam[p]=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});renderServisChips(p);
   $(p+'EditId').value=m.id;$(p+'SaveBtn').innerText='Aktualizovať';$(p+'CancelBtn').style.display='block';
@@ -581,6 +585,7 @@ function showEvent(type,id){
       var isR=o.servisType==='Oprava';
       info='<h3>'+(isR?'🔨':'🧹')+' '+esc(o.servisType||'Servis')+': '+esc(o.clientName||'')+'</h3>'+
         '<div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+
+        '<div class="modal-row"><strong>Telefón:</strong> '+telA(o.telefon)+'</div><div class="modal-row"><strong>E-mail:</strong> '+mailA(o.email)+'</div>'+
         '<div class="modal-row"><strong>Adresa:</strong> '+mapA({adresa:o.address})+'</div>'+
         (o.zariadenie?'<div class="modal-row"><strong>Zariadenie:</strong> '+esc(o.zariadenie)+'</div>':'')+
         (o.popis?'<div class="modal-row"><strong>Popis poruchy:</strong> '+esc(o.popis)+'</div>':'')+
@@ -613,7 +618,7 @@ var lastDay=null;
 function isMobile(){return !!(window.matchMedia&&window.matchMedia('(max-width:600px)').matches)}
 function dayEvents(ds){
   var out=[];
-  dbData.montaze.forEach(function(m){if(m.date===ds)out.push({type:'montaze',id:m.id,color:m.kind?'#2563eb':'#0d9488',text:(m.kind?(m.servisType==='Oprava'?'🔨 ':'🧹 '):'🔧 ')+(m.time?m.time+' ':'')+(m.title||'Montáž'),
+  dbData.montaze.forEach(function(m){if(m.date===ds)out.push({type:'montaze',id:m.id,color:m.kind?'#2563eb':'#0d9488',text:(m.kind?(m.servisType==='Oprava'?'🔨 ':'🧹 '):'🔧 ')+(m.title||'Montáž'),
     sub:m.kind?[m.address?'📍 '+m.address:'',m.zariadenie||m.popis||'',m.memberNames&&m.memberNames.length?'👷 '+m.memberNames.join(', '):''].filter(Boolean).join(' · '):[m.clientName?'👤 '+m.clientName:'',m.memberNames&&m.memberNames.length?'👷 '+m.memberNames.join(', '):''].filter(Boolean).join(' · ')})});
   dbData.obhliadky.forEach(function(o){if(o.date===ds)out.push({type:'obhliadky',id:o.id,color:'#7c3aed',text:'🔍 Obhliadka: '+onm(o),sub:o.obec||''})});
   dbData.clients.forEach(function(c){
@@ -631,7 +636,7 @@ function openDay(ds){
   var ev=dayEvents(ds);if(!ev.length)return;
   lastDay=ds;
   $('eventModalBody').innerHTML='<h3>📅 '+esc(fmtD(ds))+'</h3>'+ev.map(function(e){
-    return '<div class="day-row" style="border-left-color:'+e.color+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+esc(e.text)+'</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+'</div>';
+    return '<div class="day-row" style="border-left-color:'+e.color+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+esc(e.text)+'</b>'+'</div>';
   }).join('')+'<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModal').style.display='flex';
 }
@@ -644,7 +649,7 @@ function renderCalendar(){
   for(var i=0;i<first;i++)h+='<div class="calendar-cell empty"></div>';
   for(var d=1;d<=total;d++){
     var ds=viewYear+'-'+p(viewMonth+1)+'-'+p(d),ev='';
-    dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:'+(m.kind?'#2563eb':'#0d9488')+'" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">'+(m.kind?(m.servisType==='Oprava'?'🔨 ':'🧹 '):'🔧 ')+(m.time?esc(m.time)+' ':'')+esc(m.title)+(m.memberNames&&m.memberNames.length?'<div style="margin-top:2px;padding-top:2px;border-top:1px solid rgba(255,255,255,.4);font-weight:bold">👷 '+m.memberNames.map(esc).join(', ')+'</div>':'')+'</div>'});
+    dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:'+(m.kind?'#2563eb':'#0d9488')+'" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">'+(m.kind?(m.servisType==='Oprava'?'🔨 ':'🧹 '):'🔧 ')+esc(m.title)+'</div>'});
     dbData.obhliadky.forEach(function(o){if(o.date===ds)ev+='<div class="cal-event-card" style="background:#7c3aed" onclick="showEvent(\'obhliadky\',\''+esc(o.id)+'\')">🔍 '+esc(o.name)+'</div>'});
     dbData.clients.forEach(function(c){if(c.datumMontaze===ds&&!dbData.montaze.some(function(m){return m.date===ds&&!m.kind&&m.clientId===c.id}))ev+='<div class="cal-event-card" style="background:#d97706" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">👤 '+esc(nm(c))+'</div>'});
     dbData.clients.forEach(function(c){if(serviceDates(c).indexOf(ds)>-1)ev+='<div class="cal-event-card" style="background:#dc2626" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">🛠 Servis: '+esc(nm(c))+'</div>'});
@@ -775,6 +780,10 @@ window.onload=function(){
     <input type="hidden" id="clClientId" value="">
     <input type="text" id="clName" placeholder="🔍 Meno a priezvisko klienta (hľadanie v kartách klientov)" oninput="sugSearch('cl')" onfocus="sugSearch('cl')" onblur="setTimeout(function(){$('clSug').style.display='none'},150)" autocomplete="off">
     <div id="clSug" class="sug" style="display:none"></div>
+    <div class="form-grid">
+      <input type="tel" id="clPhone" placeholder="Telefón (vyplní sa automaticky)">
+      <input type="email" id="clEmail" placeholder="E-mail (vyplní sa automaticky)">
+    </div>
     <input type="text" id="clAddr" placeholder="Adresa (vyplní sa automaticky, inak ju zadajte)">
     <input type="text" id="clDevice" placeholder="Zariadenie (napr. Klimatizácia Daikin)">
     <div class="form-grid">
@@ -796,6 +805,10 @@ window.onload=function(){
     <input type="hidden" id="rpClientId" value="">
     <input type="text" id="rpName" placeholder="🔍 Meno a priezvisko klienta (hľadanie v kartách klientov)" oninput="sugSearch('rp')" onfocus="sugSearch('rp')" onblur="setTimeout(function(){$('rpSug').style.display='none'},150)" autocomplete="off">
     <div id="rpSug" class="sug" style="display:none"></div>
+    <div class="form-grid">
+      <input type="tel" id="rpPhone" placeholder="Telefón (vyplní sa automaticky)">
+      <input type="email" id="rpEmail" placeholder="E-mail (vyplní sa automaticky)">
+    </div>
     <input type="text" id="rpAddr" placeholder="Adresa (vyplní sa automaticky, inak ju zadajte)">
     <textarea id="rpDesc" placeholder="Popis poruchy" style="min-height:90px"></textarea>
     <div class="form-grid">
