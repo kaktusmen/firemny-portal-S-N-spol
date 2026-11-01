@@ -177,7 +177,7 @@ function put(c,o,id){
 function delItem(c,id){
   if(!confirm('Naozaj zmazať túto položku?'))return;
   col(c).doc(id).delete().catch(function(){toast('Mazanie zlyhalo!')});
-  if(c==='clients'&&$('editingClientId').value===id)clearClient();
+  if(c==='clients'&&$('editingClientId').value===id)hideClientForm();
   if(c==='obhliadky'&&$('editingObhliadkaId').value===id)clearObhliadka();
   if(c==='montaze'&&$('editingMontazId').value===id)clearMontaz();
 }
@@ -259,10 +259,23 @@ var V={
   spravy:['spravyList','Žiadne správy.',function(a,b){return (b.ts||0)-(a.ts||0)},function(s){
     return card('spravy',s,'💬 Od: '+esc(s.author||'Anonym')+(s.toNames&&s.toNames.length?' → Pre: '+s.toNames.map(esc).join(', '):''),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':''),false,true)}]
 };
+function norm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()}
 function render(){
   COLS.forEach(function(c){
     var v=V[c],el=$(v[0]);if(!el)return;
-    el.innerHTML=dbData[c].slice().sort(v[2]).map(v[3]).join('')||v[1];
+    var arr=dbData[c].slice(),empty=v[1];
+    if(c==='clients'){
+      var q=norm($('clientSearch')?$('clientSearch').value:'');
+      if(q){
+        var qd=q.replace(/\s+/g,'');
+        arr=arr.filter(function(x){
+          var hay=norm([nm(x),x.obec,x.adresa,x.email,x.zariadenie,x.znacka].join(' '));
+          return hay.indexOf(q)>-1||norm(x.telefon).replace(/\s+/g,'').indexOf(qd)>-1;
+        });
+        empty='Žiadny klient nezodpovedá hľadaniu.';
+      }
+    }
+    el.innerHTML=arr.sort(v[2]).map(v[3]).join('')||empty;
   });
   renderCalendar();
   fillMontazSelects();
@@ -270,6 +283,14 @@ function render(){
 }
 
 // ---------- Klienti ----------
+function showClientForm(){
+  clearClient();
+  $('clientFormBox').style.display='block';$('clientAddBtn').style.display='none';
+}
+function hideClientForm(){
+  clearClient();
+  $('clientFormBox').style.display='none';$('clientAddBtn').style.display='block';
+}
 function clearClient(){
   CF.forEach(function(n){sv('c'+n,'')});
   $('editingClientId').value='';$('clientSaveBtn').innerText='Uložiť klienta';
@@ -280,11 +301,12 @@ function saveClient(){
   o.name=(o.meno+' '+o.priezvisko).trim();
   if(!o.name){toast('Zadajte meno alebo priezvisko');return}
   put('clients',o,$('editingClientId').value||null);
-  clearClient();toast('Klient uložený!');
+  hideClientForm();toast('Klient uložený!');
 }
 function editClient(id){
   var c=dbData.clients.filter(function(x){return x.id===id})[0];if(!c)return;
   openSection('clientsSection','Správa klientov');
+  $('clientFormBox').style.display='block';$('clientAddBtn').style.display='none';
   CF.forEach(function(n){sv('c'+n,c[lf(n)]||'')});
   if(!$('cSnVnutorna').value)$('cSnVnutorna').value=c.vyrobneCislo||'';
   $('editingClientId').value=c.id;$('clientSaveBtn').innerText='Aktualizovať klienta';
@@ -565,6 +587,8 @@ window.onload=function(){
   <div id="clientsSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
     <h2>Správa klientov</h2>
+    <button class="action-btn" id="clientAddBtn" onclick="showClientForm()">➕ Pridať klienta</button>
+    <div id="clientFormBox" style="display:none">
     <input type="hidden" id="editingClientId" value="">
     <div class="form-grid">
       <input type="text" id="cMeno" placeholder="Meno">
@@ -582,7 +606,9 @@ window.onload=function(){
       <input type="text" id="cPoznamky" placeholder="Poznámky / servisné záznamy" class="full-width-input">
     </div>
     <button class="action-btn" id="clientSaveBtn" onclick="saveClient()">Uložiť klienta</button>
-    <h3>Zoznam klientov</h3>
+    <button class="back-btn" onclick="hideClientForm()">✖ Zrušiť</button>
+    </div>
+    <input type="search" id="clientSearch" placeholder="🔍 Hľadať klienta (meno, obec, telefón…)" oninput="render()" autocomplete="off">
     <div id="clientsList">Načítavam...</div>
   </div>
 
