@@ -62,6 +62,11 @@ button.action-btn{background:var(--primary);color:#fff;border:none;font-weight:b
 .day-row{display:block;border-left:5px solid #0d9488;background:#f8fafc;border-radius:6px;padding:10px 12px;margin-top:8px;cursor:pointer}
 .day-row b{display:block;font-size:1rem;color:#0f172a}
 .day-row span{display:block;font-size:.85rem;color:#475569;margin-top:2px}
+.ms-choice{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.ms-choice button{padding:26px 10px;font-size:1.15rem;margin:0}
+.sug{border:1px solid #cbd5e1;border-radius:8px;background:#fff;margin:-4px 0 8px;max-height:230px;overflow:auto;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.sug div{padding:9px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9}
+.sug div:hover{background:#eff6ff}
 .cal-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;margin-top:10px}
 .cal-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-2px}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 18px;border-radius:8px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .25s;z-index:1000;max-width:90%;text-align:center}
@@ -96,7 +101,7 @@ function installDate(c){
   if(c.datumMontaze)return c.datumMontaze;
   var n=nm(c).toLowerCase(),best='';
   dbData.montaze.forEach(function(m){
-    if(!m.date)return;
+    if(!m.date||m.kind)return;
     if(m.clientId===c.id||(!m.clientId&&(m.clientName||'').trim().toLowerCase()===n)){if(m.date>best)best=m.date}
   });
   return best;
@@ -224,6 +229,7 @@ function openSection(id,title){
   $('mainMenu').style.display='none';$('pageTitle').innerText=title;$('pageSub').style.display='none';
   document.querySelectorAll('.section-content').forEach(function(s){s.style.display='none'});
   $(id).style.display='block';render();
+  if(id==='montazSection')showMS('choice');
 }
 function goHome(){
   document.querySelectorAll('.section-content').forEach(function(s){s.style.display='none'});
@@ -248,6 +254,8 @@ var V={
       '<strong>Záruka:</strong> '+(c.zarukaRoky?esc(c.zarukaRoky)+' r.':'-')+' | <strong>Montáž:</strong> '+esc(c.datumMontaze||'-')+'\n<strong>🛠 Servis:</strong> '+esc(serviceText(c))+
       (c.poznamky?'\n📝 '+esc(c.poznamky):''),true,true)}],
   montaze:['montazList','Žiadne montáže.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(m){
+    if(m.kind)return card('montaze',m,(m.servisType==='Oprava'?'🔨 ':'🧹 ')+esc(m.title||'Servis')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')',
+      '<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):''),'editServis');
     return card('montaze',m,'🔧 '+esc(m.title||'Montáž')+(m.clientName?' – '+esc(m.clientName):'')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')',
       (m.memberNames&&m.memberNames.length?'<strong>👷 Na montáž idú:</strong> '+m.memberNames.map(esc).join(', '):''),'editMontaz')}],
   members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
@@ -334,6 +342,68 @@ function addMontazMember(){
   mTeam.push({id:id,name:t.name||''});$('mMember').value='';renderMontazChips();
 }
 function removeMontazMember(i){mTeam.splice(i,1);renderMontazChips()}
+function showMS(v){
+  var map={choice:'msChoice',montaz:'msMontaz',servis:'msServis',clean:'msClean',repair:'msRepair'};
+  Object.keys(map).forEach(function(k){$(map[k]).style.display='none'});
+  $(map[v]).style.display=(v==='choice'?'grid':'block');
+}
+function newMontaz(){clearMontaz();showMS('montaz')}
+function newServis(p){clearServis(p);showMS(p==='cl'?'clean':'repair')}
+function clientAddr(c){
+  var a=c.adresa||'';
+  if(c.obec&&a.toLowerCase().indexOf(String(c.obec).toLowerCase())<0)a+=(a?', ':'')+c.obec;
+  return a;
+}
+function sugSearch(p){
+  var inp=$(p+'Name'),box=$(p+'Sug'),q=norm(inp.value),qd=q.replace(/\s+/g,'');
+  var cur=$(p+'ClientId').value,cc=cur?findById('clients',cur):null;
+  if(cc&&norm(nm(cc))!==q)$(p+'ClientId').value='';
+  if(!q){box.style.display='none';return}
+  var res=dbData.clients.filter(function(x){
+    var hay=norm([nm(x),x.obec,x.adresa,x.email].join(' '));
+    return hay.indexOf(q)>-1||norm(x.telefon).replace(/\s+/g,'').indexOf(qd)>-1;
+  }).sort(function(a,b){return nm(a).localeCompare(nm(b))}).slice(0,8);
+  box.innerHTML=res.length?res.map(function(c){
+    return '<div onmousedown="sugPick(\''+p+'\',\''+esc(c.id)+'\')"><b>'+esc(nm(c))+'</b>'+(c.obec?' – '+esc(c.obec):'')+'</div>';
+  }).join(''):'<div style="color:#64748b;cursor:default">Klient nie je v kartách. Vyplňte údaje ručne.</div>';
+  box.style.display='block';
+}
+function sugPick(p,id){
+  var c=findById('clients',id);if(!c)return;
+  $(p+'Name').value=nm(c);$(p+'ClientId').value=c.id;$(p+'Addr').value=clientAddr(c);
+  if(p==='cl')$('clDevice').value=[c.zariadenie,c.znacka].filter(Boolean).join(' ');
+  $(p+'Sug').style.display='none';
+}
+function clearServis(p){
+  ['Name','Addr','Date','Time','ClientId','EditId'].forEach(function(f){$(p+f).value=''});
+  if(p==='cl')$('clDevice').value='';else $('rpDesc').value='';
+  $(p+'Sug').style.display='none';
+  $(p+'SaveBtn').innerText=p==='cl'?'Uložiť čistenie':'Uložiť opravu';$(p+'CancelBtn').style.display='none';
+}
+function saveServis(p){
+  var name=$(p+'Name').value.trim();if(!name){toast('Zadajte meno klienta');return}
+  var cid=$(p+'ClientId').value,c=cid?findById('clients',cid):null;
+  if(!c)c=dbData.clients.filter(function(x){return norm(nm(x))===norm(name)})[0]||null;
+  var type=p==='cl'?'Čistenie':'Oprava',cname=c?nm(c):name;
+  var o={kind:'servis',servisType:type,title:type+' – '+cname,clientId:c?c.id:'',clientName:cname,
+    address:$(p+'Addr').value.trim()||(c?clientAddr(c):''),date:$(p+'Date').value,time:$(p+'Time').value};
+  if(p==='cl')o.zariadenie=$('clDevice').value.trim()||(c?[c.zariadenie,c.znacka].filter(Boolean).join(' '):'');
+  else o.popis=$('rpDesc').value.trim();
+  var eid=$(p+'EditId').value||null;
+  put('montaze',o,eid);
+  clearServis(p);toast(eid?'Servis aktualizovaný!':'Servis uložený!');showMS('choice');
+}
+function editServis(id){
+  var m=findById('montaze',id);if(!m)return;
+  var p=m.servisType==='Oprava'?'rp':'cl';
+  openSection('montazSection','Montáž / Servis');
+  showMS(p==='cl'?'clean':'repair');
+  $(p+'Name').value=m.clientName||'';$(p+'ClientId').value=m.clientId||'';$(p+'Addr').value=m.address||'';
+  $(p+'Date').value=m.date||'';$(p+'Time').value=m.time||'';
+  if(p==='cl')$('clDevice').value=m.zariadenie||'';else $('rpDesc').value=m.popis||'';
+  $(p+'EditId').value=m.id;$(p+'SaveBtn').innerText='Aktualizovať';$(p+'CancelBtn').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 function clearMontaz(){
   ['mTitle','mClient','mDate','mTime','mMember'].forEach(function(i){$(i).value=''});
   mTeam=[];renderMontazChips();
@@ -341,13 +411,15 @@ function clearMontaz(){
 }
 function editMontaz(id){
   var m=findById('montaze',id);if(!m)return;
-  openSection('montazSection','Montáže');
+  if(m.kind){editServis(id);return}
+  openSection('montazSection','Montáž / Servis');
   $('mTitle').value=m.title||'';$('mDate').value=m.date||'';$('mTime').value=m.time||'';
   var cid=m.clientId||'';
   if(!cid&&m.clientName){var f=dbData.clients.filter(function(x){return nm(x).toLowerCase()===m.clientName.toLowerCase()})[0];if(f)cid=f.id}
   $('mClient').value=cid;
   mTeam=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});
   $('mMember').value='';renderMontazChips();
+  showMS('montaz');
   $('editingMontazId').value=m.id;$('montazSaveBtn').innerText='Aktualizovať montáž';$('montazCancelBtn').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -478,7 +550,16 @@ function showEvent(type,id){
   var c=null,info='';
   if(type==='clients'){c=o}
   else{
-    if(type==='montaze'){
+    if(type==='montaze'&&o.kind){
+      c=(o.clientId&&findById('clients',o.clientId))||null;
+      var isR=o.servisType==='Oprava';
+      info='<h3>'+(isR?'🔨':'🧹')+' '+esc(o.servisType||'Servis')+': '+esc(o.clientName||'')+'</h3>'+
+        '<div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+
+        '<div class="modal-row"><strong>Adresa:</strong> '+mapA({adresa:o.address})+'</div>'+
+        (o.zariadenie?'<div class="modal-row"><strong>Zariadenie:</strong> '+esc(o.zariadenie)+'</div>':'')+
+        (o.popis?'<div class="modal-row"><strong>Popis poruchy:</strong> '+esc(o.popis)+'</div>':'');
+      var edO='<button class="btn-edit" onclick="closeEvent();editServis(\''+esc(o.id)+'\')">Upraviť servis</button>';
+    }else if(type==='montaze'){
       c=(o.clientId&&findById('clients',o.clientId))||null;
       info='<h3>🔧 '+esc(o.title||'Montáž')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+
         '<div class="modal-row" style="background:#ecfeff;border-left:4px solid #0d9488;padding:8px 10px;border-radius:6px"><strong>👷 Na montáž idú:</strong> '+(o.memberNames&&o.memberNames.length?o.memberNames.map(esc).join(', '):'nikto nie je priradený')+'</div>';
@@ -505,11 +586,11 @@ var lastDay=null;
 function isMobile(){return !!(window.matchMedia&&window.matchMedia('(max-width:600px)').matches)}
 function dayEvents(ds){
   var out=[];
-  dbData.montaze.forEach(function(m){if(m.date===ds)out.push({type:'montaze',id:m.id,color:'#0d9488',text:'🔧 '+(m.time?m.time+' ':'')+(m.title||'Montáž'),
-    sub:[m.clientName?'👤 '+m.clientName:'',m.memberNames&&m.memberNames.length?'👷 '+m.memberNames.join(', '):''].filter(Boolean).join(' · ')})});
+  dbData.montaze.forEach(function(m){if(m.date===ds)out.push({type:'montaze',id:m.id,color:m.kind?'#2563eb':'#0d9488',text:(m.kind?(m.servisType==='Oprava'?'🔨 ':'🧹 '):'🔧 ')+(m.time?m.time+' ':'')+(m.title||'Montáž'),
+    sub:m.kind?[m.address?'📍 '+m.address:'',m.zariadenie||m.popis||''].filter(Boolean).join(' · '):[m.clientName?'👤 '+m.clientName:'',m.memberNames&&m.memberNames.length?'👷 '+m.memberNames.join(', '):''].filter(Boolean).join(' · ')})});
   dbData.obhliadky.forEach(function(o){if(o.date===ds)out.push({type:'obhliadky',id:o.id,color:'#7c3aed',text:'🔍 Obhliadka: '+onm(o),sub:o.obec||''})});
   dbData.clients.forEach(function(c){
-    if(c.datumMontaze===ds&&!dbData.montaze.some(function(m){return m.date===ds&&m.clientId===c.id}))out.push({type:'clients',id:c.id,color:'#d97706',text:'👤 Montáž: '+nm(c),sub:c.obec||''});
+    if(c.datumMontaze===ds&&!dbData.montaze.some(function(m){return m.date===ds&&!m.kind&&m.clientId===c.id}))out.push({type:'clients',id:c.id,color:'#d97706',text:'👤 Montáž: '+nm(c),sub:c.obec||''});
     if(serviceDates(c).indexOf(ds)>-1)out.push({type:'clients',id:c.id,color:'#dc2626',text:'🛠 Servis: '+nm(c),sub:c.obec||''});
   });
   return out;
@@ -536,9 +617,9 @@ function renderCalendar(){
   for(var i=0;i<first;i++)h+='<div class="calendar-cell empty"></div>';
   for(var d=1;d<=total;d++){
     var ds=viewYear+'-'+p(viewMonth+1)+'-'+p(d),ev='';
-    dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:#0d9488" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">🔧 '+(m.time?esc(m.time)+' ':'')+esc(m.title)+(m.memberNames&&m.memberNames.length?'<div style="margin-top:2px;padding-top:2px;border-top:1px solid rgba(255,255,255,.4);font-weight:bold">👷 '+m.memberNames.map(esc).join(', ')+'</div>':'')+'</div>'});
+    dbData.montaze.forEach(function(m){if(m.date===ds)ev+='<div class="cal-event-card" style="background:'+(m.kind?'#2563eb':'#0d9488')+'" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">'+(m.kind?(m.servisType==='Oprava'?'🔨 ':'🧹 '):'🔧 ')+(m.time?esc(m.time)+' ':'')+esc(m.title)+(m.memberNames&&m.memberNames.length?'<div style="margin-top:2px;padding-top:2px;border-top:1px solid rgba(255,255,255,.4);font-weight:bold">👷 '+m.memberNames.map(esc).join(', ')+'</div>':'')+'</div>'});
     dbData.obhliadky.forEach(function(o){if(o.date===ds)ev+='<div class="cal-event-card" style="background:#7c3aed" onclick="showEvent(\'obhliadky\',\''+esc(o.id)+'\')">🔍 '+esc(o.name)+'</div>'});
-    dbData.clients.forEach(function(c){if(c.datumMontaze===ds&&!dbData.montaze.some(function(m){return m.date===ds&&m.clientId===c.id}))ev+='<div class="cal-event-card" style="background:#d97706" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">👤 '+esc(nm(c))+'</div>'});
+    dbData.clients.forEach(function(c){if(c.datumMontaze===ds&&!dbData.montaze.some(function(m){return m.date===ds&&!m.kind&&m.clientId===c.id}))ev+='<div class="cal-event-card" style="background:#d97706" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">👤 '+esc(nm(c))+'</div>'});
     dbData.clients.forEach(function(c){if(serviceDates(c).indexOf(ds)>-1)ev+='<div class="cal-event-card" style="background:#dc2626" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">🛠 Servis: '+esc(nm(c))+'</div>'});
     h+='<div class="calendar-cell'+(ds===today?' today':'')+'" onclick="openDay(\''+ds+'\')"><div class="calendar-day-number">'+d+'</div><div class="cal-full">'+ev+'</div><div class="cal-dots">'+dotsHtml(ds)+'</div></div>';
   }
@@ -579,7 +660,7 @@ window.onload=function(){
     <div class="menu-card" onclick="openSection('clientsSection','Správa klientov')">👥 Klienti</div>
     <div class="menu-card" onclick="openSection('calendarSection','Kalendár udalostí')">📅 Kalendár</div>
     <div class="menu-card" onclick="openSection('teamSection','Správa tímu')">🛡️ Tím</div>
-    <div class="menu-card" onclick="openSection('montazSection','Montáže')">🔧 Montáže</div>
+    <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis')">🔧 Montáž / Servis</div>
     <div class="menu-card" onclick="openSection('obhliadkaSection','Obhliadky')">🔍 Obhliadky</div>
     <div class="menu-card" onclick="openSection('spravySection','Správy pre tím')">💬 Správy</div>
   </div>
@@ -618,7 +699,7 @@ window.onload=function(){
     <div class="cal-nav"><button onclick="changeMonth(-1)">◀</button><span class="cal-title" id="calTitle"></span><button onclick="goToday()">Dnes</button><button onclick="changeMonth(1)">▶</button></div>
     <div class="calendar-grid"><div class="calendar-day-name">Po</div><div class="calendar-day-name">Ut</div><div class="calendar-day-name">St</div><div class="calendar-day-name">Št</div><div class="calendar-day-name">Pi</div><div class="calendar-day-name">So</div><div class="calendar-day-name">Ne</div></div>
     <div id="calendarDaysGrid" class="calendar-grid" style="margin-top:4px"></div>
-    <div class="cal-legend"><span><i style="background:#0d9488"></i>Montáž</span><span><i style="background:#7c3aed"></i>Obhliadka</span><span><i style="background:#d97706"></i>Montáž klienta</span><span><i style="background:#dc2626"></i>Servis</span></div>
+    <div class="cal-legend"><span><i style="background:#0d9488"></i>Montáž</span><span><i style="background:#7c3aed"></i>Obhliadka</span><span><i style="background:#d97706"></i>Montáž klienta</span><span><i style="background:#dc2626"></i>Záručný servis</span><span><i style="background:#2563eb"></i>Čistenie / Oprava</span></div>
   </div>
 
   <div id="teamSection" class="section-content">
@@ -633,7 +714,13 @@ window.onload=function(){
 
   <div id="montazSection" class="section-content">
     <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
-    <h2>Montáže</h2>
+    <h2>Montáž / Servis</h2>
+    <div id="msChoice" class="ms-choice">
+      <button class="action-btn" onclick="newMontaz()">🔧 Montáž</button>
+      <button class="action-btn" style="background:#2563eb" onclick="showMS('servis')">🛠 Servis</button>
+    </div>
+    <div id="msMontaz" style="display:none">
+    <button class="back-btn" onclick="showMS('choice')">⬅ Späť</button>
     <input type="hidden" id="editingMontazId" value="">
     <div class="form-grid">
       <input type="text" id="mTitle" placeholder="Názov montáže / zariadenia" class="full-width-input">
@@ -646,7 +733,47 @@ window.onload=function(){
     <div id="mTeamChips" class="chips"></div>
     <button class="action-btn" id="montazSaveBtn" onclick="saveMontaz()">Uložiť montáž</button>
     <button class="back-btn" id="montazCancelBtn" style="display:none" onclick="clearMontaz()">✖ Zrušiť úpravu</button>
-    <h3>Zoznam montáží</h3><div id="montazList">Načítavam...</div>
+    </div>
+    <div id="msServis" style="display:none">
+      <button class="back-btn" onclick="showMS('choice')">⬅ Späť</button>
+      <div class="ms-choice">
+        <button class="action-btn" style="background:#0891b2" onclick="newServis('cl')">🧹 Čistenie</button>
+        <button class="action-btn" style="background:#ea580c" onclick="newServis('rp')">🔨 Oprava</button>
+      </div>
+    </div>
+  <div id="msClean" style="display:none">
+    <button class="back-btn" onclick="showMS('servis')">⬅ Späť</button>
+    <h3>🧹 Čistenie</h3>
+    <input type="hidden" id="clEditId" value="">
+    <input type="hidden" id="clClientId" value="">
+    <input type="text" id="clName" placeholder="🔍 Meno a priezvisko klienta (hľadanie v kartách klientov)" oninput="sugSearch('cl')" onfocus="sugSearch('cl')" onblur="setTimeout(function(){$('clSug').style.display='none'},150)" autocomplete="off">
+    <div id="clSug" class="sug" style="display:none"></div>
+    <input type="text" id="clAddr" placeholder="Adresa (vyplní sa automaticky, inak ju zadajte)">
+    <input type="text" id="clDevice" placeholder="Zariadenie (napr. Klimatizácia Daikin)">
+    <div class="form-grid">
+      <input type="date" id="clDate" title="Dátum">
+      <input type="time" id="clTime" title="Čas">
+    </div>
+    <button class="action-btn" id="clSaveBtn" onclick="saveServis('cl')">Uložiť čistenie</button>
+    <button class="back-btn" id="clCancelBtn" style="display:none" onclick="clearServis('cl');showMS('choice')">✖ Zrušiť úpravu</button>
+  </div>
+  <div id="msRepair" style="display:none">
+    <button class="back-btn" onclick="showMS('servis')">⬅ Späť</button>
+    <h3>🔨 Oprava</h3>
+    <input type="hidden" id="rpEditId" value="">
+    <input type="hidden" id="rpClientId" value="">
+    <input type="text" id="rpName" placeholder="🔍 Meno a priezvisko klienta (hľadanie v kartách klientov)" oninput="sugSearch('rp')" onfocus="sugSearch('rp')" onblur="setTimeout(function(){$('rpSug').style.display='none'},150)" autocomplete="off">
+    <div id="rpSug" class="sug" style="display:none"></div>
+    <input type="text" id="rpAddr" placeholder="Adresa (vyplní sa automaticky, inak ju zadajte)">
+    <textarea id="rpDesc" placeholder="Popis poruchy" style="min-height:90px"></textarea>
+    <div class="form-grid">
+      <input type="date" id="rpDate" title="Dátum">
+      <input type="time" id="rpTime" title="Čas">
+    </div>
+    <button class="action-btn" id="rpSaveBtn" onclick="saveServis('rp')">Uložiť opravu</button>
+    <button class="back-btn" id="rpCancelBtn" style="display:none" onclick="clearServis('rp');showMS('choice')">✖ Zrušiť úpravu</button>
+  </div>
+    <h3>Zoznam montáží a servisov</h3><div id="montazList">Načítavam...</div>
   </div>
 
   <div id="obhliadkaSection" class="section-content">
