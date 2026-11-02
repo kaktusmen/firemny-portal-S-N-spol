@@ -980,7 +980,7 @@ function renderDue(){
       '<button class="btn-edit" style="background:#475569" onclick="showEvent(\''+(x.cid?'clients':'montaze')+'\',\''+esc(x.cid||x.mid)+'\')">Detail</button></div></div>';
   }).join('')||'<div class="td-none">Žiadne servisy v najbližších 30 dňoch.</div>';
 }
-var rtOrder={};
+var rtOrder={},rtInit=false;
 function mAddr(m){
   if(m.address)return m.address;
   var c=m.clientId?findById('clients',m.clientId):clientOfMontaz(m);
@@ -1002,9 +1002,11 @@ function renderRoute(){
   var el=$('rtList');if(!el)return;
   if(!$('rtDate').value)$('rtDate').value=ymd(new Date());
   var ds=$('rtDate').value,tv=$('rtTech').value;
-  var tsel=$('rtTech');
+  var tsel=$('rtTech'),adm=isAdmin();
+  if(!adm)tv=me||'__none';
+  else if(!rtInit&&me){tv=me;rtInit=true}
   tsel.innerHTML='<option value="">👷 Všetci technici</option>'+dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');
-  tsel.value=tv;
+  tsel.value=tv==='__none'?'':tv;tsel.style.display=adm?'':'none';
   var arr=dbData.montaze.filter(function(m){return m.date===ds&&(!tv||(m.memberIds||[]).indexOf(tv)>-1)&&m.stav!=='Hotová'});
   arr.sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99')});
   var ord=rtOrder[ds];
@@ -1414,7 +1416,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>';
 }
-var APP_VERSION='2026-11-02.7';
+var APP_VERSION='2026-11-02.8';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
