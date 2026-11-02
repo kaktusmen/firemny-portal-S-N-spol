@@ -1414,7 +1414,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>';
 }
-var APP_VERSION='2026-11-02.6';
+var APP_VERSION='2026-11-02.7';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -1735,13 +1735,13 @@ window.onload=function(){
   <div id="todayBox" class="today-box"></div>
   <div id="mainMenu" class="menu-grid">
     <div class="menu-card" onclick="openSection('myTasksSection','Moje úlohy')">✅ Moje úlohy</div>
+    <div class="menu-card" onclick="openSection('routeSection','Trasa dňa')">🗺 Trasa dňa</div>
     <div class="menu-card" onclick="openSection('calendarSection','Kalendár udalostí')">📅 Kalendár</div>
     <div class="menu-card" onclick="openSection('clientsSection','Správa klientov')">👥 Klienti</div>
     <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis')">🔧 Montáž / Servis</div>
     <div class="menu-card" onclick="openSection('obhliadkaSection','Obhliadky')">🔍 Obhliadky</div>
     <div class="menu-card" onclick="openSection('ponukySection','Cenové ponuky')">💶 Ponuky</div>
     <div class="menu-card" id="dueTile" onclick="openSection('dueSection','Servisné termíny')">🛠 Servisné termíny</div>
-    <div class="menu-card" onclick="openSection('routeSection','Trasa dňa')">🗺 Trasa dňa</div>
     <div class="menu-card" id="volnoTile" onclick="openSection('volnoSection','Voľno')">🏖 Voľno</div>
     <div class="menu-card" onclick="openSection('spravySection','Správy pre tím')">💬 Správy</div>
     <div class="menu-card" onclick="openSection('teamSection','Správa tímu')">🛡️ Tím</div>
