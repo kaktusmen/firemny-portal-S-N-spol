@@ -1414,7 +1414,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>';
 }
-var APP_VERSION='2026-11-02.5';
+var APP_VERSION='2026-11-02.6';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -1531,7 +1531,13 @@ function renderToday(){
   var el=$('todayBox');if(!el)return;
   var t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1));
   el.innerHTML=renderHomeMsgs()+[['Dnes',d0],['Zajtra',d1]].map(function(x){
-    var ev=dayEvents(x[1]).sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99')});
+    var ev=dayEvents(x[1]).filter(function(e){
+      if(isAdmin())return true;
+      var o=findById(e.type,e.id);
+      if(e.type==='montaze'&&o&&!o.kind||e.type==='montaze'&&o&&o.kind)return isMine(o);
+      if(e.type==='volno')return !!o&&o.memberId===me;
+      return false;
+    }).sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99')});
     return '<div class="td-h">📅 '+x[0]+' · '+esc(fmtD(x[1]))+'</div>'+(ev.length?ev.map(dayRow).join(''):'<div class="td-none">Žiadne udalosti</div>');
   }).join('');
 }
