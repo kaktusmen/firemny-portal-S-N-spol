@@ -977,7 +977,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>';
 }
-var APP_VERSION='2026-11-01.7';
+var APP_VERSION='2026-11-01.8';
 var membersReady=false;
 function isAdmin(){
   if(!membersReady)return false;
@@ -1387,7 +1387,7 @@ window.onload=function(){
       <input type="text" id="oObec" placeholder="Obec">
       <input type="text" id="oAdresa" placeholder="Adresa">
       <input type="date" id="oDate" title="Dátum obhliadky" class="full-width-input">
-      <select id="oZariadenie" data-iny><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option></select>
+      <select id="oZariadenie" data-iny><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Multisplit</option><option>Tepelné čerpadlo</option></select>
       <select id="oBudova" data-iny><option value="">-- Typ budovy --</option><option>Dom</option><option>Byt</option></select>
       <select id="oStena" data-iny><option value="">-- Stena --</option><option>Betón</option><option>Tehla</option></select>
       <select id="oVnutorna" data-iny><option value="">-- Miesto zabudovania vnútornej jednotky --</option><option>Obývacia izba</option><option>Kuchyňa</option><option>Detská izba</option></select>
