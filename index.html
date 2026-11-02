@@ -353,6 +353,7 @@ function render(){
         empty='Filtru nezodpovedá žiadny záznam.';
       }
     }
+    if(c==='montaze'&&!isAdmin())arr=arr.filter(isMine);
     if(c==='volno'&&!isAdmin())arr=arr.filter(function(x){return x.memberId===me});
     if(c==='clients'){
       var q=norm($('clientSearch')?$('clientSearch').value:'');
@@ -681,7 +682,7 @@ function saveSprava(){
 var calMode='month',calWs=null;
 function weekStart(d){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
 function setCalMode(m){calMode=m;if(m==='week'&&!calWs)calWs=weekStart(new Date(viewYear,viewMonth,new Date().getMonth()===viewMonth?new Date().getDate():1));renderCalendar()}
-function techF(){var e=$('calTech');return e?e.value:''}
+function techF(){if(!isAdmin())return me||'__none';var e=$('calTech');return e?e.value:''}
 function techPass(m){var f=techF();return !f||(m.memberIds||[]).indexOf(f)>-1}
 function changeMonth(d){
   if(calMode==='week'){calWs=new Date(calWs.getFullYear(),calWs.getMonth(),calWs.getDate()+7*d);viewYear=calWs.getFullYear();viewMonth=calWs.getMonth();renderCalendar();return}
@@ -1416,7 +1417,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>';
 }
-var APP_VERSION='2026-11-02.8';
+var APP_VERSION='2026-11-02.9';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -1652,7 +1653,7 @@ function backToCalendar(){
 function fillCalTech(){
   var e=$('calTech');if(!e)return;var v=e.value;
   e.innerHTML='<option value="">👷 Všetci technici</option>'+dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');
-  e.value=v;
+  e.value=v;e.style.display=isAdmin()?'':'none';
 }
 function renderWeek(){
   var p=function(x){return String(x).padStart(2,'0')},names=['Po','Ut','St','Št','Pi','So','Ne'],tds=ymd(new Date()),h='';
@@ -1739,11 +1740,11 @@ window.onload=function(){
     <div class="menu-card" onclick="openSection('myTasksSection','Moje úlohy')">✅ Moje úlohy</div>
     <div class="menu-card" onclick="openSection('routeSection','Trasa dňa')">🗺 Trasa dňa</div>
     <div class="menu-card" onclick="openSection('calendarSection','Kalendár udalostí')">📅 Kalendár</div>
-    <div class="menu-card" onclick="openSection('clientsSection','Správa klientov')">👥 Klienti</div>
+    <div class="menu-card admin-only" onclick="openSection('clientsSection','Správa klientov')">👥 Klienti</div>
     <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis')">🔧 Montáž / Servis</div>
     <div class="menu-card" onclick="openSection('obhliadkaSection','Obhliadky')">🔍 Obhliadky</div>
-    <div class="menu-card" onclick="openSection('ponukySection','Cenové ponuky')">💶 Ponuky</div>
-    <div class="menu-card" id="dueTile" onclick="openSection('dueSection','Servisné termíny')">🛠 Servisné termíny</div>
+    <div class="menu-card admin-only" onclick="openSection('ponukySection','Cenové ponuky')">💶 Ponuky</div>
+    <div class="menu-card admin-only" id="dueTile" onclick="openSection('dueSection','Servisné termíny')">🛠 Servisné termíny</div>
     <div class="menu-card" id="volnoTile" onclick="openSection('volnoSection','Voľno')">🏖 Voľno</div>
     <div class="menu-card" onclick="openSection('spravySection','Správy pre tím')">💬 Správy</div>
     <div class="menu-card" onclick="openSection('teamSection','Správa tímu')">🛡️ Tím</div>
