@@ -149,8 +149,8 @@ function telA(v){if(!v)return '-';return '<a href="tel:'+esc(String(v).replace(/
 function mailA(v){if(!v)return '-';return '<a href="mailto:'+esc(v)+'">'+esc(v)+'</a>'}
 function mapA(c){
   if(!c.adresa)return '-';
-  var q=encodeURIComponent(c.adresa+(c.obec?', '+c.obec:'')),apple=/iPhone|iPad|Macintosh|Mac OS/i.test(navigator.userAgent);
-  return '<a href="'+(apple?'https://maps.apple.com/?q=':'https://www.google.com/maps/search/?api=1&query=')+q+'" target="_blank" rel="noopener">📍 '+esc(c.adresa)+'</a>';
+  var q=encodeURIComponent(c.adresa+(c.obec?', '+c.obec:''));
+  return '<a href="https://www.google.com/maps/search/?api=1&query='+q+'" target="_blank" rel="noopener">📍 '+esc(c.adresa)+'</a>';
 }
 function syncIny(id){var e=$(id),x=$(id+'Iny');if(!x)return;x.style.display=e.value==='__iny'?'block':'none';if(e.value!=='__iny')x.value=''}
 function gv(id){var e=$(id);if(e.tagName==='SELECT'&&e.value==='__iny'){var x=$(id+'Iny');return x?x.value.trim():''}return e.value.trim()}
@@ -1307,7 +1307,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>';
 }
-var APP_VERSION='2026-11-02.2';
+var APP_VERSION='2026-11-02.3';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
