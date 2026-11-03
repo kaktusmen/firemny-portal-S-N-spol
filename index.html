@@ -1415,18 +1415,36 @@ function admStats(){
     '<button type="button" class="back-btn" onclick="statsCsv()">📥 Export mesiaca (CSV)</button>';
   statsRender();
 }
+function chStats(p){
+  var o={kg:0,n:0,typ:{},tech:{}};
+  dbData.chladivo.forEach(function(x){
+    if((x.date||'').indexOf(p)!==0)return;
+    var k=num(x.kg);o.kg+=k;o.n++;
+    o.typ[x.typ||'?']=(o.typ[x.typ||'?']||0)+k;
+    o.tech[x.techName||'?']=(o.tech[x.techName||'?']||0)+k;
+  });
+  return o;
+}
+function r2(v){return Math.round(v*100)/100}
 function statsRender(){
   var mo=$('stMonth').value||'',yr=mo.slice(0,4),a=statsCalc(mo),b=statsCalc(yr);
   var row=function(l,x,y){return '<tr><td>'+l+'</td><td style="text-align:right"><b>'+x+'</b></td><td style="text-align:right">'+y+'</td></tr>'};
-  var techs=Object.keys(a.byTech).sort();
+  var techs=Object.keys(a.byTech).sort(),ca=chStats(mo),cb=chStats(yr);
   $('stOut').innerHTML='<table style="width:100%;border-collapse:collapse;margin:8px 0" class="st-tbl"><tr><th></th><th>Mesiac '+esc(mo)+'</th><th>Rok '+esc(yr)+'</th></tr>'+
     row('🔧 Montáže',a.montaz,b.montaz)+row('🧹 Čistenia',a.cistenie,b.cistenie)+
     row('🔨 Opravy (hotové / všetky)',a.opravaDone+' / '+a.oprava,b.opravaDone+' / '+b.oprava)+row('🔍 Obhliadky',a.obhl,b.obhl)+
-    row('💶 Tržby z opráv',fmtEur(a.rev),fmtEur(b.rev))+'</table>'+
+    row('💶 Tržby z opráv',fmtEur(a.rev),fmtEur(b.rev))+
+    row('❄️ Chladivo (kg)',r2(ca.kg)+' kg',r2(cb.kg)+' kg')+row('❄️ Doplnení chladiva',ca.n,cb.n)+'</table>'+
     '<h4 style="margin:12px 0 4px">Podľa technika (mesiac)</h4>'+
     (techs.length?'<table style="width:100%;border-collapse:collapse" class="st-tbl"><tr><th>Technik</th><th>Montáže</th><th>Čistenia</th><th>Opravy</th><th>Hotové</th></tr>'+
       techs.map(function(t){var x=a.byTech[t];return '<tr><td>'+esc(t)+'</td><td style="text-align:center">'+x.montaz+'</td><td style="text-align:center">'+x.cistenie+'</td><td style="text-align:center">'+x.oprava+'</td><td style="text-align:center">'+x.done+'</td></tr>'}).join('')+'</table>'
-      :'<div class="td-none">V tomto mesiaci nie sú priradené žiadne udalosti technikom.</div>');
+      :'<div class="td-none">V tomto mesiaci nie sú priradené žiadne udalosti technikom.</div>')+
+    '<h4 style="margin:12px 0 4px">❄️ Chladivo podľa typu</h4>'+
+    (Object.keys(cb.typ).length?'<table style="width:100%;border-collapse:collapse" class="st-tbl"><tr><th>Typ</th><th>Mesiac</th><th>Rok</th></tr>'+
+      Object.keys(cb.typ).sort().map(function(t){return '<tr><td>'+esc(t)+'</td><td style="text-align:center">'+r2(ca.typ[t]||0)+' kg</td><td style="text-align:center">'+r2(cb.typ[t])+' kg</td></tr>'}).join('')+'</table>':'<div class="td-none">Žiadne záznamy o chladive.</div>')+
+    '<h4 style="margin:12px 0 4px">❄️ Chladivo podľa technika</h4>'+
+    (Object.keys(cb.tech).length?'<table style="width:100%;border-collapse:collapse" class="st-tbl"><tr><th>Technik</th><th>Mesiac</th><th>Rok</th></tr>'+
+      Object.keys(cb.tech).sort().map(function(t){return '<tr><td>'+esc(t)+'</td><td style="text-align:center">'+r2(ca.tech[t]||0)+' kg</td><td style="text-align:center">'+r2(cb.tech[t])+' kg</td></tr>'}).join('')+'</table>':'');
 }
 function statsCsv(){
   var mo=$('stMonth').value||'';
@@ -1434,6 +1452,10 @@ function statsCsv(){
   var lines=[['Dátum','Typ','Klient','Názov','Stav','Technici','Cena (€)'].map(q).join(';')];
   dbData.montaze.filter(function(m){return (m.date||'').indexOf(mo)===0}).sort(function(a,b){return (a.date||'').localeCompare(b.date||'')}).forEach(function(m){
     lines.push([fmtD(m.date),m.kind?m.servisType:'Montáž',m.clientName||'',m.title||'',m.stav||'',(m.memberNames||[]).join(', '),m.cena||''].map(q).join(';'));
+  });
+  lines.push('');lines.push(['Chladivo – dátum','Klient','Adresa','Typ','kg','Dôvod','Doplnil'].map(q).join(';'));
+  dbData.chladivo.filter(function(r){return (r.date||'').indexOf(mo)===0}).sort(function(a,b){return (a.date||'').localeCompare(b.date||'')}).forEach(function(r){
+    lines.push([fmtD(r.date),r.clientName,r.adresa,r.typ,String(r.kg).replace('.',','),r.dovod,r.techName].map(q).join(';'));
   });
   var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='statistika_'+mo+'.csv';
@@ -1718,7 +1740,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.14';
+var APP_VERSION='2026-11-03.15';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
