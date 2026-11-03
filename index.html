@@ -378,7 +378,7 @@ function card(c,o,title,body,edit,collapsed,extra){
 var V={
   clients:['clientsList','Žiadni klienti.',function(a,b){return nm(a).localeCompare(nm(b))},function(c){
     return card('clients',c,'👤 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):''),
-      '<strong>Telefón:</strong> '+telA(c.telefon)+' | <strong>Adresa:</strong> '+mapA(c)+' | <strong>E-mail:</strong> '+mailA(c.email)+eventRows(c),true,true)}],
+      clientInfo(c).map(function(r){return '<div class="modal-row"><strong>'+r[0]+':</strong> '+r[1]+'</div>'}).join('')+eventRows(c),true,true)}],
   montaze:['montazList','Žiadne montáže.',function(a,b){return (a.date||'').localeCompare(b.date||'')},function(m){
     if(m.kind)return card('montaze',m,srvIcon(m)+esc(m.title||'Servis')+(m.stav?' ['+esc(m.stav)+']':'')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')',
       '<strong>Telefón:</strong> '+telA(m.telefon)+' | <strong>E-mail:</strong> '+mailA(m.email)+'\n'+'<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):'')+(m.memberNames&&m.memberNames.length?'\n<strong>👷 Na servis idú:</strong> '+m.memberNames.map(esc).join(', '):'')+oprBody(m),'editServis',false,listBtns(m));
@@ -1327,12 +1327,31 @@ function admHist(){
     $('admView').innerHTML='<h3>📜 História zmien (posledných 150)</h3>'+(h||'<div class="td-none">Zatiaľ žiadne záznamy.</div>');
   }).catch(function(){$('admView').innerHTML='<h3>📜 História zmien</h3><div class="td-none">Históriu sa nepodarilo načítať.</div>'});
 }
+function clientInfo(c){
+  var rows=[['Meno',esc(c.meno||'-')],['Priezvisko',esc(c.priezvisko||(c.meno?'':nm(c))||'-')],['Telefón',telA(c.telefon)],['E-mail',mailA(c.email)],['Adresa',mapA(c)]];
+  var devs=[];
+  clientInstalls(c).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')}).forEach(function(m){
+    var dl=devicesOf(m);
+    if(!dl.length&&m.title)devs.push('<b>'+esc(m.title)+'</b>'+(m.date?' <small>(montáž '+esc(fmtD(m.date))+')</small>':''));
+    dl.forEach(function(d,i){
+      var t=[d.typ,d.system].filter(Boolean).join(' – '),ind=(d.vnutorne||[]).filter(Boolean),we=devEnd(m,d);
+      devs.push('<b>'+esc(t||'Zariadenie')+'</b>'+(m.date?' <small>(montáž '+esc(fmtD(m.date))+')</small>':'')+
+        (m.title?'<br>Značka / model: '+esc(m.title):'')+
+        '<br>Výrobné číslo vnútornej jednotky: '+(ind.length?esc(ind.join(', ')):'-')+
+        '<br>Výrobné číslo vonkajšej jednotky: '+esc(d.vonkajsia||'-')+
+        (we?'<br>Záruka do: '+esc(fmtD(we)):''));
+    });
+  });
+  var legacy=[c.zariadenie&&'Typ: '+c.zariadenie,c.znacka&&'Značka: '+c.znacka,(c.snVnutorna||c.vyrobneCislo)&&'S/N vnútorná: '+(c.snVnutorna||c.vyrobneCislo),c.snVonkajsia&&'S/N vonkajšia: '+c.snVonkajsia,c.zarukaRoky&&'Záruka: '+c.zarukaRoky+' r.',c.datumMontaze&&'Montáž: '+fmtD(c.datumMontaze)].filter(Boolean);
+  if(legacy.length)devs.push(legacy.map(esc).join('<br>'));
+  rows.push(['Zariadenia',devs.length?devs.map(function(x){return '<div style="margin:4px 0 8px;padding-left:8px;border-left:3px solid #d1d1d6">'+x+'</div>'}).join(''):'-']);
+  if(c.poznamky)rows.push(['Poznámky',esc(c.poznamky)]);
+  return rows;
+}
 function clientDetail(c){
   var rh=function(l,h){return '<div class="modal-row"><strong>'+l+':</strong> '+h+'</div>'};
-  var legacy=[c.zariadenie,c.znacka,c.snVnutorna||c.vyrobneCislo,c.snVonkajsia,c.zarukaRoky?c.zarukaRoky+' r.':'',c.datumMontaze,c.poznamky].filter(Boolean);
   return '<h3>👤 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):'')+'</h3>'+
-    rh('Telefón',telA(c.telefon))+rh('E-mail',mailA(c.email))+rh('Adresa',mapA(c))+
-    (legacy.length?rh('Pôvodné údaje',esc(legacy.join(' · '))):'')+
+    clientInfo(c).map(function(r){return rh(r[0],r[1])}).join('')+
     eventRows(c);
 }
 function showEvent(type,id){
@@ -1545,7 +1564,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.4';
+var APP_VERSION='2026-11-03.5';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
