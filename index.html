@@ -1627,9 +1627,10 @@ function listBtns(m){
   var id=esc(m.id),st=m.stav||'Nová';
   return (st==='Hotová'?'':(st!=='Prebieha'?'<button class="btn-edit" style="background:#ca8a04" onclick="setStav(\''+id+'\',\'Prebieha\')">▶ Prebieha</button>':'')+
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
-    '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+smsBtn(m);
+    '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
+    '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.10';
+var APP_VERSION='2026-11-03.11';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
