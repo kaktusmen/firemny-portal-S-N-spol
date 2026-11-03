@@ -209,6 +209,23 @@ html[data-theme=dark] #updBar{color:#111}
 .foto-add{display:inline-block;cursor:pointer;text-align:center}
 #lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:12px}
 #lightbox img{max-width:100%;max-height:100%;border-radius:8px}
+/* --- iOS navigácia --- */
+.container{padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+.menu-list{display:block;background:#fff;border-radius:16px;overflow:hidden;margin-top:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05)}
+.menu-list .menu-card{min-height:0;height:auto;display:flex;align-items:center;justify-content:space-between;text-align:left;border-radius:0;box-shadow:none;background:transparent;padding:15px 16px;font-weight:500;border-bottom:.5px solid var(--sep)}
+.menu-list .menu-card:last-child{border-bottom:none}
+.menu-list .menu-card::after{content:'›';color:#c7c7cc;font-size:1.5rem;line-height:1;font-weight:400}
+.menu-list .menu-card:active{background:var(--fill);transform:none}
+#tabBar{position:fixed;left:0;right:0;bottom:0;z-index:900;display:flex;justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:rgba(249,249,249,.86);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep)}
+#tabBar button{flex:1;max-width:120px;background:none;border:none;margin:0;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;color:#8e8e93;font-size:.68rem;font-weight:500;cursor:pointer;width:auto;-webkit-tap-highlight-color:transparent}
+#tabBar button span{font-size:1.45rem;line-height:1.2;filter:grayscale(1);opacity:.7}
+#tabBar button.on{color:var(--primary)}
+#tabBar button.on span{filter:none;opacity:1}
+body.is-tech #tabBar button.admin-only{display:none!important}
+html[data-theme=dark] .menu-list{background:#1c1c1e;box-shadow:none}
+html[data-theme=dark] #tabBar{background:rgba(29,29,31,.86)}
+.sec-fade{animation:secIn .22s ease}
+@keyframes secIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -403,16 +420,42 @@ function importData(ev){
 }
 
 // ---------- Navigácia ----------
-function openSection(id,title){
+var scr='home',navBack='';
+function hideAll(){
+  document.querySelectorAll('.section-content').forEach(function(x){x.style.display='none'});
+  ['mainMenu','todayBox','homeQuick','workMenu'].forEach(function(i){$(i).style.display='none'});
+}
+function setTab(t){
+  document.querySelectorAll('#tabBar button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
+}
+function tabFor(id){
+  if(navBack==='more')return 'more';
+  if(navBack==='work')return 'work';
+  var m={calendarSection:'cal',clientsSection:'clients',montazSection:'work',obhliadkaSection:'work',chladivoSection:'work',myTasksSection:'home',routeSection:'home'};
+  return m[id]||'more';
+}
+function openSection(id,title,from){
   fromCal=false;
-  $('mainMenu').style.display='none';$('todayBox').style.display='none';$('pageTitle').innerText=title;$('pageSub').style.display='none';
-  document.querySelectorAll('.section-content').forEach(function(s){s.style.display='none'});
-  $(id).style.display='block';render();
+  if(from!==undefined)navBack=from;else if(scr!=='sec')navBack='';
+  scr='sec';hideAll();
+  $('pageTitle').innerText=title;$('pageSub').style.display='none';$('statusBar').style.display='none';
+  var el=$(id);el.style.display='block';el.classList.remove('sec-fade');void el.offsetWidth;el.classList.add('sec-fade');
+  setTab(tabFor(id));render();
   if(id==='montazSection')showMS('choice');
+  window.scrollTo(0,0);
+}
+function showHome(){scr='home';navBack='';hideAll();$('todayBox').style.display='block';$('homeQuick').style.display='grid';$('pageTitle').innerText='Dnes';$('pageSub').style.display='none';$('statusBar').style.display='';setTab('home');window.scrollTo(0,0)}
+function showWork(){scr='work';navBack='';hideAll();$('workMenu').style.display='block';$('pageTitle').innerText='Práca';$('pageSub').style.display='none';$('statusBar').style.display='none';setTab('work');window.scrollTo(0,0)}
+function showMore(){scr='more';navBack='';hideAll();$('mainMenu').style.display='block';$('pageTitle').innerText='Viac';$('pageSub').style.display='none';$('statusBar').style.display='';setTab('more');window.scrollTo(0,0)}
+function goTab(t){
+  if(t==='home')showHome();
+  else if(t==='work')showWork();
+  else if(t==='more')showMore();
+  else if(t==='cal')openSection('calendarSection','Kalendár udalostí','');
+  else if(t==='clients')openSection('clientsSection','Klienti','');
 }
 function goHome(){
-  document.querySelectorAll('.section-content').forEach(function(s){s.style.display='none'});
-  $('mainMenu').style.display='grid';$('todayBox').style.display='block';$('pageTitle').innerText='Firemný Portál';$('pageSub').style.display='block';
+  if(navBack==='more')showMore();else if(navBack==='work')showWork();else showHome();
 }
 
 // ---------- Zobrazenie ----------
@@ -1740,7 +1783,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.15';
+var APP_VERSION='2026-11-03.16';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2173,6 +2216,13 @@ window.onload=function(){
 </script>
 </head>
 <body>
+<nav id="tabBar">
+  <button data-t="home" class="on" onclick="goTab('home')"><span>🏠</span>Dnes</button>
+  <button data-t="cal" onclick="goTab('cal')"><span>📅</span>Kalendár</button>
+  <button data-t="work" onclick="goTab('work')"><span>🔧</span>Práca</button>
+  <button data-t="clients" class="admin-only" onclick="goTab('clients')"><span>👥</span>Klienti</button>
+  <button data-t="more" onclick="goTab('more')"><span>⋯</span>Viac</button>
+</nav>
 <div id="updBar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:2000;background:#f59e0b;color:#111;padding:10px 14px;text-align:center;font-weight:bold">🔄 Je dostupná nová verzia aplikácie. <button onclick="hardRefresh()" style="width:auto;display:inline-block;margin:0 0 0 8px;padding:6px 12px">Aktualizovať</button></div>
 <div class="container">
   <div id="keyBox" style="display:none">
@@ -2195,29 +2245,31 @@ window.onload=function(){
     </div>
   </div>
 
-  <h1 id="pageTitle">Firemný Portál</h1>
-  <p id="pageSub">Vyberte sekciu z menu</p>
+  <h1 id="pageTitle">Dnes</h1>
+  <p id="pageSub" style="display:none"></p>
 
   <div id="todayBox" class="today-box"></div>
-  <div id="mainMenu" class="menu-grid">
+  <div id="homeQuick" class="menu-grid">
     <div class="menu-card" onclick="openSection('myTasksSection','Moje úlohy')">✅ Moje úlohy</div>
     <div class="menu-card" onclick="openSection('routeSection','Trasa dňa')">🗺 Trasa dňa</div>
-    <div class="menu-card" onclick="openSection('calendarSection','Kalendár udalostí')">📅 Kalendár</div>
-    <div class="menu-card admin-only" onclick="openSection('clientsSection','Správa klientov')">👥 Klienti</div>
-    <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis')">🔧 Montáž / Servis</div>
-    <div class="menu-card" onclick="openSection('obhliadkaSection','Obhliadky')">🔍 Obhliadky</div>
-    <div class="menu-card admin-only" onclick="openSection('ponukySection','Cenové ponuky')">💶 Ponuky</div>
-    <div class="menu-card admin-only" id="dueTile" onclick="openSection('dueSection','Servisné termíny')">🛠 Servisné termíny</div>
-    <div class="menu-card" onclick="openSection('chladivoSection','Chladivo')">❄️ Chladivo</div>
-    <div class="menu-card" id="volnoTile" onclick="openSection('volnoSection','Voľno')">🏖 Voľno</div>
-    <div class="menu-card" onclick="openSection('spravySection','Správy pre tím')">💬 Správy</div>
-    <div class="menu-card" onclick="openSection('teamSection','Správa tímu')">🛡️ Tím</div>
-    <div class="menu-card" onclick="openSection('helpSection','Nápoveda')">❓ Nápoveda</div>
-    <div class="menu-card admin-only" onclick="openSection('adminSection','Správa aplikácie')">⚙️ Správa</div>
+  </div>
+  <div id="workMenu" class="menu-list" style="display:none">
+    <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis','work')">🔧 Montáž / Servis</div>
+    <div class="menu-card" onclick="openSection('obhliadkaSection','Obhliadky','work')">🔍 Obhliadky</div>
+    <div class="menu-card" onclick="openSection('chladivoSection','Chladivo','work')">❄️ Chladivo</div>
+  </div>
+  <div id="mainMenu" class="menu-list" style="display:none">
+    <div class="menu-card admin-only" onclick="openSection('ponukySection','Cenové ponuky','more')">💶 Ponuky</div>
+    <div class="menu-card admin-only" id="dueTile" onclick="openSection('dueSection','Servisné termíny','more')">🛠 Servisné termíny</div>
+    <div class="menu-card" id="volnoTile" onclick="openSection('volnoSection','Voľno','more')">🏖 Voľno</div>
+    <div class="menu-card" onclick="openSection('spravySection','Správy pre tím','more')">💬 Správy</div>
+    <div class="menu-card" onclick="openSection('teamSection','Správa tímu','more')">🛡️ Tím</div>
+    <div class="menu-card" onclick="openSection('helpSection','Nápoveda','more')">❓ Nápoveda</div>
+    <div class="menu-card admin-only" onclick="openSection('adminSection','Správa aplikácie','more')">⚙️ Správa</div>
   </div>
 
   <div id="clientsSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Správa klientov</h2>
     <button class="action-btn" id="clientAddBtn" onclick="showClientForm()">➕ Pridať klienta</button>
     <div id="clientFormBox" style="display:none">
@@ -2237,14 +2289,14 @@ window.onload=function(){
   </div>
 
   <div id="myTasksSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Moje úlohy</h2>
     <select id="meSelect" onchange="setMe()"></select>
     <div id="myTasksList"></div>
   </div>
 
   <div id="ponukySection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Cenové ponuky</h2>
     <input type="hidden" id="editingPonukaId" value="">
     <button class="action-btn" id="ponukaAddBtn" onclick="showPonukaForm()">➕ Nová cenová ponuka</button>
@@ -2264,14 +2316,14 @@ window.onload=function(){
   </div>
 
   <div id="helpSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <p style="color:#8e8e93;margin:0 2px 10px">Klikni na tému a rozbalí sa návod.</p>
     <div id="helpList"></div>
     <button class="action-btn" style="margin-top:14px" onclick="showWelcome()">👋 Zobraziť úvod znova</button>
   </div>
 
   <div id="chladivoSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>❄️ Správa chladiva</h2>
     <p style="color:#64748b;font-size:.9rem;margin-top:0">Zapíš každé doplnenie chladiva: kedy, kde, komu, aké a koľko.</p>
     <input type="hidden" id="chEditId">
@@ -2294,7 +2346,7 @@ window.onload=function(){
   </div>
 
   <div id="volnoSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Voľno</h2>
     <p id="vInfo" style="color:#64748b;font-size:.9rem;margin-top:0"></p>
     <div class="form-grid"><select id="vMember" class="full-width-input"></select><select id="vTyp" class="full-width-input" onchange="volnoTypUi()"><option value="den">📅 Celý deň (alebo viac dní)</option><option value="cas">🕐 Na určitý čas (hodiny)</option></select>
@@ -2305,21 +2357,21 @@ window.onload=function(){
   </div>
 
   <div id="routeSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Trasa dňa</h2>
     <div class="form-grid"><input type="date" id="rtDate" onchange="renderRoute()"><select id="rtTech" onchange="renderRoute()"></select></div>
     <div id="rtList"></div>
   </div>
 
   <div id="dueSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Servisné termíny</h2>
     <p style="color:#64748b;font-size:.9rem;margin-top:0">Záručné servisy v najbližších 30 dňoch (a týždeň po termíne).</p>
     <div id="dueList"></div>
   </div>
 
   <div id="adminSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Správa aplikácie</h2>
     <div class="ms-choice">
       <button class="action-btn" style="padding:16px" onclick="admShow('firma')">🏢 Firma</button>
@@ -2332,7 +2384,7 @@ window.onload=function(){
   </div>
 
   <div id="calendarSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Kalendár udalostí</h2>
     <div class="cal-nav" style="margin-bottom:6px"><button id="calBtnM" onclick="setCalMode('month')">Mesiac</button><button id="calBtnW" onclick="setCalMode('week')">Týždeň</button><select id="calTech" onchange="renderCalendar()" style="flex:1;min-width:0"></select></div>
     <div class="cal-nav"><button onclick="changeMonth(-1)">◀</button><span class="cal-title" id="calTitle"></span><button onclick="goToday()">Dnes</button><button onclick="changeMonth(1)">▶</button></div>
@@ -2343,7 +2395,7 @@ window.onload=function(){
   </div>
 
   <div id="teamSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Správa tímu</h2>
     <input type="hidden" id="editingMemberId" value="">
     <div class="form-grid admin-only"><input type="text" id="tName" placeholder="Meno a priezvisko člena"><input type="text" id="tTel" placeholder="Telefón"><select id="tRola" class="full-width-input"><option value="Technik">Rola: Technik</option><option value="Správca">Rola: Správca</option></select><input type="password" id="tHeslo" class="full-width-input" placeholder="Heslo správcu (pri úprave nechajte prázdne = bez zmeny)" autocomplete="new-password"></div>
@@ -2353,7 +2405,7 @@ window.onload=function(){
   </div>
 
   <div id="montazSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Montáž / Servis</h2>
     <div id="msChoice" class="ms-choice">
       <button class="action-btn" onclick="newMontaz()">🔧 Montáž</button>
@@ -2451,7 +2503,7 @@ window.onload=function(){
   </div>
 
   <div id="obhliadkaSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Obhliadky</h2>
     <p style="color:#64748b;font-size:.9rem;margin-top:0">Obhliadka je pre potenciálneho klienta. Keď klient potvrdí montáž, preklopíš ho na kartu klienta.</p>
     <input type="hidden" id="editingObhliadkaId" value="">
@@ -2477,7 +2529,7 @@ window.onload=function(){
   </div>
 
   <div id="spravySection" class="section-content">
-    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Správy pre tím</h2>
     <div class="form-grid">
       <select id="sFrom" class="full-width-input"></select>
