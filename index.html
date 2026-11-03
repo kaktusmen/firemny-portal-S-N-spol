@@ -210,6 +210,9 @@ html[data-theme=dark] #updBar{color:#111}
 #lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:12px}
 #lightbox img{max-width:100%;max-height:100%;border-radius:8px}
 /* --- iOS navigácia --- */
+.fl{display:block;font-size:.8rem;font-weight:500;color:#8e8e93;margin:0}
+.fl input{display:block;width:100%;margin-top:4px;min-height:44px}
+.full-width-input.fl{grid-column:1/-1}
 .container{padding-bottom:calc(86px + env(safe-area-inset-bottom))}
 .menu-list{display:block;background:#fff;border-radius:16px;overflow:hidden;margin-top:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05)}
 .menu-list .menu-card{min-height:0;height:auto;display:flex;align-items:center;justify-content:space-between;text-align:left;border-radius:0;box-shadow:none;background:transparent;padding:15px 16px;font-weight:500;border-bottom:.5px solid var(--sep)}
@@ -609,6 +612,7 @@ function showMS(v){
   var map={choice:'msChoice',montaz:'msMontaz',servis:'msServis',clean:'msClean',repair:'msRepair'};
   Object.keys(map).forEach(function(k){$(map[k]).style.display='none'});
   $(map[v]).style.display=(v==='choice'?'grid':'block');
+  var ob=document.querySelector('#montazSection > .back-btn');if(ob)ob.style.display=(v==='choice'?'':'none');
 }
 function newMontaz(){clearMontaz();showMS('montaz')}
 function newServis(p){clearServis(p);showMS(p==='cl'?'clean':'repair')}
@@ -1011,11 +1015,11 @@ function deviceBlock(d,i,total){
     '<select id="dSys'+i+'" data-iny onchange="devRefresh()"><option value="">-- Split / Multisplit --</option><option>Split</option><option>Multisplit</option></select>'+
     '<input type="text" id="dZn'+i+'" value="'+esc(d.znacka||'')+'" placeholder="Značka a model (napr. Daikin Perfera)">'+
     ind.map(function(v,j){
-      return '<div class="dev-row"><input type="text" class="dIndT" data-d="'+i+'" value="'+esc((d.vnutorneTyp||[])[j]||'')+'" placeholder="Typové označenie vnútornej'+(multi?' '+(j+1):'')+'"><input type="text" class="dInd" data-d="'+i+'" value="'+esc(v)+'" placeholder="S/N vnútornej'+(multi?' '+(j+1):'')+'">'+
+      return '<div class="dev-row"><input type="text" class="dIndT" data-d="'+i+'" value="'+esc((d.vnutorneTyp||[])[j]||'')+'" placeholder="Typ vnútornej'+(multi?' '+(j+1):'')+'"><input type="text" class="dInd" data-d="'+i+'" value="'+esc(v)+'" placeholder="S/N vnútornej'+(multi?' '+(j+1):'')+'">'+
         (multi&&ind.length>1?'<button type="button" class="dev-x" onclick="removeInd('+i+','+j+')">×</button>':'')+'</div>';
     }).join('')+
     (multi?'<button type="button" onclick="addInd('+i+')" style="margin-bottom:8px">➕ Pridať vnútornú jednotku</button>':'')+
-    '<div class="dev-row"><input type="text" id="dOutT'+i+'" value="'+esc(d.vonkajsiaTyp||'')+'" placeholder="Typové označenie vonkajšej"><input type="text" id="dOut'+i+'" value="'+esc(d.vonkajsia||'')+'" placeholder="S/N vonkajšej"></div>'+
+    '<div class="dev-row"><input type="text" id="dOutT'+i+'" value="'+esc(d.vonkajsiaTyp||'')+'" placeholder="Typ vonkajšej"><input type="text" id="dOut'+i+'" value="'+esc(d.vonkajsia||'')+'" placeholder="S/N vonkajšej"></div>'+
     '<select id="dZar'+i+'" data-iny data-iny-ph="Počet rokov (číslo)"><option value="">-- Záruka v rokoch --</option><option value="1">1 rok</option><option value="2">2 roky</option><option value="3">3 roky</option><option value="5">5 rokov</option></select></div>';
 }
 function readDevices(){
@@ -1783,7 +1787,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.16';
+var APP_VERSION='2026-11-03.17';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2359,7 +2363,7 @@ window.onload=function(){
   <div id="routeSection" class="section-content">
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Trasa dňa</h2>
-    <div class="form-grid"><input type="date" id="rtDate" onchange="renderRoute()"><select id="rtTech" onchange="renderRoute()"></select></div>
+    <div class="form-grid"><label class="fl">Dátum<input type="date" id="rtDate" onchange="renderRoute()"></label><select id="rtTech" onchange="renderRoute()"></select></div>
     <div id="rtList"></div>
   </div>
 
@@ -2417,8 +2421,8 @@ window.onload=function(){
     <div class="form-grid">
       <input type="text" id="mTitle" placeholder="Názov montáže (napr. značka a model)" class="full-width-input">
       <select id="mClient" class="full-width-input"></select>
-      <input type="date" id="mDate" title="Dátum montáže">
-      <input type="time" id="mTime" title="Čas montáže">
+      <label class="fl">Dátum montáže<input type="date" id="mDate"></label>
+      <label class="fl">Čas<input type="time" id="mTime"></label>
       <div id="mDevices" class="full-width-input"></div>
       <button type="button" class="full-width-input" onclick="addDevice()">➕ Pridať ďalšie zariadenie</button>
       <select id="mMember"></select>
@@ -2455,8 +2459,8 @@ window.onload=function(){
     </div>
     <div id="clTeamChips" class="chips"></div>
     <div class="form-grid">
-      <input type="date" id="clDate" title="Dátum">
-      <input type="time" id="clTime" title="Čas">
+      <label class="fl">Dátum<input type="date" id="clDate"></label>
+      <label class="fl">Čas<input type="time" id="clTime"></label>
     </div>
     <button class="action-btn" id="clSaveBtn" onclick="saveServis('cl')">Uložiť čistenie</button>
     <button class="back-btn" id="clCancelBtn" style="display:none" onclick="clearServis('cl');showMS('choice')">✖ Zrušiť úpravu</button>
@@ -2492,8 +2496,8 @@ window.onload=function(){
     </div>
     <div id="rpTeamChips" class="chips"></div>
     <div class="form-grid">
-      <input type="date" id="rpDate" title="Dátum">
-      <input type="time" id="rpTime" title="Čas">
+      <label class="fl">Dátum<input type="date" id="rpDate"></label>
+      <label class="fl">Čas<input type="time" id="rpTime"></label>
     </div>
     <button class="action-btn" id="rpSaveBtn" onclick="saveServis('rp')">Uložiť opravu</button>
     <button class="back-btn" id="rpCancelBtn" style="display:none" onclick="clearServis('rp');showMS('choice')">✖ Zrušiť úpravu</button>
@@ -2514,7 +2518,7 @@ window.onload=function(){
       <input type="email" id="oEmail" placeholder="E-mail">
       <input type="text" id="oObec" placeholder="Obec">
       <input type="text" id="oAdresa" placeholder="Adresa">
-      <input type="date" id="oDate" title="Dátum obhliadky" class="full-width-input">
+      <label class="fl full-width-input">Dátum obhliadky<input type="date" id="oDate"></label>
       <select id="oZariadenie" data-iny><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Multisplit</option><option>Tepelné čerpadlo</option></select>
       <select id="oBudova" data-iny><option value="">-- Typ budovy --</option><option>Dom</option><option>Byt</option></select>
       <select id="oStena" data-iny><option value="">-- Stena --</option><option>Betón</option><option>Tehla</option></select>
