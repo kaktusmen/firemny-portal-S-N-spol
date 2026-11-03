@@ -1038,8 +1038,13 @@ function renderDue(){
   var el=$('dueList'),t=$('dueTile');if(!el)return;
   var a=dueItems();
   if(t)t.textContent='🛠 Servisné termíny'+(a.length?' ('+a.length+')':'');
-  var f=firmaData();
-  el.innerHTML=a.map(function(x){
+  var f=firmaData(),tn=new Date(),tmr=ymd(new Date(tn.getFullYear(),tn.getMonth(),tn.getDate()+1));
+  var tm=dbData.montaze.filter(function(m){return m.date===tmr&&m.stav!=='Hotová'}).sort(function(x,y){return (x.time||'99').localeCompare(y.time||'99')});
+  var tmHtml='<h3>📅 Pripomienky na zajtra ('+esc(fmtD(tmr))+')</h3>'+(tm.map(function(m){
+    var ri=remGet(smsKey(m));
+    return '<div class="day-row" style="border-left-color:'+srvColor(m)+';cursor:default'+(ri?';opacity:.7':'')+'">'+(ri?'<small style="color:#15803d">✅ SMS poslaná '+esc(new Date(ri.ts).toLocaleString('sk-SK'))+(ri.by?' ('+esc(ri.by)+')':'')+'</small><br>':'')+'<b>'+(m.time?esc(m.time)+' · ':'')+esc(srvIcon(m)+(m.title||'Zákazka'))+'</b><span>'+esc(m.clientName||'')+(mAddr(m)?' · '+esc(mAddr(m)):'')+'</span><div class="modal-actions" style="margin-top:6px;flex-wrap:wrap">'+(smsBtn(m)||'<span class="td-none">bez telefónu</span>')+'</div></div>';
+  }).join('')||'<div class="td-none">Na zajtra nie sú žiadne zákazky.</div>')+'<h3>🛠 Záručné servisy</h3>';
+  el.innerHTML=tmHtml+(a.map(function(x){
     var sms='Dobrý deň, pripomíname Vám blížiaci sa záručný servis Vašej klimatizácie ('+fmtD(x.ds)+'). Dohodneme si termín? '+(f.nazov||'Úsporné klímy S&N');
     var tel=String(x.tel||'').replace(/\s+/g,''),rk=remKey(x),ri=remInfo(x);
     var mk='onclick="markRem(\''+rk+'\')"';
@@ -1047,7 +1052,7 @@ function renderDue(){
       '<div class="modal-actions" style="margin-top:6px;flex-wrap:wrap">'+(tel?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" '+mk+' href="tel:'+esc(tel)+'">📞 Zavolať</a><a class="btn-edit" style="background:#2563eb;text-decoration:none" '+mk+' href="sms:'+esc(tel)+'?&body='+encodeURIComponent(sms)+'">💬 SMS</a>':'<span class="td-none">bez telefónu</span>')+
       (ri?'<button class="btn-edit" style="background:#64748b" onclick="unmarkRem(\''+rk+'\')">↩ Zrušiť označenie</button>':'<button class="btn-edit" style="background:#0d9488" '+mk+'>✔ Označiť ako kontaktovaného</button>')+
       '<button class="btn-edit" style="background:#475569" onclick="showEvent(\''+(x.cid?'clients':'montaze')+'\',\''+esc(x.cid||x.mid)+'\')">Detail</button></div></div>';
-  }).join('')||'<div class="td-none">Žiadne servisy v najbližších 30 dňoch.</div>';
+  }).join('')||'<div class="td-none">Žiadne servisy v najbližších 30 dňoch.</div>');
 }
 var rtOrder={},rtInit=false;
 function mAddr(m){
@@ -1085,7 +1090,7 @@ function renderRoute(){
   el.innerHTML=(arr.length?'<p style="color:#64748b;font-size:.9rem">Poradie je podľa času, šípkami ▲▼ ho môžeš upraviť. Hotové zákazky sa nezobrazujú.</p>':'')+arr.map(function(m,i){
     var a=addrs[i],tel=m.telefon||((clientOfMontaz(m)||{}).telefon)||'';
     return '<div class="day-row" style="border-left-color:'+srvColor(m)+';cursor:default"><b>'+(i+1)+'. '+(m.time?esc(m.time)+' – ':'')+esc(srvIcon(m)+(m.title||'Zákazka'))+'</b><span>'+(m.clientName?'👤 '+esc(m.clientName)+' · ':'')+esc(a||'bez adresy')+'</span>'+
-      '<div class="modal-actions" style="margin-top:6px;flex-wrap:wrap">'+(a?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" target="_blank" rel="noopener" href="'+mapsDir([a])+'">🧭 Navigovať</a>':'')+(tel?'<a class="btn-edit" style="background:#2563eb;text-decoration:none" href="tel:'+esc(String(tel).replace(/\s+/g,''))+'">📞</a>':'')+
+      '<div class="modal-actions" style="margin-top:6px;flex-wrap:wrap">'+(a?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" target="_blank" rel="noopener" href="'+mapsDir([a])+'">🧭 Navigovať</a>':'')+(tel?'<a class="btn-edit" style="background:#2563eb;text-decoration:none" href="tel:'+esc(String(tel).replace(/\s+/g,''))+'">📞</a>':'')+smsBtn(m)+
       '<button class="btn-edit" style="background:#64748b" onclick="rtMove('+i+',-1)">▲</button><button class="btn-edit" style="background:#64748b" onclick="rtMove('+i+',1)">▼</button><button class="btn-edit" style="background:#475569" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">Detail</button></div></div>';
   }).join('')+(arr.length>1&&addrs.filter(Boolean).length>1?'<a class="action-btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="'+mapsDir(addrs)+'">🗺 Celá trasa v Google mapách</a>':'')||'<div class="td-none">Na tento deň nie sú žiadne otvorené zákazky.</div>';
 }
@@ -1136,6 +1141,26 @@ function showLeave(id){
     (own&&v.dovod?'<div class="modal-row"><strong>Dôvod:</strong> '+esc(v.dovod)+'</div>':'')+
     '<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModal').style.display='flex';
+}
+function smsKey(m){return 'k_sms_'+m.id+'_'+(m.date||'')}
+function remGet(k){var d=dbData.nastavenia.filter(function(y){return y.id==='pripomienky'})[0];return d&&d[k]}
+function smsText(m){
+  var f=firmaData(),t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1));
+  var day=m.date===d0?'dnes':(m.date===d1?'zajtra':'dňa '+fmtD(m.date));
+  var what=!m.kind?'montáž':(m.servisType==='Oprava'?'opravu':'čistenie');
+  var addr=mAddr(m);
+  return 'Dobrý deň, pripomíname Vám, že '+day+(m.time?' o '+m.time:'')+' prídeme na '+what+' klimatizácie'+(addr?' na adresu '+addr:'')+'.'+
+    (f.tel?' V prípade zmeny termínu nás kontaktujte na '+f.tel+'.':' V prípade zmeny termínu nás prosím kontaktujte.')+' '+(f.nazov||'Úsporné klímy S&N');
+}
+function smsTel(m){
+  var c=m.clientId?findById('clients',m.clientId):clientOfMontaz(m);
+  return String(m.telefon||(c&&c.telefon)||'').replace(/\s+/g,'');
+}
+function smsBtn(m){
+  if(!m||!m.date||m.stav==='Hotová')return '';
+  var tel=smsTel(m);if(!tel)return '';
+  var done=remGet(smsKey(m));
+  return '<a class="btn-edit" style="background:'+(done?'#64748b':'#2563eb')+';text-decoration:none" onclick="markRem(\''+smsKey(m)+'\')" href="sms:'+esc(tel)+'?&body='+encodeURIComponent(smsText(m))+'">'+(done?'✅ SMS poslaná – znova':'💬 SMS klientovi')+'</a>';
 }
 function remKey(x){return 'k_'+(x.cid||x.mid)+'_'+x.ds}
 function remInfo(x){var d=dbData.nastavenia.filter(function(y){return y.id==='pripomienky'})[0];return d&&d[remKey(x)]}
@@ -1477,15 +1502,15 @@ function stavButtons(o){
   var btns=st==='Hotová'?b('↩ Znovu otvoriť','Nová','#64748b'):
     (st==='Nová'?b('📅 Naplánovaná','Naplánovaná','#2563eb'):'')+(st!=='Prebieha'?b('▶ Prebieha (som na mieste)','Prebieha','#ca8a04'):'')+b('✔ Hotová','Hotová','#16a34a')+
     '<button class="btn-edit" style="background:#b91c1c" onclick="toggleUrgent(\''+id+'\')">'+(o.urgent?'Zrušiť urgentné':'🚨 Urgentné')+'</button>';
-  return '<div class="modal-row"><strong>Stav:</strong> '+chip+'</div><div class="modal-actions" style="flex-wrap:wrap">'+btns+'</div>';
+  return '<div class="modal-row"><strong>Stav:</strong> '+chip+'</div><div class="modal-actions" style="flex-wrap:wrap">'+btns+smsBtn(o)+'</div>';
 }
 function listBtns(m){
   var id=esc(m.id),st=m.stav||'Nová';
   return (st==='Hotová'?'':(st!=='Prebieha'?'<button class="btn-edit" style="background:#ca8a04" onclick="setStav(\''+id+'\',\'Prebieha\')">▶ Prebieha</button>':'')+
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
-    '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>';
+    '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.2';
+var APP_VERSION='2026-11-03.3';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
