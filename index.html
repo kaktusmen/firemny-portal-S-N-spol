@@ -615,7 +615,7 @@ function editMontaz(id){
   var cid=m.clientId||'';
   if(!cid&&m.clientName){var f=dbData.clients.filter(function(x){return nm(x).toLowerCase()===m.clientName.toLowerCase()})[0];if(f)cid=f.id}
   $('mClient').value=cid;
-  renderDevices(devicesOf(m).map(function(d){return {typ:d.typ||'',znacka:d.znacka||'',typove:d.typove||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vonkajsia:d.vonkajsia||'',zarukaRoky:d.zarukaRoky||''}}));
+  renderDevices(devicesOf(m).map(function(d){return {typ:d.typ||'',znacka:d.znacka||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vnutorneTyp:(d.vnutorne&&d.vnutorne.length)?(d.vnutorneTyp||[]).concat(d.vnutorne.map(function(){return ''})).slice(0,d.vnutorne.length):[d.typove||''],vonkajsia:d.vonkajsia||'',vonkajsiaTyp:d.vonkajsiaTyp||'',zarukaRoky:d.zarukaRoky||''}}));
   mTeam=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});
   $('mMember').value='';renderMontazChips();
   showMS('montaz');
@@ -629,8 +629,8 @@ function saveMontaz(){
   if(!leaveConflict(mTeam,$('mDate').value))return;
   var eid=$('editingMontazId').value||null;
   var cid=$('mClient').value,cl=dbData.clients.filter(function(x){return x.id===cid})[0];
-  var devs=readDevices().map(function(d){return {typ:d.typ,znacka:d.znacka,typove:d.typove,system:d.system,vnutorne:d.vnutorne.filter(Boolean),vonkajsia:d.vonkajsia,zarukaRoky:d.zarukaRoky}})
-    .filter(function(d){return d.typ||d.znacka||d.typove||d.system||d.vnutorne.length||d.vonkajsia||d.zarukaRoky});
+  var devs=readDevices().map(function(d){var il=indList(d);return {typ:d.typ,znacka:d.znacka,system:d.system,vnutorne:il.map(function(x){return x.sn}),vnutorneTyp:il.map(function(x){return x.tp}),vonkajsia:d.vonkajsia,vonkajsiaTyp:d.vonkajsiaTyp,zarukaRoky:d.zarukaRoky}})
+    .filter(function(d){return d.typ||d.znacka||d.system||d.vnutorne.length||d.vonkajsia||d.vonkajsiaTyp||d.zarukaRoky});
   put('montaze',{title:t,clientId:cid||'',clientName:cl?nm(cl):'',date:$('mDate').value,time:$('mTime').value,
     zariadenia:devs,typ:'',system:'',vnutorne:[],vonkajsia:'',zarukaRoky:'',
     memberIds:mTeam.map(function(x){return x.id}),memberNames:mTeam.map(function(x){return x.name})},eid);
@@ -813,10 +813,10 @@ function serviceItemsOn(ds){
 function deviceSummary(m){
   var a=devicesOf(m);
   return a.map(function(d,i){
-    var p=[],t=[d.typ,d.system].filter(Boolean).join(' – ');if(t)p.push(t);if(d.znacka)p.push(d.znacka);if(d.typove)p.push('typ '+d.typove);
-    var ind=(d.vnutorne||[]).filter(Boolean);
-    if(ind.length)p.push('vnútorné S/N: '+ind.join(', '));
-    if(d.vonkajsia)p.push('vonkajšia S/N: '+d.vonkajsia);
+    var p=[],t=[d.typ,d.system].filter(Boolean).join(' – ');if(t)p.push(t);if(d.znacka)p.push(d.znacka);
+    var ind=indList(d).map(function(x){return unitStr(x.sn,x.tp)});
+    if(ind.length)p.push('vnútorné: '+ind.join(', '));
+    if(d.vonkajsia||d.vonkajsiaTyp)p.push('vonkajšia: '+unitStr(d.vonkajsia,d.vonkajsiaTyp));
     if(d.zarukaRoky)p.push('záruka '+d.zarukaRoky+' r.');
     return (a.length>1?'Zariadenie '+(i+1)+': ':'')+p.join(' · ');
   }).filter(Boolean).join(' | ');
@@ -825,11 +825,11 @@ function deviceRows(m){
   var r=function(l,v){return v?'<div class="modal-row"><strong>'+l+':</strong> '+esc(v)+'</div>':''};
   var devs=devicesOf(m),out='';
   devs.forEach(function(d,i){
-    var ind=(d.vnutorne||[]).filter(Boolean),t=[d.typ,d.system].filter(Boolean).join(' – '),we=devEnd(m,d);
+    var ind=indList(d),t=[d.typ,d.system].filter(Boolean).join(' – '),we=devEnd(m,d);
     out+=(devs.length>1?'<div class="modal-row" style="border-top:1px solid #e2e8f0;padding-top:6px"><strong>Zariadenie '+(i+1)+'</strong></div>':'')+
-      r(devs.length>1?'Typ':'Zariadenie',t)+r('Značka / model',d.znacka)+r('Typové označenie',d.typove)+
-      (ind.length?'<div class="modal-row"><strong>Vnútorné jednotky (S/N):</strong><br>'+ind.map(function(x,j){return esc((ind.length>1?(j+1)+'. ':'')+x)}).join('<br>')+'</div>':'')+
-      r('Vonkajšia jednotka (S/N)',d.vonkajsia)+(we?r('Záruka',d.zarukaRoky+' r. – do '+fmtD(we)):'');
+      r(devs.length>1?'Typ':'Zariadenie',t)+r('Značka / model',d.znacka)+(d.typove?r('Typové označenie',d.typove):'')+
+      (ind.length?'<div class="modal-row"><strong>Vnútorné jednotky (typ / S/N):</strong><br>'+ind.map(function(x,j){return esc((ind.length>1?(j+1)+'. ':'')+(x.tp?'typ '+x.tp:'')+(x.tp&&x.sn?' · ':'')+(x.sn?'S/N '+x.sn:''))}).join('<br>')+'</div>':'')+
+      (d.vonkajsia||d.vonkajsiaTyp?'<div class="modal-row"><strong>Vonkajšia jednotka (typ / S/N):</strong> '+esc((d.vonkajsiaTyp?'typ '+d.vonkajsiaTyp:'')+(d.vonkajsiaTyp&&d.vonkajsia?' · ':'')+(d.vonkajsia?'S/N '+d.vonkajsia:''))+'</div>':'')+(we?r('Záruka',d.zarukaRoky+' r. – do '+fmtD(we)):'');
   });
   var sd=montazServiceDates(m);
   return out+(sd.length?r('🛠 Servisné termíny',sd.map(fmtD).join(', ')):'');
@@ -892,7 +892,13 @@ function eventRows(c){
         '<div class="ev-detail"'+(open?'':' style="display:none"')+'>'+eventDetail(e)+'</div>';
     }).join(''):'<div class="td-none">Zatiaľ žiadne udalosti.</div>')+plan.join('');
 }
-function emptyDev(){return {typ:'',znacka:'',typove:'',system:'',vnutorne:[''],vonkajsia:'',zarukaRoky:'',typove:''}}
+function indList(d){
+  var a=d.vnutorne||[],t=d.vnutorneTyp||[],n=Math.max(a.length,t.length),o=[];
+  for(var i=0;i<n;i++)if(a[i]||t[i])o.push({sn:a[i]||'',tp:t[i]||''});
+  return o;
+}
+function unitStr(sn,tp){return sn?(sn+(tp?' ('+tp+')':'')):(tp||'')}
+function emptyDev(){return {typ:'',znacka:'',system:'',vnutorne:[''],vnutorneTyp:[''],vonkajsia:'',vonkajsiaTyp:'',zarukaRoky:''}}
 function deviceBlock(d,i,total){
   var multi=norm(d.system||'').indexOf('multi')>-1;
   var ind=(d.vnutorne&&d.vnutorne.length)?d.vnutorne:[''];
@@ -901,21 +907,21 @@ function deviceBlock(d,i,total){
     '<select id="dTyp'+i+'" data-iny><option value="">-- Zariadenie --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option></select>'+
     '<select id="dSys'+i+'" data-iny onchange="devRefresh()"><option value="">-- Split / Multisplit --</option><option>Split</option><option>Multisplit</option></select>'+
     '<input type="text" id="dZn'+i+'" value="'+esc(d.znacka||'')+'" placeholder="Značka a model (napr. Daikin Perfera)">'+
-    '<input type="text" id="dTp'+i+'" value="'+esc(d.typove||'')+'" placeholder="Typové označenie (napr. FTXM25R / RXM25R)">'+
     ind.map(function(v,j){
-      return '<div class="dev-row"><input type="text" class="dInd" data-d="'+i+'" value="'+esc(v)+'" placeholder="S/N vnútornej jednotky'+(multi?' '+(j+1):'')+'">'+
+      return '<div class="dev-row"><input type="text" class="dIndT" data-d="'+i+'" value="'+esc((d.vnutorneTyp||[])[j]||'')+'" placeholder="Typové označenie vnútornej'+(multi?' '+(j+1):'')+'"><input type="text" class="dInd" data-d="'+i+'" value="'+esc(v)+'" placeholder="S/N vnútornej'+(multi?' '+(j+1):'')+'">'+
         (multi&&ind.length>1?'<button type="button" class="dev-x" onclick="removeInd('+i+','+j+')">×</button>':'')+'</div>';
     }).join('')+
     (multi?'<button type="button" onclick="addInd('+i+')" style="margin-bottom:8px">➕ Pridať vnútornú jednotku</button>':'')+
-    '<input type="text" id="dOut'+i+'" value="'+esc(d.vonkajsia||'')+'" placeholder="S/N vonkajšej jednotky">'+
+    '<div class="dev-row"><input type="text" id="dOutT'+i+'" value="'+esc(d.vonkajsiaTyp||'')+'" placeholder="Typové označenie vonkajšej"><input type="text" id="dOut'+i+'" value="'+esc(d.vonkajsia||'')+'" placeholder="S/N vonkajšej"></div>'+
     '<select id="dZar'+i+'" data-iny data-iny-ph="Počet rokov (číslo)"><option value="">-- Záruka v rokoch --</option><option value="1">1 rok</option><option value="2">2 roky</option><option value="3">3 roky</option><option value="5">5 rokov</option></select></div>';
 }
 function readDevices(){
   var out=[],i=0;
   while($('dTyp'+i)){
-    out.push({typ:gv('dTyp'+i),znacka:($('dZn'+i)?$('dZn'+i).value.trim():''),typove:($('dTp'+i)?$('dTp'+i).value.trim():''),system:gv('dSys'+i),
+    out.push({typ:gv('dTyp'+i),znacka:($('dZn'+i)?$('dZn'+i).value.trim():''),system:gv('dSys'+i),
       vnutorne:Array.prototype.map.call(document.querySelectorAll('#mDevices input.dInd[data-d="'+i+'"]'),function(x){return x.value.trim()}),
-      vonkajsia:$('dOut'+i).value.trim(),zarukaRoky:gv('dZar'+i)});
+      vnutorneTyp:Array.prototype.map.call(document.querySelectorAll('#mDevices input.dIndT[data-d="'+i+'"]'),function(x){return x.value.trim()}),
+      vonkajsia:$('dOut'+i).value.trim(),vonkajsiaTyp:$('dOutT'+i).value.trim(),zarukaRoky:gv('dZar'+i)});
     i++;
   }
   return out;
@@ -930,8 +936,8 @@ function renderDevices(list){
 function devRefresh(){renderDevices(readDevices())}
 function addDevice(){var L=readDevices();L.push(emptyDev());renderDevices(L)}
 function removeDevice(i){var L=readDevices();L.splice(i,1);renderDevices(L)}
-function addInd(i){var L=readDevices();L[i].vnutorne.push('');renderDevices(L)}
-function removeInd(i,j){var L=readDevices();L[i].vnutorne.splice(j,1);renderDevices(L)}
+function addInd(i){var L=readDevices();L[i].vnutorne.push('');L[i].vnutorneTyp.push('');renderDevices(L)}
+function removeInd(i,j){var L=readDevices();L[i].vnutorne.splice(j,1);L[i].vnutorneTyp.splice(j,1);renderDevices(L)}
 function pdfCss(){return 'body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{font-size:22px;margin:14px 0 4px}table{width:100%;border-collapse:collapse;margin-top:14px}td,th{border:1px solid #bbb;padding:7px;vertical-align:top;font-size:14px;text-align:left}.lh{display:flex;gap:16px;align-items:center;border-bottom:2px solid #0d9488;padding-bottom:10px}.lh img{height:64px}.lh div{font-size:13px;line-height:1.4}.tot td{font-weight:bold;background:#f3f4f6}@media print{.np{display:none}}'}
 function letterhead(){
   var f=firmaData();
@@ -1336,11 +1342,11 @@ function clientInfo(c){
     var dl=devicesOf(m);
     if(!dl.length&&m.title)devs.push('<b>'+esc(m.title)+'</b>'+(m.date?' <small>(montáž '+esc(fmtD(m.date))+')</small>':''));
     dl.forEach(function(d,i){
-      var t=[d.typ,d.system].filter(Boolean).join(' – '),ind=(d.vnutorne||[]).filter(Boolean),we=devEnd(m,d);
+      var t=[d.typ,d.system].filter(Boolean).join(' – '),ind=indList(d),we=devEnd(m,d);
       devs.push('<b>'+esc(t||'Zariadenie')+'</b>'+(m.date?' <small>(montáž '+esc(fmtD(m.date))+')</small>':'')+
         ((d.znacka||m.title)?'<br>Značka / model: '+esc(d.znacka||m.title):'')+(d.typove?'<br>Typové označenie: '+esc(d.typove):'')+
-        '<br>Výrobné číslo vnútornej jednotky: '+(ind.length?esc(ind.join(', ')):'-')+
-        '<br>Výrobné číslo vonkajšej jednotky: '+esc(d.vonkajsia||'-')+
+        (ind.length?ind.map(function(x,j){return '<br>Vnútorná jednotka'+(ind.length>1?' '+(j+1):'')+': typ '+esc(x.tp||'-')+' · výrobné číslo '+esc(x.sn||'-')}).join(''):'<br>Vnútorná jednotka: -')+
+        '<br>Vonkajšia jednotka: typ '+esc(d.vonkajsiaTyp||'-')+' · výrobné číslo '+esc(d.vonkajsia||'-')+
         (we?'<br>Záruka do: '+esc(fmtD(we)):''));
     });
   });
@@ -1455,12 +1461,12 @@ function protocolRows(m){
     var devs=devicesOf(m);
     devs.forEach(function(d,i){
       var sfx=devs.length>1?' '+(i+1):'',we=devEnd(m,d);
-      var ind=(d.vnutorne||[]).filter(Boolean).map(function(x,j,a){return (a.length>1?(j+1)+'. ':'')+x}).join('\n');
+      var ind=indList(d).map(function(x,j,a){return (a.length>1?(j+1)+'. ':'')+(x.tp?'typ '+x.tp:'')+(x.tp&&x.sn?' · ':'')+(x.sn?'S/N '+x.sn:'')}).join('\n');
       devRows.push(['Zariadenie'+sfx,[d.typ,d.system].filter(Boolean).join(' – ')]);
       devRows.push(['Značka / model'+sfx,d.znacka]);
       devRows.push(['Typové označenie'+sfx,d.typove]);
-      devRows.push(['Vnútorné jednotky (S/N)'+sfx,ind]);
-      devRows.push(['Vonkajšia jednotka (S/N)'+sfx,d.vonkajsia]);
+      devRows.push(['Vnútorné jednotky (typ / S/N)'+sfx,ind]);
+      devRows.push(['Vonkajšia jednotka (typ / S/N)'+sfx,(d.vonkajsiaTyp?'typ '+d.vonkajsiaTyp:'')+(d.vonkajsiaTyp&&d.vonkajsia?' · ':'')+(d.vonkajsia?'S/N '+d.vonkajsia:'')]);
       devRows.push(['Záruka'+sfx,we?d.zarukaRoky+' r. – do '+fmtD(we):'']);
     });
   }else{
@@ -1568,7 +1574,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.7';
+var APP_VERSION='2026-11-03.8';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
