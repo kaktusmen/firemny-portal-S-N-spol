@@ -615,7 +615,7 @@ function editMontaz(id){
   var cid=m.clientId||'';
   if(!cid&&m.clientName){var f=dbData.clients.filter(function(x){return nm(x).toLowerCase()===m.clientName.toLowerCase()})[0];if(f)cid=f.id}
   $('mClient').value=cid;
-  renderDevices(devicesOf(m).map(function(d){return {typ:d.typ||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vonkajsia:d.vonkajsia||'',zarukaRoky:d.zarukaRoky||''}}));
+  renderDevices(devicesOf(m).map(function(d){return {typ:d.typ||'',znacka:d.znacka||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vonkajsia:d.vonkajsia||'',zarukaRoky:d.zarukaRoky||''}}));
   mTeam=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});
   $('mMember').value='';renderMontazChips();
   showMS('montaz');
@@ -629,8 +629,8 @@ function saveMontaz(){
   if(!leaveConflict(mTeam,$('mDate').value))return;
   var eid=$('editingMontazId').value||null;
   var cid=$('mClient').value,cl=dbData.clients.filter(function(x){return x.id===cid})[0];
-  var devs=readDevices().map(function(d){return {typ:d.typ,system:d.system,vnutorne:d.vnutorne.filter(Boolean),vonkajsia:d.vonkajsia,zarukaRoky:d.zarukaRoky}})
-    .filter(function(d){return d.typ||d.system||d.vnutorne.length||d.vonkajsia||d.zarukaRoky});
+  var devs=readDevices().map(function(d){return {typ:d.typ,znacka:d.znacka,system:d.system,vnutorne:d.vnutorne.filter(Boolean),vonkajsia:d.vonkajsia,zarukaRoky:d.zarukaRoky}})
+    .filter(function(d){return d.typ||d.znacka||d.system||d.vnutorne.length||d.vonkajsia||d.zarukaRoky});
   put('montaze',{title:t,clientId:cid||'',clientName:cl?nm(cl):'',date:$('mDate').value,time:$('mTime').value,
     zariadenia:devs,typ:'',system:'',vnutorne:[],vonkajsia:'',zarukaRoky:'',
     memberIds:mTeam.map(function(x){return x.id}),memberNames:mTeam.map(function(x){return x.name})},eid);
@@ -813,7 +813,7 @@ function serviceItemsOn(ds){
 function deviceSummary(m){
   var a=devicesOf(m);
   return a.map(function(d,i){
-    var p=[],t=[d.typ,d.system].filter(Boolean).join(' – ');if(t)p.push(t);
+    var p=[],t=[d.typ,d.system].filter(Boolean).join(' – ');if(t)p.push(t);if(d.znacka)p.push(d.znacka);
     var ind=(d.vnutorne||[]).filter(Boolean);
     if(ind.length)p.push('vnútorné S/N: '+ind.join(', '));
     if(d.vonkajsia)p.push('vonkajšia S/N: '+d.vonkajsia);
@@ -827,7 +827,7 @@ function deviceRows(m){
   devs.forEach(function(d,i){
     var ind=(d.vnutorne||[]).filter(Boolean),t=[d.typ,d.system].filter(Boolean).join(' – '),we=devEnd(m,d);
     out+=(devs.length>1?'<div class="modal-row" style="border-top:1px solid #e2e8f0;padding-top:6px"><strong>Zariadenie '+(i+1)+'</strong></div>':'')+
-      r(devs.length>1?'Typ':'Zariadenie',t)+
+      r(devs.length>1?'Typ':'Zariadenie',t)+r('Značka / model',d.znacka)+
       (ind.length?'<div class="modal-row"><strong>Vnútorné jednotky (S/N):</strong><br>'+ind.map(function(x,j){return esc((ind.length>1?(j+1)+'. ':'')+x)}).join('<br>')+'</div>':'')+
       r('Vonkajšia jednotka (S/N)',d.vonkajsia)+(we?r('Záruka',d.zarukaRoky+' r. – do '+fmtD(we)):'');
   });
@@ -892,7 +892,7 @@ function eventRows(c){
         '<div class="ev-detail"'+(open?'':' style="display:none"')+'>'+eventDetail(e)+'</div>';
     }).join(''):'<div class="td-none">Zatiaľ žiadne udalosti.</div>')+plan.join('');
 }
-function emptyDev(){return {typ:'',system:'',vnutorne:[''],vonkajsia:'',zarukaRoky:''}}
+function emptyDev(){return {typ:'',znacka:'',system:'',vnutorne:[''],vonkajsia:'',zarukaRoky:''}}
 function deviceBlock(d,i,total){
   var multi=norm(d.system||'').indexOf('multi')>-1;
   var ind=(d.vnutorne&&d.vnutorne.length)?d.vnutorne:[''];
@@ -900,6 +900,7 @@ function deviceBlock(d,i,total){
   return '<div class="dev-box"><div class="dev-h"><b>Zariadenie '+(i+1)+'</b>'+(total>1?'<button type="button" class="dev-x" onclick="removeDevice('+i+')">× Odstrániť</button>':'')+'</div>'+
     '<select id="dTyp'+i+'" data-iny><option value="">-- Zariadenie --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option></select>'+
     '<select id="dSys'+i+'" data-iny onchange="devRefresh()"><option value="">-- Split / Multisplit --</option><option>Split</option><option>Multisplit</option></select>'+
+    '<input type="text" id="dZn'+i+'" value="'+esc(d.znacka||'')+'" placeholder="Značka a model (napr. Daikin Perfera)">'+
     ind.map(function(v,j){
       return '<div class="dev-row"><input type="text" class="dInd" data-d="'+i+'" value="'+esc(v)+'" placeholder="S/N vnútornej jednotky'+(multi?' '+(j+1):'')+'">'+
         (multi&&ind.length>1?'<button type="button" class="dev-x" onclick="removeInd('+i+','+j+')">×</button>':'')+'</div>';
@@ -911,7 +912,7 @@ function deviceBlock(d,i,total){
 function readDevices(){
   var out=[],i=0;
   while($('dTyp'+i)){
-    out.push({typ:gv('dTyp'+i),system:gv('dSys'+i),
+    out.push({typ:gv('dTyp'+i),znacka:($('dZn'+i)?$('dZn'+i).value.trim():''),system:gv('dSys'+i),
       vnutorne:Array.prototype.map.call(document.querySelectorAll('#mDevices input.dInd[data-d="'+i+'"]'),function(x){return x.value.trim()}),
       vonkajsia:$('dOut'+i).value.trim(),zarukaRoky:gv('dZar'+i)});
     i++;
@@ -1336,7 +1337,7 @@ function clientInfo(c){
     dl.forEach(function(d,i){
       var t=[d.typ,d.system].filter(Boolean).join(' – '),ind=(d.vnutorne||[]).filter(Boolean),we=devEnd(m,d);
       devs.push('<b>'+esc(t||'Zariadenie')+'</b>'+(m.date?' <small>(montáž '+esc(fmtD(m.date))+')</small>':'')+
-        (m.title?'<br>Značka / model: '+esc(m.title):'')+
+        ((d.znacka||m.title)?'<br>Značka / model: '+esc(d.znacka||m.title):'')+
         '<br>Výrobné číslo vnútornej jednotky: '+(ind.length?esc(ind.join(', ')):'-')+
         '<br>Výrobné číslo vonkajšej jednotky: '+esc(d.vonkajsia||'-')+
         (we?'<br>Záruka do: '+esc(fmtD(we)):''));
@@ -1455,6 +1456,7 @@ function protocolRows(m){
       var sfx=devs.length>1?' '+(i+1):'',we=devEnd(m,d);
       var ind=(d.vnutorne||[]).filter(Boolean).map(function(x,j,a){return (a.length>1?(j+1)+'. ':'')+x}).join('\n');
       devRows.push(['Zariadenie'+sfx,[d.typ,d.system].filter(Boolean).join(' – ')]);
+      devRows.push(['Značka / model'+sfx,d.znacka]);
       devRows.push(['Vnútorné jednotky (S/N)'+sfx,ind]);
       devRows.push(['Vonkajšia jednotka (S/N)'+sfx,d.vonkajsia]);
       devRows.push(['Záruka'+sfx,we?d.zarukaRoky+' r. – do '+fmtD(we):'']);
@@ -1564,7 +1566,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.5';
+var APP_VERSION='2026-11-03.6';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
