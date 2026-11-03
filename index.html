@@ -1798,7 +1798,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.20';
+var APP_VERSION='2026-11-03.21';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -1935,11 +1935,24 @@ function showMsg(id){
   $('eventModal').style.display='flex';
   markReadMsg(id);
 }
+function leaveBlock(d0){
+  var arr=dbData.volno.filter(function(v){
+    if(v.stav==='Zamietnuté'||(v.do||v.od)<d0)return false;
+    return isAdmin()||v.memberId===me;
+  }).sort(function(a,b){return (a.od||'').localeCompare(b.od||'')||(a.casOd||'').localeCompare(b.casOd||'')});
+  if(!arr.length)return '';
+  return '<div class="td-h">🏖 Voľno tímu</div>'+arr.map(function(v){
+    var now=v.od<=d0,ok=v.stav==='Schválené';
+    return dayRow({type:'volno',id:v.id,color:ok?'#0891b2':'#67b7c9',text:(ok?'':'⏳ ')+(v.memberName||''),
+      sub:volnoWhen(v)+(now?' · práve ide':' · plánované')+(ok?'':' · čaká na schválenie'),time:''});
+  }).join('');
+}
 function renderToday(){
   var el=$('todayBox');if(!el)return;
   var t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1));
-  el.innerHTML=renderHomeMsgs()+[['Dnes',d0],['Zajtra',d1]].map(function(x){
+  el.innerHTML=renderHomeMsgs()+leaveBlock(d0)+[['Dnes',d0],['Zajtra',d1]].map(function(x){
     var ev=dayEvents(x[1]).filter(function(e){
+      if(e.type==='volno')return false;
       if(e.type==='montaze'){var q=findById('montaze',e.id);if(q&&q.stav==='Hotová')return false}
       if(isAdmin())return true;
       var o=findById(e.type,e.id);
