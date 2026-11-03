@@ -210,6 +210,8 @@ html[data-theme=dark] #updBar{color:#111}
 #lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:12px}
 #lightbox img{max-width:100%;max-height:100%;border-radius:8px}
 /* --- iOS navigácia --- */
+#leaveBanner{background:#ff9500;color:#fff;border-radius:16px;padding:13px 16px;margin:0 0 12px;font-size:.95rem;cursor:pointer;box-shadow:0 4px 14px rgba(255,149,0,.3)}
+#tabBadge{position:absolute;top:0;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:#ff3b30;color:#fff;font-style:normal;font-size:.7rem;font-weight:700;line-height:18px;text-align:center;padding:0 5px}
 .fl{display:block;font-size:.8rem;font-weight:500;color:#8e8e93;margin:0}
 .fl input{display:block;width:100%;margin-top:4px;min-height:44px}
 .full-width-input.fl{grid-column:1/-1}
@@ -426,7 +428,7 @@ function importData(ev){
 var scr='home',navBack='';
 function hideAll(){
   document.querySelectorAll('.section-content').forEach(function(x){x.style.display='none'});
-  ['mainMenu','todayBox','homeQuick','workMenu'].forEach(function(i){$(i).style.display='none'});
+  ['mainMenu','todayBox','homeQuick','workMenu','leaveBanner'].forEach(function(i){$(i).style.display='none'});
 }
 function setTab(t){
   document.querySelectorAll('#tabBar button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
@@ -447,9 +449,9 @@ function openSection(id,title,from){
   if(id==='montazSection')showMS('choice');
   window.scrollTo(0,0);
 }
-function showHome(){scr='home';navBack='';hideAll();$('todayBox').style.display='block';$('homeQuick').style.display='grid';$('pageTitle').innerText='Dnes';$('pageSub').style.display='none';$('statusBar').style.display='';setTab('home');window.scrollTo(0,0)}
+function showHome(){scr='home';navBack='';hideAll();updLeaveUi();$('todayBox').style.display='block';$('homeQuick').style.display='grid';$('pageTitle').innerText='Dnes';$('pageSub').style.display='none';$('statusBar').style.display='';setTab('home');window.scrollTo(0,0)}
 function showWork(){scr='work';navBack='';hideAll();$('workMenu').style.display='block';$('pageTitle').innerText='Práca';$('pageSub').style.display='none';$('statusBar').style.display='none';setTab('work');window.scrollTo(0,0)}
-function showMore(){scr='more';navBack='';hideAll();$('mainMenu').style.display='block';$('pageTitle').innerText='Viac';$('pageSub').style.display='none';$('statusBar').style.display='';setTab('more');window.scrollTo(0,0)}
+function showMore(){scr='more';navBack='';hideAll();$('mainMenu').style.display='block';$('pageTitle').innerText='Viac';$('pageSub').style.display='none';$('statusBar').style.display='none';setTab('more');window.scrollTo(0,0)}
 function goTab(t){
   if(t==='home')showHome();
   else if(t==='work')showWork();
@@ -500,7 +502,7 @@ var V={
       'editChladivo',true)}],
   volno:['volnoList','Žiadne záznamy o voľne.',function(a,b){var pa=a.stav==='Žiadosť'?0:1,pb=b.stav==='Žiadosť'?0:1;return pa-pb||(b.od||'').localeCompare(a.od||'')},function(v){
     var ic=v.stav==='Schválené'?'✅':(v.stav==='Zamietnuté'?'❌':'⏳');
-    var ex=(isAdmin()&&v.stav==='Žiadosť')?'<button class="btn-edit" style="background:#16a34a" onclick="volnoSet(\''+esc(v.id)+'\',\'Schválené\')">✔ Schváliť</button><button class="btn-edit" style="background:#b91c1c" onclick="volnoSet(\''+esc(v.id)+'\',\'Zamietnuté\')">✖ Zamietnuť</button>':'';
+    var ex=(isAdmin()&&v.stav==='Žiadosť'&&v.memberId!==me)?'<button class="btn-edit" style="background:#16a34a" onclick="volnoSet(\''+esc(v.id)+'\',\'Schválené\')">✔ Schváliť</button><button class="btn-edit" style="background:#b91c1c" onclick="volnoSet(\''+esc(v.id)+'\',\'Zamietnuté\')">✖ Zamietnuť</button>':'';
     return card('volno',v,'🏖 '+esc(v.memberName||'')+' – '+esc(volnoWhen(v))+' ['+ic+' '+esc(v.stav||'')+']',
       '<strong>Dôvod:</strong> '+esc(v.dovod||'-')+(v.rozhodol?'\n<small style="color:#64748b">Rozhodol: '+esc(v.rozhodol)+'</small>':''),false,false,ex)}],
   spravy:['spravyList','Žiadne správy.',function(a,b){return (b.ts||0)-(a.ts||0)},function(s){
@@ -1290,13 +1292,21 @@ function leaveConflict(team,ds,time){
 function leaveOn(ds){
   return dbData.volno.filter(function(v){return v.stav!=='Zamietnuté'&&v.od<=ds&&(v.do||v.od)>=ds});
 }
+function updLeaveUi(){
+  var n=isAdmin()?dbData.volno.filter(function(x){return x.stav==='Žiadosť'}).length:0;
+  var b=$('tabBadge');if(b){b.textContent=n;b.style.display=n?'':'none'}
+  var bn=$('leaveBanner');if(!bn)return;
+  bn.innerHTML=n?'🏖 <b>'+n+(n===1?' žiadosť':(n<5?' žiadosti':' žiadostí'))+' o voľno čaká na schválenie</b> ›':'';
+  bn.style.display=(n&&scr==='home')?'block':'none';
+}
 function fillVolno(){
   var s=$('vMember');if(!s)return;
   var adm=isAdmin(),v=s.value;
   if(adm){s.innerHTML='<option value="">-- Pre koho --</option>'+dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');s.value=v;s.style.display=''}
   else{s.style.display='none';s.innerHTML=''}
-  $('vBtn').textContent=adm?'Pridať voľno (schválené)':'Požiadať o voľno';
-  $('vInfo').textContent=adm?'Voľno môžeš určiť ručne, alebo schváliť / zamietnuť žiadosti technikov.':(me?'Pošli žiadosť o voľno, správca ju schváli alebo zamietne.':'Najprv vyber svoje meno na úvodnej stránke.');
+  $('vBtn').textContent=adm?'Pridať voľno':'Požiadať o voľno';
+  $('vInfo').textContent=adm?'Voľno pre iných môžeš určiť ručne (platí hneď) a žiadosti schvaľuješ / zamietaš. Svoje vlastné voľno musí schváliť iný správca.':(me?'Pošli žiadosť o voľno, správca ju schváli alebo zamietne.':'Najprv vyber svoje meno na úvodnej stránke.');
+  updLeaveUi();
   var t=$('volnoTile');
   if(t){var n=adm?dbData.volno.filter(function(x){return x.stav==='Žiadosť'}).length:0;t.textContent='🏖 Voľno'+(n?' ('+n+' čaká)':'')}
 }
@@ -1314,13 +1324,14 @@ function saveVolno(){
     if(!od){toast('Zadaj dátum');return}
     if(dd<od){toast('Koniec nesmie byť pred začiatkom');return}
   }
-  var me2=me?findById('members',me):null;
-  put('volno',{memberId:mid,memberName:m.name||'',od:od,do:dd,casOd:co,casDo:cd,dovod:$('vDovod').value.trim(),stav:adm?'Schválené':'Žiadosť',ts:Date.now(),rozhodol:adm&&me2?me2.name:''},null);
+  var me2=me?findById('members',me):null,auto=adm&&mid!==me;
+  put('volno',{memberId:mid,memberName:m.name||'',od:od,do:dd,casOd:co,casDo:cd,dovod:$('vDovod').value.trim(),stav:auto?'Schválené':'Žiadosť',ts:Date.now(),rozhodol:auto&&me2?me2.name:''},null);
   $('vOd').value='';$('vDo').value='';$('vOdT').value='';$('vCasOd').value='';$('vCasDo').value='';$('vDovod').value='';
-  toast(adm?'Voľno pridané':'Žiadosť odoslaná');
+  toast(auto?'Voľno pridané':(adm?'Žiadosť odoslaná, musí ju schváliť iný správca':'Žiadosť odoslaná'));
 }
 function volnoSet(id,st){
   var v=findById('volno',id);if(!v)return;
+  if(v.memberId===me){toast('Vlastné voľno musí schváliť iný správca');return}
   var me2=me?findById('members',me):null,u={stav:st,rozhodol:me2?me2.name:''};
   col('volno').doc(id).update(u).catch(function(){toast('Nepodarilo sa uložiť')});
   logAct(st==='Schválené'?'schválil voľno':'zamietol voľno','volno',(v.memberName||'')+' '+volnoWhen(v));
@@ -1787,7 +1798,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.17';
+var APP_VERSION='2026-11-03.20';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -1997,7 +2008,7 @@ function applyTheme(){
   var dark=THEME==='dark'||(THEME==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.setAttribute('data-theme',dark?'dark':'light');
   var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',dark?'#000000':'#f2f2f7');
-  var b=document.getElementById('themeBtn');if(b)b.textContent='🌓 '+({auto:'Auto',light:'Svetlý',dark:'Tmavý'})[THEME];
+  var b=document.getElementById('themeBtn');if(b)b.textContent='🌓 Vzhľad: '+({auto:'Auto',light:'Svetlý',dark:'Tmavý'})[THEME];
 }
 function cycleTheme(){THEME=THEME==='auto'?'dark':(THEME==='dark'?'light':'auto');try{localStorage.setItem('portal_theme',THEME)}catch(e){}applyTheme();toast('Vzhľad: '+({auto:'automaticky podľa telefónu',light:'svetlý',dark:'tmavý'})[THEME])}
 applyTheme();
@@ -2225,7 +2236,7 @@ window.onload=function(){
   <button data-t="cal" onclick="goTab('cal')"><span>📅</span>Kalendár</button>
   <button data-t="work" onclick="goTab('work')"><span>🔧</span>Práca</button>
   <button data-t="clients" class="admin-only" onclick="goTab('clients')"><span>👥</span>Klienti</button>
-  <button data-t="more" onclick="goTab('more')"><span>⋯</span>Viac</button>
+  <button data-t="more" onclick="goTab('more')" style="position:relative"><span>⋯</span>Viac<i id="tabBadge" style="display:none"></i></button>
 </nav>
 <div id="updBar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:2000;background:#f59e0b;color:#111;padding:10px 14px;text-align:center;font-weight:bold">🔄 Je dostupná nová verzia aplikácie. <button onclick="hardRefresh()" style="width:auto;display:inline-block;margin:0 0 0 8px;padding:6px 12px">Aktualizovať</button></div>
 <div class="container">
@@ -2238,20 +2249,13 @@ window.onload=function(){
 
   <div id="app">
   <div class="status-bar" id="statusBar">
-    <div><span id="st">🟡 Pripájam sa k databáze…</span><div id="bkInfo" class="admin-only" style="font-size:.75rem;margin-top:2px"></div><div id="verInfo" style="font-size:.7rem;color:#94a3b8"></div></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button onclick="hardRefresh()" style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:#f59e0b;color:#111;border:none;border-radius:4px;cursor:pointer">🔄 Aktualizovať</button>
-      <button id="themeBtn" onclick="cycleTheme()" style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:#64748b;color:#fff;border:none;border-radius:4px;cursor:pointer">🌓 Vzhľad</button>
-      <button class="admin-only" onclick="shareLink()" style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:#16a34a;color:#fff;border:none;border-radius:4px;cursor:pointer">🔗 Odkaz pre kolegu</button>
-      <button class="admin-only" onclick="exportClientsCsv()" style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:#0f766e;color:#fff;border:none;border-radius:4px;cursor:pointer">📊 Klienti (CSV)</button>
-      <button class="admin-only" onclick="exportData()" style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:var(--primary);color:#fff;border:none;border-radius:4px;cursor:pointer">💾 Stiahnuť zálohu</button>
-      <label class="admin-only" style="width:auto;padding:4px 10px;margin:0;font-size:.75rem;background:#475569;color:#fff;border-radius:4px;cursor:pointer;display:inline-block">📂 Nahrať dáta <input type="file" accept=".json,application/json" style="display:none" onchange="importData(event)"></label>
-    </div>
+    <span id="st">🟡 Pripájam sa k databáze…</span><div id="bkInfo" class="admin-only" style="font-size:.75rem;margin-top:2px"></div>
   </div>
 
   <h1 id="pageTitle">Dnes</h1>
   <p id="pageSub" style="display:none"></p>
 
+  <div id="leaveBanner" onclick="openSection('volnoSection','Voľno','')" style="display:none"></div>
   <div id="todayBox" class="today-box"></div>
   <div id="homeQuick" class="menu-grid">
     <div class="menu-card" onclick="openSection('myTasksSection','Moje úlohy')">✅ Moje úlohy</div>
@@ -2269,7 +2273,24 @@ window.onload=function(){
     <div class="menu-card" onclick="openSection('spravySection','Správy pre tím','more')">💬 Správy</div>
     <div class="menu-card" onclick="openSection('teamSection','Správa tímu','more')">🛡️ Tím</div>
     <div class="menu-card" onclick="openSection('helpSection','Nápoveda','more')">❓ Nápoveda</div>
-    <div class="menu-card admin-only" onclick="openSection('adminSection','Správa aplikácie','more')">⚙️ Správa</div>
+    <div class="menu-card admin-only" onclick="openSection('adminSection','Správa aplikácie','more')">🗂 Správa</div>
+    <div class="menu-card" onclick="openSection('settingsSection','Nastavenia','more')">⚙️ Nastavenia</div>
+  </div>
+
+  <div id="settingsSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <h2>Nastavenia</h2>
+    <div class="menu-list">
+      <div class="menu-card" onclick="hardRefresh()">🔄 Aktualizovať aplikáciu</div>
+      <div class="menu-card" id="themeBtn" onclick="cycleTheme()">🌓 Vzhľad</div>
+    </div>
+    <div class="menu-list">
+      <div class="menu-card admin-only" onclick="shareLink()">🔗 Odkaz pre kolegu</div>
+      <div class="menu-card admin-only" onclick="exportClientsCsv()">📊 Klienti (CSV)</div>
+      <div class="menu-card admin-only" onclick="exportData()">💾 Stiahnuť zálohu</div>
+      <div class="menu-card admin-only" onclick="document.getElementById('importFile').click()">📂 Nahrať dáta zo zálohy<input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)"></div>
+    </div>
+    <p id="verInfo" style="font-size:.8rem;color:#8e8e93;text-align:center;margin-top:18px"></p>
   </div>
 
   <div id="clientsSection" class="section-content">
