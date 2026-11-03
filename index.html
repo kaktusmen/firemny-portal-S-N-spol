@@ -376,6 +376,8 @@ function exportData(){
   a.href='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(dbData));
   a.download='portal_zaloha.json';document.body.appendChild(a);a.click();a.remove();
   try{localStorage.setItem('portal_last_backup',String(Date.now()))}catch(e){}
+  var mm=me?findById('members',me):null;
+  col('nastavenia').doc('zaloha').set({ts:Date.now(),by:mm?mm.name:''},{merge:true}).catch(function(){});
   updateBackupInfo();
 }
 function importData(ev){
@@ -487,7 +489,7 @@ function render(){
   fillMontazSelects();
   fillSpravySelects();
   fillServisMembers();
-  renderToday();fillMe();renderMyTasks();fillVolno();renderDue();renderRoute();renderHelp();fillPonukaSelects();applyRole();
+  renderToday();fillMe();renderMyTasks();fillVolno();updateBackupInfo();renderDue();renderRoute();renderHelp();fillPonukaSelects();applyRole();
 }
 
 // ---------- Klienti ----------
@@ -1627,7 +1629,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.9';
+var APP_VERSION='2026-11-03.10';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -1934,17 +1936,21 @@ function backupPrompt(){
     if(localStorage.getItem('bk_snooze')===ymd(new Date()))return;
     var d=t?Math.floor((Date.now()-t)/86400000):0;
     lastDay=null;
-    $('eventModalBody').innerHTML='<h3>💾 Čas na zálohu</h3><div class="modal-row">'+(t?'Posledná záloha je stará '+d+' dní.':'Záloha ešte nebola stiahnutá.')+' Stiahni ju teraz, trvá to sekundu. Súbor sa uloží do telefónu alebo do Stiahnutých v počítači.</div><div class="modal-row"><small>Fotky v zálohe nie sú, sú len v databáze.</small></div>'+
+    $('eventModalBody').innerHTML='<h3>💾 Čas na zálohu</h3><div class="modal-row">'+(t?'Posledná záloha je stará '+d+' dní.':'Záloha ešte nebola stiahnutá.')+' Stačí, ak ju stiahne jeden zo správcov, ostatným sa potom už nezobrazí. Súbor sa uloží do telefónu alebo do Stiahnutých v počítači.</div><div class="modal-row"><small>Fotky v zálohe nie sú, sú len v databáze.</small></div>'+
       '<div class="modal-actions" style="flex-wrap:wrap"><button class="btn-edit" style="background:#16a34a" onclick="exportData();closeEvent();toast(\'Záloha stiahnutá\')">💾 Stiahnuť zálohu</button><button class="btn-delete" style="background:#64748b;color:#fff" onclick="try{localStorage.setItem(\'bk_snooze\',ymd(new Date()))}catch(e){}closeEvent()">Pripomenúť zajtra</button></div>';
     $('eventModal').style.display='flex';
   }catch(e){}
 }
-function lastBackup(){try{return +localStorage.getItem('portal_last_backup')||0}catch(e){return 0}}
+function sharedBackup(){return dbData.nastavenia.filter(function(x){return x.id==='zaloha'})[0]||null}
+function lastBackup(){
+  var l=0;try{l=+localStorage.getItem('portal_last_backup')||0}catch(e){}
+  var sh=sharedBackup();return Math.max(l,(sh&&sh.ts)||0);
+}
 function updateBackupInfo(){
   var el=$('bkInfo');if(!el)return;var t=lastBackup();
   if(!t){el.innerHTML='<span style="color:#b91c1c">⚠️ Záloha ešte nebola stiahnutá</span>';return}
   var d=Math.floor((Date.now()-t)/86400000);
-  el.innerHTML='<span style="color:'+(d>7?'#b91c1c':'#64748b')+'">💾 Záloha: '+esc(fmtD(ymd(new Date(t))))+(d>7?' (pred '+d+' d)':'')+'</span>';
+  el.innerHTML='<span style="color:'+(d>7?'#b91c1c':'#64748b')+'">💾 Záloha: '+esc(fmtD(ymd(new Date(t))))+((sharedBackup()||{}).by&&(sharedBackup().ts>=t)?' ('+esc(sharedBackup().by)+')':'')+(d>7?' (pred '+d+' d)':'')+'</span>';
 }
 var lastDay=null;
 function isMobile(){return !!(window.matchMedia&&window.matchMedia('(max-width:600px)').matches)}
