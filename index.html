@@ -440,7 +440,7 @@ function render(){
   fillMontazSelects();
   fillSpravySelects();
   fillServisMembers();
-  renderToday();fillMe();renderMyTasks();fillVolno();renderDue();renderRoute();fillPonukaSelects();applyRole();
+  renderToday();fillMe();renderMyTasks();fillVolno();renderDue();renderRoute();renderHelp();fillPonukaSelects();applyRole();
 }
 
 // ---------- Klienti ----------
@@ -1142,6 +1142,41 @@ function showLeave(id){
     '<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModal').style.display='flex';
 }
+var HELP=[
+['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Tlačidlo <b>Späť do menu</b> ťa vráti na hlavnú obrazovku.</li></ol>'],
+['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú.'],
+['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam, nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li></ol>'],
+['📅 Kalendár',0,'Prepínaš <b>Mesiac / Týždeň</b>. Ťuknutím na deň vidíš udalosti a môžeš pridať montáž, čistenie alebo opravu. Ťuknutím na udalosť sa otvorí jej detail. Na mobile môžeš listovať potiahnutím doľava a doprava. Správca si môže filtrovať podľa technika.'],
+['🗺 Trasa dňa',0,'Vyber deň a uvidíš svoje otvorené zákazky podľa času. <b>🧭 Navigovať</b> otvorí Google mapy, <b>▲▼</b> zmení poradie a <b>Celá trasa</b> otvorí všetky zastávky naraz.'],
+['🏖 Voľno',0,'Technik pošle žiadosť o voľno (od–do, dôvod), správca ju schváli alebo zamietne. Správca môže voľno aj sám určiť. Schválené voľno je v kalendári tyrkysové a appka upozorní, ak niekomu naplánuješ prácu v ten deň.'],
+['💬 Správy',0,'V dlaždici <b>Správy</b> napíšeš správu členom tímu (od koho, pre koho, text). Nová správa sa ukáže na úvodnej stránke. Keď ju otvoríš a prečítaš, zmizne z úvodnej stránky a ostane v histórii správ.'],
+['📲 Appka v telefóne, aktualizácia, offline',0,'<ul><li><b>Na plochu (iPhone):</b> Safari → Zdieľať → Pridať na plochu.</li><li><b>Aktualizácia:</b> prebehne sama. Keď je novinka, appka sa obnoví, ak práve nič nepíšeš. Ručne ju potiahneš nadol od vrchu alebo tlačidlom 🔄 Aktualizovať.</li><li><b>Bez internetu</b> appka funguje, hore je „📴 Offline“. Zmeny sa odošlú po pripojení.</li></ul>'],
+['👥 Klienti',1,'Karta klienta má meno, adresu, telefón a e-mail. Ťuknutím na telefón volíš, na adresu naviguješ (Google mapy). V karte vidíš históriu: montáže, servisy a čistenia aj s podrobnosťami. Pri uložení s rovnakým telefónom ťa appka upozorní na duplicitu.'],
+['🔧 Montáž / Servis (zadávanie)',1,'<ol><li>Vyber <b>Montáž</b> alebo <b>Servis</b> (Oprava, Čistenie).</li><li>Klienta vyberieš z karty klientov, adresa sa doplní sama.</li><li>Pri montáži môžeš pridať viac zariadení, viac vnútorných jednotiek, sériové čísla a záruku v rokoch.</li><li>Po uložení montáže so zárukou sa sám vytvorí <b>záručný servis</b> (340 dní po montáži a potom každý rok).</li><li>Priraď členov tímu, ktorí tam idú.</li></ol>'],
+['🔍 Obhliadky',1,'Obhliadka je potenciálny klient. Vyplníš údaje a parametre (typ, budova, stena, miesto jednotiek…). Po potvrdení klikni <b>✅ Na klienta</b> a prenesie sa do kariet klientov.'],
+['💶 Cenové ponuky',1,'Dlaždica <b>Ponuky</b> → Nová ponuka. Môžeš vybrať obhliadku, pridať položky z cenníka alebo vlastné a upraviť ceny. Číslo (PON-rok-001) sa pridelí samo. <b>🖨 PDF</b> vytvorí ponuku s hlavičkou firmy, <b>📤 Poslať</b> ju pošle.'],
+['🛠 Servisné termíny a SMS',1,'Hore sú zajtrajšie zákazky s tlačidlom SMS klientovi, pod nimi záručné servisy na 30 dní dopredu. Pri každom je 📞 Zavolať a 💬 SMS. Po odoslaní sa ukáže „kontaktovaný“, aby sa nepísalo dvakrát.'],
+['🛡️ Tím a heslá',1,'V dlaždici <b>Tím</b> pridávaš členov. Rola <b>Správca</b> vidí všetko a prihlasuje sa heslom (min. 4 znaky), rola <b>Technik</b> vidí len svoje zákazky, kalendár, trasu a voľno. Heslo zmeníš úpravou člena.'],
+['⚙️ Správa (firma, cenník, štatistiky, kôš)',1,'<ul><li><b>Firma:</b> IČO, adresa, telefón, IBAN, DPH, pätička. Ide do hlavičky protokolov a ponúk.</li><li><b>Cenník:</b> položky na ponuky.</li><li><b>Štatistiky:</b> mesiac, rok, technici, export do CSV.</li><li><b>Kôš:</b> zmazané veci sa dajú obnoviť.</li><li><b>História zmien:</b> kto čo upravil.</li><li>Zálohu stiahneš hore v stavovom pruhu (💾 Stiahnuť zálohu), odporúča sa raz týždenne.</li></ul>']
+];
+function renderHelp(){
+  var el=$('helpList');if(!el)return;
+  var adm=isAdmin();
+  el.innerHTML=HELP.filter(function(h){return adm||!h[1]}).map(function(h){
+    return '<details style="background:#fff;border-radius:14px;padding:12px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.04)"><summary style="font-weight:600;cursor:pointer;list-style:none">'+h[0]+'</summary><div class="item-note" style="white-space:normal;margin-top:8px;line-height:1.5">'+h[2]+'</div></details>';
+  }).join('');
+}
+function showWelcome(){
+  lastDay=null;
+  $('eventModalBody').innerHTML='<h3>👋 Vitajte vo Firemnom portáli</h3>'+
+    '<div class="modal-row"><b>1.</b> Na úvodnej stránke ťukni na <b>zmeniť</b> a vyber svoje meno.</div>'+
+    '<div class="modal-row"><b>2.</b> Svoje zákazky nájdeš v <b>Moje úlohy</b> a v zozname Dnes / Zajtra.</div>'+
+    '<div class="modal-row"><b>3.</b> Pri zákazke dávaj stav <b>Prebieha</b> a <b>Hotová</b>, vyplň <b>protokol</b> a nechaj ho podpísať.</div>'+
+    '<div class="modal-row"><b>4.</b> V dlaždici <b>❓ Nápoveda</b> nájdeš návod ku všetkému.</div>'+
+    '<div class="modal-actions"><button class="btn-edit" style="background:#16a34a" onclick="closeEvent();openSection(\'helpSection\',\'Nápoveda\')">📖 Otvoriť nápovedu</button><button class="btn-delete" style="background:#64748b;color:#fff" onclick="closeEvent()">Rozumiem</button></div>';
+  $('eventModal').style.display='flex';
+  try{localStorage.setItem('portal_welcome','1')}catch(e){}
+}
 function smsKey(m){return 'k_sms_'+m.id+'_'+(m.date||'')}
 function remGet(k){var d=dbData.nastavenia.filter(function(y){return y.id==='pripomienky'})[0];return d&&d[k]}
 function smsText(m){
@@ -1510,7 +1545,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.3';
+var APP_VERSION='2026-11-03.4';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -1824,6 +1859,7 @@ window.onload=function(){
   if(!KEY){$('app').style.display='none';$('keyBox').style.display='block';return}
   start();
   updateBackupInfo();
+  setTimeout(function(){var seen='';try{seen=localStorage.getItem('portal_welcome')}catch(e){}if(!seen&&$('app').style.display!=='none')showWelcome()},1800);
   setTimeout(function(){var t=lastBackup();if(isAdmin()&&(!t||Date.now()-t>7*86400000))toast('💾 Odporúčame stiahnuť zálohu dát')},3500);
 };
 </script>
@@ -1866,6 +1902,7 @@ window.onload=function(){
     <div class="menu-card" id="volnoTile" onclick="openSection('volnoSection','Voľno')">🏖 Voľno</div>
     <div class="menu-card" onclick="openSection('spravySection','Správy pre tím')">💬 Správy</div>
     <div class="menu-card" onclick="openSection('teamSection','Správa tímu')">🛡️ Tím</div>
+    <div class="menu-card" onclick="openSection('helpSection','Nápoveda')">❓ Nápoveda</div>
     <div class="menu-card admin-only" onclick="openSection('adminSection','Správa aplikácie')">⚙️ Správa</div>
   </div>
 
@@ -1914,6 +1951,13 @@ window.onload=function(){
       <button class="back-btn" onclick="hidePonukaForm()">✖ Zrušiť</button>
     </div>
     <h3>Zoznam ponúk</h3><div id="ponukyList">Načítavam...</div>
+  </div>
+
+  <div id="helpSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">⬅️ Späť do menu</button>
+    <p style="color:#8e8e93;margin:0 2px 10px">Klikni na tému a rozbalí sa návod.</p>
+    <div id="helpList"></div>
+    <button class="action-btn" style="margin-top:14px" onclick="showWelcome()">👋 Zobraziť úvod znova</button>
   </div>
 
   <div id="volnoSection" class="section-content">
