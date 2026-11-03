@@ -1485,7 +1485,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#16a34a" onclick="setStav(\''+id+'\',\'Hotová\')">✔ Hotová</button>')+
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>';
 }
-var APP_VERSION='2026-11-03.1';
+var APP_VERSION='2026-11-03.2';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -1540,9 +1540,33 @@ function hardRefresh(){
 function checkUpdate(){
   try{fetch(location.pathname+'?chk='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){
     var m=t.match(/var APP_VERSION='([^']+)'/);
-    if(m&&m[1]!==APP_VERSION)$('updBar').style.display='block';
+    if(m&&m[1]!==APP_VERSION){$('updBar').style.display='block';updPending=m[1];tryAutoUpdate()}
   }).catch(function(){})}catch(e){}
 }
+var updPending='';
+function updSafe(){
+  try{
+    if($('eventModal').style.display==='flex')return false;
+    var ae=document.activeElement;if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return false;
+    var ed=document.querySelectorAll('input[id^="editing"]');
+    for(var i=0;i<ed.length;i++)if(ed[i].value)return false;
+    var f=document.querySelectorAll('#app input[type=text],#app input[type=date],#app input[type=time],#app textarea');
+    for(var j=0;j<f.length;j++){
+      var e=f[j];if(!e.offsetParent||!e.value)continue;
+      if(/Search|Filter|rtDate|stMonth|calTech/.test(e.id))continue;
+      return false;
+    }
+    return true;
+  }catch(x){return false}
+}
+function tryAutoUpdate(){
+  if(!updPending||!updSafe())return;
+  var last=0;try{last=+sessionStorage.getItem('auto_upd')||0}catch(e){}
+  if(Date.now()-last<120000)return; /* ochrana pred cyklením */
+  try{sessionStorage.setItem('auto_upd',String(Date.now()))}catch(e){}
+  hardRefresh();
+}
+setInterval(tryAutoUpdate,30000);
 function initGestures(){
   var cs=$('calendarSection'),x0=0,y0=0;
   cs.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
@@ -1769,7 +1793,7 @@ window.onload=function(){
   renderDevices([emptyDev()]);
   initGestures();
   $('verInfo').textContent='verzia '+APP_VERSION;
-  checkUpdate();setInterval(checkUpdate,600000);
+  checkUpdate();setInterval(checkUpdate,300000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)checkUpdate()});
   KEY=getKey();
   if(!KEY){$('app').style.display='none';$('keyBox').style.display='block';return}
