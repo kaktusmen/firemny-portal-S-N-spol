@@ -1432,6 +1432,7 @@ var HELP=[
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
+['📝 Treba doplniť',0,'V <b>Moje úlohy</b> je hore červený zoznam montáží (za posledných 90 dní), kde chýbajú <b>výrobné čísla</b> alebo <b>chladivo a náplň</b>. Ťuknutím sa otvorí montáž na doplnenie. Po doplnení zmizne zo zoznamu.'],
 ['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
 ['🧪 Upozornenie na kontrolu tesnosti',0,'Správca vidí na úvodnej stránke Dnes červený pruh, keď je kontrola tesnosti chladiva po termíne alebo do 60 dní. Ťuknutím sa otvoria Servisné termíny, kde ju zapíšeš.'],
 ['📅 Kalendár',0,'Prepínaš <b>Mesiac / Týždeň</b>. Ťuknutím na deň vidíš udalosti a môžeš pridať montáž, čistenie alebo opravu. Ťuknutím na udalosť sa otvorí jej detail. Na mobile môžeš listovať potiahnutím doľava a doprava. Správca si môže filtrovať podľa technika.'],
@@ -1884,7 +1885,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.11';
+var APP_VERSION='2026-11-04.12';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2075,6 +2076,21 @@ function isMine(m){
   var mm=findById('members',me);if(!mm)return false;
   return (m.memberIds||[]).indexOf(me)>-1||(m.memberNames||[]).some(function(n){return norm(n)===norm(mm.name)});
 }
+function missingOf(m){
+  var out=[],ds=devicesOf(m);
+  if(!ds.length)return ['zariadenie'];
+  var sn=false,ch=false;
+  ds.forEach(function(d){
+    if(!(indList(d).some(function(x){return x.sn})||d.vonkajsia))sn=true;
+    if(!d.chlTyp||!num(d.chlKg))ch=true;
+  });
+  if(sn)out.push('výrobné čísla');
+  if(ch)out.push('chladivo a náplň');
+  return out;
+}
+function todoRow(m,mi){
+  return '<div class="day-row" style="border-left-color:#dc2626" onclick="editMontaz(\''+esc(m.id)+'\')"><b>'+esc(m.title||'Montáž')+(m.clientName?' · '+esc(m.clientName):'')+'</b><span>'+(m.date?esc(fmtD(m.date))+' · ':'')+'<span style="color:#dc2626;font-weight:700">Doplniť: '+esc(mi.join(', '))+'</span> ›</span></div>';
+}
 function renderMyTasks(){
   var el=$('myTasksList');if(!el)return;
   var mm=findById('members',me);
@@ -2089,11 +2105,12 @@ function renderMyTasks(){
     else if(m.date>=today)soon.push(e);
     else if(m.servisType==='Oprava'&&open)late.push(e);
   });
+  var lim=ymd(new Date(Date.now()-90*86400000)),todo=dbData.montaze.filter(function(m){return !m.kind&&isMine(m)&&m.date&&m.date<=today&&m.date>=lim&&missingOf(m).length}).sort(function(a,b){return b.date.localeCompare(a.date)});
   var by=function(a,b){return (a.d+(a.time||'')).localeCompare(b.d+(b.time||''))};
   late.sort(by);soon.sort(by);
   var sec=function(t,a){return a.length?'<div class="td-h">'+t+'</div>'+a.map(dayRow).join(''):''};
   var msgs=dbData.spravy.filter(msgForMe).sort(function(a,b){return (b.ts||0)-(a.ts||0)}).slice(0,10);
-  el.innerHTML=(sec('⏰ Meškajúce opravy',late)+sec('📅 Nadchádzajúce',soon)+sec('📌 Bez dátumu',nodate)||'<div class="td-none">Nemáte priradené žiadne úlohy.</div>')+
+  el.innerHTML=(todo.length?'<div class="td-h" style="color:#dc2626">📝 Treba doplniť ('+todo.length+')</div>'+todo.map(function(m){return todoRow(m,missingOf(m))}).join(''):'')+(sec('⏰ Meškajúce opravy',late)+sec('📅 Nadchádzajúce',soon)+sec('📌 Bez dátumu',nodate)||(todo.length?'':'<div class="td-none">Nemáte priradené žiadne úlohy.</div>'))+
     '<div class="td-h">💬 Správy pre mňa</div>'+(msgs.length?msgs.map(function(x){
       return '<div class="day-row" style="border-left-color:#7c3aed" onclick="showMsg(\''+esc(x.id)+'\')"><b>'+(msgUnread(x)?'🆕 ':'✓ ')+'Od: '+esc(x.author||'Anonym')+'</b><span>'+esc(x.text||'')+(x.timestamp?' · '+esc(x.timestamp):'')+'</span></div>';
     }).join(''):'<div class="td-none">Žiadne správy.</div>');
