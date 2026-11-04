@@ -755,7 +755,7 @@ function editServis(id){
 function toggleNewClient(on){
   var b=$('mNewBox'),open=(on===undefined)?b.style.display==='none':on;
   b.style.display=open?'block':'none';
-  $('mNewBtn').textContent=open?'✖ Zrušiť nového klienta':'➕ Nový klient (zadať priamo tu)';
+  $('mModeNew').style.background=open?'#0d9488':'#94a3b8';$('mModeOld').style.background=open?'#94a3b8':'#0d9488';
   $('mClient').style.display=open?'none':'';
   if(!open)['mNMeno','mNPriez','mNTel','mNAdr','mNMail'].forEach(function(i){$(i).value=''});
   else $('mClient').value='';
@@ -1486,7 +1486,7 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
-['🔧 Montáž krok za krokom',0,'Práca → Montáž: <b>1 Klient</b> (existujúci alebo ➕ nový) → <b>2 Zákazka</b> (názov, dátum, čas) → <b>3 Zariadenia</b> → <b>4 Tím</b> → <b>5 Hotovo</b> (zhrnutie a uloženie). Na očíslované štvorčeky hore môžeš ťuknúť a skočiť na ľubovoľný krok, aj pri úprave montáže.'],
+['🔧 Montáž krok za krokom',0,'Práca → Montáž: <b>1 Klient</b> (tlačidlo 👤 Existujúci klient alebo ➕ Nový klient) → <b>2 Zákazka</b> (názov, dátum, čas) → <b>3 Zariadenia</b> → <b>4 Tím</b> → <b>5 Hotovo</b> (zhrnutie a uloženie). Na očíslované štvorčeky hore môžeš ťuknúť a skočiť na ľubovoľný krok, aj pri úprave montáže.'],
 ['📋 Zákazka krok za krokom',0,'Ťukni pri úlohe na <b>📋 Zákazka</b>. Ideš krokmi: <b>Príchod</b> (📞 Zavolať, 🧭 Navigovať, ▶ Som na mieste) → <b>Zariadenia</b> (červené polia treba doplniť) → <b>Kontrola</b> → <b>Fotky</b> → <b>Podpisy</b> → <b>Hotovo</b>. Každý krok sa ukladá pri ťuknutí na Ďalej. Technik má dole lištu: Dnes, Kalendár, Voľno, Správy.'],
 ['📝 Treba doplniť',0,'V <b>Moje úlohy</b> je hore červený zoznam montáží (za posledných 90 dní), kde chýbajú <b>výrobné čísla</b> alebo <b>chladivo a náplň</b>. Ťuknutím sa otvorí montáž na doplnenie. Po doplnení zmizne zo zoznamu.'],
 ['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
@@ -2060,7 +2060,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.17';
+var APP_VERSION='2026-11-04.18';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2777,8 +2777,8 @@ window.onload=function(){
     <h3 id="mStepH" style="margin:6px 0"></h3>
     <div class="form-grid">
       <div class="mStep" data-s="1" style="grid-column:1/-1;display:grid;gap:10px">
+      <div class="modal-actions" style="margin:0"><button type="button" class="btn-edit" id="mModeOld" onclick="toggleNewClient(false)">👤 Existujúci klient</button><button type="button" class="btn-edit" id="mModeNew" onclick="toggleNewClient(true)">➕ Nový klient</button></div>
       <select id="mClient" class="full-width-input"></select>
-      <button type="button" class="back-btn" id="mNewBtn" style="margin:0" onclick="toggleNewClient()">➕ Nový klient (zadať priamo tu)</button>
       <div id="mNewBox" class="full-width-input" style="display:none;border:1.5px solid #0d9488;border-radius:14px;padding:10px">
         <b>👤 Nový klient</b>
         <input type="text" id="mNMeno" placeholder="Meno" class="full-width-input">
