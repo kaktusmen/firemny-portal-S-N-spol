@@ -211,6 +211,7 @@ html[data-theme=dark] #updBar{color:#111}
 #lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:12px}
 #lightbox img{max-width:100%;max-height:100%;border-radius:8px}
 /* --- iOS navigácia --- */
+#leakBanner{background:#dc2626;color:#fff;border-radius:16px;padding:13px 16px;margin:0 0 12px;font-size:.95rem;cursor:pointer;box-shadow:0 4px 14px rgba(220,38,38,.3)}
 #leaveBanner{background:#ff9500;color:#fff;border-radius:16px;padding:13px 16px;margin:0 0 12px;font-size:.95rem;cursor:pointer;box-shadow:0 4px 14px rgba(255,149,0,.3)}
 #tabBadge{position:absolute;top:0;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:#ff3b30;color:#fff;font-style:normal;font-size:.7rem;font-weight:700;line-height:18px;text-align:center;padding:0 5px}
 .fl{display:block;font-size:.8rem;font-weight:500;color:#8e8e93;margin:0}
@@ -429,7 +430,7 @@ function importData(ev){
 var scr='home',navBack='';
 function hideAll(){
   document.querySelectorAll('.section-content').forEach(function(x){x.style.display='none'});
-  ['mainMenu','todayBox','homeQuick','workMenu','leaveBanner'].forEach(function(i){$(i).style.display='none'});
+  ['mainMenu','todayBox','homeQuick','workMenu','leaveBanner','leakBanner'].forEach(function(i){$(i).style.display='none'});
 }
 function setTab(t){
   document.querySelectorAll('#tabBar button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
@@ -1371,6 +1372,11 @@ function updLeaveUi(){
   var bn=$('leaveBanner');if(!bn)return;
   bn.innerHTML=n?'🏖 <b>'+n+(n===1?' žiadosť':(n<5?' žiadosti':' žiadostí'))+' o voľno čaká na schválenie</b> ›':'';
   bn.style.display=(n&&scr==='home')?'block':'none';
+  var lb=$('leakBanner');if(lb){
+    var li=isAdmin()?leakItems():[],t=ymd(new Date()),late=li.filter(function(x){return x.due<t}).length;
+    lb.innerHTML=li.length?'🧪 <b>Kontrola tesnosti chladiva: '+li.length+(late?' (po termíne: '+late+')':' blíži sa termín')+'</b> ›':'';
+    lb.style.display=(li.length&&scr==='home')?'block':'none';
+  }
 }
 function fillVolno(){
   var s=$('vMember');if(!s)return;
@@ -1427,6 +1433,7 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
+['🧪 Upozornenie na kontrolu tesnosti',0,'Správca vidí na úvodnej stránke Dnes červený pruh, keď je kontrola tesnosti chladiva po termíne alebo do 60 dní. Ťuknutím sa otvoria Servisné termíny, kde ju zapíšeš.'],
 ['📅 Kalendár',0,'Prepínaš <b>Mesiac / Týždeň</b>. Ťuknutím na deň vidíš udalosti a môžeš pridať montáž, čistenie alebo opravu. Ťuknutím na udalosť sa otvorí jej detail. Na mobile môžeš listovať potiahnutím doľava a doprava. Správca si môže filtrovať podľa technika.'],
 ['🗺 Trasa dňa',0,'Vyber deň a uvidíš svoje otvorené zákazky podľa času. <b>🧭 Navigovať</b> otvorí Google mapy, <b>▲▼</b> zmení poradie a <b>Celá trasa</b> otvorí všetky zastávky naraz.'],
 ['🏖 Voľno',0,'Voľno môže byť na <b>celý deň (aj viac dní)</b> alebo <b>na určitý čas</b> (od–do hodiny). Technik pošle žiadosť, správca ju schváli alebo zamietne. Správca môže voľno inému určiť sám, platí hneď. <b>Vlastné voľno správcu musí schváliť iný správca.</b> Schválené voľno je v kalendári tyrkysové. Appka upozorní: (1) keď niekomu naplánuješ prácu v čase jeho voľna, (2) keď technik žiada o voľno a už má v tom čase zákazku, (3) správcu pri schvaľovaní, ak má technik v tom čase zákazku.'],
@@ -1877,7 +1884,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.10';
+var APP_VERSION='2026-11-04.11';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2377,6 +2384,7 @@ window.onload=function(){
   <p id="pageSub" style="display:none"></p>
 
   <div id="leaveBanner" onclick="openSection('volnoSection','Voľno','')" style="display:none"></div>
+  <div id="leakBanner" onclick="openSection('dueSection','Servisné termíny','')" style="display:none"></div>
   <div id="todayBox" class="today-box"></div>
   <div id="homeQuick" class="menu-grid">
     <div class="menu-card" onclick="openSection('myTasksSection','Moje úlohy')">✅ Moje úlohy</div>
