@@ -516,6 +516,11 @@ function render(){
     var v=V[c],el=$(v[0]);if(!el)return;
     var arr=dbData[c].slice(),empty=v[1];
     if(c==='montaze'){
+      var mq=norm($('msSearch')?$('msSearch').value:'');
+      if(mq){
+        arr=arr.filter(function(x){return norm([x.clientName,x.title,x.adresa,(x.memberNames||[]).join(' ')].join(' ')).indexOf(mq)>=0});
+        empty='Hľadaniu nezodpovedá žiadny záznam.';
+      }
       var mf=$('msFilter')?$('msFilter').value:'';
       if(mf){
         arr=arr.filter(function(x){
@@ -1421,6 +1426,7 @@ var HELP=[
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
+['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
 ['📅 Kalendár',0,'Prepínaš <b>Mesiac / Týždeň</b>. Ťuknutím na deň vidíš udalosti a môžeš pridať montáž, čistenie alebo opravu. Ťuknutím na udalosť sa otvorí jej detail. Na mobile môžeš listovať potiahnutím doľava a doprava. Správca si môže filtrovať podľa technika.'],
 ['🗺 Trasa dňa',0,'Vyber deň a uvidíš svoje otvorené zákazky podľa času. <b>🧭 Navigovať</b> otvorí Google mapy, <b>▲▼</b> zmení poradie a <b>Celá trasa</b> otvorí všetky zastávky naraz.'],
 ['🏖 Voľno',0,'Voľno môže byť na <b>celý deň (aj viac dní)</b> alebo <b>na určitý čas</b> (od–do hodiny). Technik pošle žiadosť, správca ju schváli alebo zamietne. Správca môže voľno inému určiť sám, platí hneď. <b>Vlastné voľno správcu musí schváliť iný správca.</b> Schválené voľno je v kalendári tyrkysové. Appka upozorní: (1) keď niekomu naplánuješ prácu v čase jeho voľna, (2) keď technik žiada o voľno a už má v tom čase zákazku, (3) správcu pri schvaľovaní, ak má technik v tom čase zákazku.'],
@@ -1871,7 +1877,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.9';
+var APP_VERSION='2026-11-04.10';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2641,6 +2647,7 @@ window.onload=function(){
     <button class="back-btn" id="rpCancelBtn" style="display:none" onclick="clearServis('rp');showMS('choice')">✖ Zrušiť úpravu</button>
   </div>
     <h3>Zoznam montáží a servisov</h3>
+    <input type="search" id="msSearch" placeholder="🔍 Hľadať podľa mena klienta, názvu alebo technika" oninput="render()" autocomplete="off">
     <select id="msFilter" onchange="render()"><option value="">Zobraziť: všetko</option><option value="montaz">Len montáže</option><option value="cistenie">Len čistenia</option><option value="oprava">Všetky opravy</option><option value="oprava_open">Opravy – otvorené</option><option value="oprava_done">Opravy – hotové</option></select><div id="montazList">Načítavam...</div>
   </div>
 
