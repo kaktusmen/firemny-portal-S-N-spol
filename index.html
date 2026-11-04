@@ -1488,6 +1488,7 @@ var HELP=[
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
 ['🔧 Montáž krok za krokom',0,'Práca → Montáž: <b>1 Klient</b> (tlačidlo 👤 Existujúci klient alebo ➕ Nový klient) → <b>2 Zákazka</b> (názov, dátum, čas) → <b>3 Zariadenia</b> → <b>4 Tím</b> → <b>5 Hotovo</b> (zhrnutie a uloženie). Na očíslované štvorčeky hore môžeš ťuknúť a skočiť na ľubovoľný krok, aj pri úprave montáže.'],
 ['📋 Zákazka krok za krokom',0,'Ťukni pri úlohe na <b>📋 Zákazka</b>. Ideš krokmi: <b>Príchod</b> (📞 Zavolať, 🧭 Navigovať, ▶ Som na mieste) → <b>Zariadenia</b> (červené polia treba doplniť) → <b>Kontrola</b> → <b>Fotky</b> → <b>Podpisy</b> → <b>Hotovo</b>. Každý krok sa ukladá pri ťuknutí na Ďalej. Technik má dole lištu: Dnes, Kalendár, Voľno, Správy.'],
+['🧹 Čistenie v Moje úlohy',0,'Naplánované čistenie sa v <b>Moje úlohy</b> zobrazí až <b>14 dní pred termínom</b>. Skôr ho nájdeš v kalendári.'],
 ['📝 Treba doplniť',0,'V <b>Moje úlohy</b> je hore červený zoznam montáží (za posledných 90 dní), kde chýbajú <b>výrobné čísla</b> alebo <b>chladivo a náplň</b>. Ťuknutím sa otvorí montáž na doplnenie. Po doplnení zmizne zo zoznamu.'],
 ['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
 ['🧪 Upozornenie na kontrolu tesnosti',0,'Správca vidí na úvodnej stránke Dnes červený pruh, keď je kontrola tesnosti chladiva po termíne alebo do 60 dní. Ťuknutím sa otvoria Servisné termíny, kde ju zapíšeš.'],
@@ -2060,7 +2061,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.18';
+var APP_VERSION='2026-11-04.19';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2279,14 +2280,14 @@ function renderMyTasks(){
   var el=$('myTasksList');if(!el)return;
   var mm=findById('members',me);
   if(!mm){el.innerHTML='<div class="td-none">Vyberte svoje meno, aby ste videli svoje úlohy a správy.</div>';return}
-  var today=ymd(new Date()),late=[],soon=[],nodate=[];
+  var today=ymd(new Date()),cl14=ymd(new Date(Date.now()+14*86400000)),late=[],soon=[],nodate=[];
   dbData.montaze.forEach(function(m){
     if(!isMine(m))return;
     var open=m.stav!=='Hotová';
     var e={type:'montaze',id:m.id,time:m.time||'',color:srvColor(m),text:srvIcon(m)+(m.title||'Montáž'),
       sub:[m.date?fmtD(m.date):'bez dátumu',m.address?'📍 '+m.address:'',m.clientName&&!m.kind?'👤 '+m.clientName:''].filter(Boolean).join(' · '),d:m.date||''};
     if(!m.date){if(m.kind&&open)nodate.push(e)}
-    else if(m.date>=today)soon.push(e);
+    else if(m.date>=today){if(m.kind&&m.servisType==='Čistenie'&&m.date>cl14)return;soon.push(e)}
     else if(m.servisType==='Oprava'&&open)late.push(e);
   });
   var lim=ymd(new Date(Date.now()-90*86400000)),todo=dbData.montaze.filter(function(m){return !m.kind&&isMine(m)&&m.date&&m.date<=today&&m.date>=lim&&missingOf(m).length}).sort(function(a,b){return b.date.localeCompare(a.date)});
