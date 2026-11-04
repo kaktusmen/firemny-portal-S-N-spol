@@ -505,6 +505,7 @@ var V={
     var ic=v.stav==='Schválené'?'✅':(v.stav==='Zamietnuté'?'❌':'⏳');
     var ex=(isAdmin()&&v.stav==='Žiadosť'&&v.memberId!==me)?'<button class="btn-edit" style="background:#16a34a" onclick="volnoSet(\''+esc(v.id)+'\',\'Schválené\')">✔ Schváliť</button><button class="btn-edit" style="background:#b91c1c" onclick="volnoSet(\''+esc(v.id)+'\',\'Zamietnuté\')">✖ Zamietnuť</button>':'';
     return card('volno',v,'🏖 '+esc(v.memberName||'')+' – '+esc(volnoWhen(v))+' ['+ic+' '+esc(v.stav||'')+']',
+      (function(){var j=v.stav==='Žiadosť'&&isAdmin()?jobsInLeave(v.memberId,v):[];return j.length?'<div style="color:#b45309;font-weight:600;margin-bottom:6px">⚠️ V tomto čase má naplánované:<br>'+j.map(function(m){return esc(fmtD(m.date)+(m.time?' '+m.time:'')+' – '+(m.title||m.clientName||'zákazka'))}).join('<br>')+'</div>':''})()+
       '<strong>Dôvod:</strong> '+esc(v.dovod||'-')+(v.rozhodol?'\n<small style="color:#64748b">Rozhodol: '+esc(v.rozhodol)+'</small>':''),false,false,ex)}],
   spravy:['spravyList','Žiadne správy.',function(a,b){return (b.ts||0)-(a.ts||0)},function(s){
     return card('spravy',s,(msgUnread(s)?'🆕 ':(msgForMe(s)?'✓ ':''))+'💬 Od: '+esc(s.author||'Anonym')+(s.toNames&&s.toNames.length?' → Pre: '+s.toNames.map(esc).join(', '):''),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':'')+(s.readBy&&s.readBy.length?'\n<small style="color:#15803d">✓ Prečítali: '+s.readBy.map(function(i){var m=findById('members',i);return esc(m?m.name:'?')}).join(', ')+'</small>':''),false,true)}]
@@ -1320,6 +1321,20 @@ function exportChladivo(){
   var blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='chladivo_'+ymd(new Date())+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},500);
 }
+function jobsInLeave(memberId,v){
+  var mm=findById('members',memberId);if(!mm)return [];
+  var od=v.od,dd=v.do||v.od;
+  return dbData.montaze.filter(function(m){
+    if(!m.date||m.stav==='Hotová'||m.date<od||m.date>dd)return false;
+    var mine=(m.memberIds||[]).indexOf(memberId)>-1||(m.memberNames||[]).some(function(n){return norm(n)===norm(mm.name)});
+    if(!mine)return false;
+    if(v.casOd&&m.time)return m.time>=v.casOd&&m.time<v.casDo;
+    return true;
+  }).sort(function(a,b){return (a.date+(a.time||'')).localeCompare(b.date+(b.time||''))});
+}
+function jobsText(list){
+  return list.map(function(m){return '• '+fmtD(m.date)+(m.time?' '+m.time:'')+' – '+(m.title||m.clientName||'zákazka')+(m.clientName&&m.title?' ('+m.clientName+')':'')}).join('\n');
+}
 function volnoWhen(v){
   var d=fmtD(v.od);
   if(v.casOd)return d+', '+v.casOd+'–'+v.casDo;
@@ -1377,6 +1392,8 @@ function saveVolno(){
     if(dd<od){toast('Koniec nesmie byť pred začiatkom');return}
   }
   var me2=me?findById('members',me):null,auto=adm&&mid!==me;
+  var jl=jobsInLeave(mid,{od:od,do:dd,casOd:co,casDo:cd});
+  if(jl.length&&!confirm((adm&&mid!==me?m.name+' má':'Máš')+' v tomto čase už naplánovanú činnosť:\n\n'+jobsText(jl)+'\n\n'+(auto?'Pridať voľno aj tak?':'Odoslať žiadosť aj tak?')))return;
   put('volno',{memberId:mid,memberName:m.name||'',od:od,do:dd,casOd:co,casDo:cd,dovod:$('vDovod').value.trim(),stav:auto?'Schválené':'Žiadosť',ts:Date.now(),rozhodol:auto&&me2?me2.name:''},null);
   $('vOd').value='';$('vDo').value='';$('vOdT').value='';$('vCasOd').value='';$('vCasDo').value='';$('vDovod').value='';
   toast(auto?'Voľno pridané':(adm?'Žiadosť odoslaná, musí ju schváliť iný správca':'Žiadosť odoslaná'));
@@ -1384,6 +1401,7 @@ function saveVolno(){
 function volnoSet(id,st){
   var v=findById('volno',id);if(!v)return;
   if(v.memberId===me){toast('Vlastné voľno musí schváliť iný správca');return}
+  if(st==='Schválené'){var jl=jobsInLeave(v.memberId,v);if(jl.length&&!confirm((v.memberName||'Člen tímu')+' má v čase voľna naplánovanú činnosť:\n\n'+jobsText(jl)+'\n\nSchváliť voľno aj tak?'))return}
   var me2=me?findById('members',me):null,u={stav:st,rozhodol:me2?me2.name:''};
   col('volno').doc(id).update(u).catch(function(){toast('Nepodarilo sa uložiť')});
   logAct(st==='Schválené'?'schválil voľno':'zamietol voľno','volno',(v.memberName||'')+' '+volnoWhen(v));
@@ -1850,7 +1868,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.2';
+var APP_VERSION='2026-11-04.3';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
