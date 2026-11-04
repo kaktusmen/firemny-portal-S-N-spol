@@ -12,6 +12,11 @@ def env(k):
     return re.sub(r"\s+", "", os.environ[k])
 
 
+def recipients():
+    """Jedna alebo viac adries oddelených riadkom, čiarkou, bodkočiarkou alebo medzerou."""
+    return [a for a in re.split(r"[,;\s]+", os.environ["MAIL_TO"]) if a]
+
+
 PROJECT = env("FB_PROJECT")
 API_KEY = env("FB_API_KEY")
 PORTAL = env("PORTAL_KEY")
@@ -109,12 +114,15 @@ def main():
     if DRY:
         print(subj); print(html); return
     msg = EmailMessage()
-    msg["Subject"], msg["From"], msg["To"] = subj, env("GMAIL_USER"), env("MAIL_TO")
+    to = recipients()
+    if not to:
+        raise SystemExit("MAIL_TO je prázdny: v GitHube pridaj aspoň jednu adresu príjemcu.")
+    msg["Subject"], msg["From"], msg["To"] = subj, env("GMAIL_USER"), ", ".join(to)
     msg.set_content("Zobrazte e-mail v HTML.")
     msg.add_alternative(html, subtype="html")
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as s:
         s.login(env("GMAIL_USER"), env("GMAIL_APP_PASSWORD"))
-        s.send_message(msg)
+        s.send_message(msg, to_addrs=to)
     print("Odoslané:", subj)
 
 
