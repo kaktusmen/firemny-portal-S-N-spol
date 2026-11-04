@@ -874,6 +874,45 @@ function clientOfMontaz(m){
   var n=norm(m.clientName||'');
   return n?(dbData.clients.filter(function(x){return norm(nm(x))===n})[0]||null):null;
 }
+var GWP={R32:675,R410A:2088,R290:3,R134a:1430,R407C:1774,R22:1810};
+function chlInfo(d){
+  var kg=num(d.chlKg),g=GWP[d.chlTyp];
+  if(!d.chlTyp||!kg||!g)return null;
+  var co2=kg*g/1000;
+  return {kg:kg,typ:d.chlTyp,co2:co2,months:co2>=500?3:(co2>=50?6:(co2>=5?12:0))};
+}
+function chlText(d){
+  var c=chlInfo(d);if(!c)return '';
+  return c.typ+' · '+r2(c.kg)+' kg ('+r2(c.co2)+' t CO₂e) – kontrola tesnosti: '+(c.months?'každých '+c.months+' mes.':'nie je povinná');
+}
+function addMonths(ds,n){var a=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ds||'');if(!a)return '';return ymd(new Date(+a[1],+a[2]-1+n,+a[3]))}
+function leakItems(){
+  var out=[];
+  dbData.montaze.forEach(function(m){
+    devicesOf(m).forEach(function(d,i){
+      var c=chlInfo(d);if(!c||!c.months)return;
+      var last=dbData.chladivo.filter(function(r){return r.dovod==='Kontrola tesnosti'&&r.mid===m.id&&r.di===i}).map(function(r){return r.date}).sort().pop();
+      var base=last||m.date;if(!base)return;
+      out.push({m:m,i:i,d:d,c:c,due:addMonths(base,c.months),last:last||''});
+    });
+  });
+  var lim=ymd(new Date(Date.now()+60*86400000));
+  return out.filter(function(x){return x.due&&x.due<=lim}).sort(function(a,b){return a.due.localeCompare(b.due)});
+}
+function leakHtml(){
+  var a=leakItems(),t=ymd(new Date());
+  return '<h3>🧪 Kontroly tesnosti chladiva</h3>'+(a.length?a.map(function(x){
+    var late=x.due<t;
+    return '<div class="day-row" style="border-left-color:'+(late?'#b91c1c':'#d97706')+';cursor:default"><b>'+esc(fmtD(x.due))+(late?' · po termíne':'')+' – '+esc(x.m.clientName||x.m.title||'')+'</b><span>'+esc((x.d.znacka||x.d.typ||'Zariadenie')+' · '+chlText(x.d))+(x.last?' · posledná kontrola '+esc(fmtD(x.last)):' · od montáže '+esc(fmtD(x.m.date)))+'</span>'+
+      '<div class="modal-actions" style="margin-top:6px"><button class="btn-edit" style="background:#0d9488" onclick="chlCheck(\''+esc(x.m.id)+'\','+x.i+')">✔ Zapísať kontrolu</button></div></div>';
+  }).join(''):'<div class="td-none">Žiadne kontroly tesnosti v najbližších 60 dňoch. (Sledujú sa zariadenia s vyplneným chladivom a náplňou.)</div>');
+}
+function chlCheck(mid,di){
+  var m=findById('montaze',mid);if(!m)return;
+  openSection('chladivoSection','Chladivo','');
+  $('chClient').value=m.clientId||'';fillChPick();
+  $('chPick').value=mid+'|'+di;$('chWhy').value='Kontrola tesnosti';$('chKg').value='0';
+}
 function devicesOf(m){
   if(Array.isArray(m.zariadenia)&&m.zariadenia.length)return m.zariadenia;
   if(m.typ||m.system||(m.vnutorne&&m.vnutorne.length)||m.vonkajsia||m.zarukaRoky)return [{typ:m.typ,system:m.system,vnutorne:m.vnutorne||[],vonkajsia:m.vonkajsia,zarukaRoky:m.zarukaRoky}];
@@ -939,6 +978,7 @@ function deviceRows(m){
       (ind.length?'<div class="modal-row"><strong>Vnútorné jednotky (typ / S/N):</strong><br>'+ind.map(function(x,j){return esc((ind.length>1?(j+1)+'. ':'')+(x.tp?'typ '+x.tp:'')+(x.tp&&x.sn?' · ':'')+(x.sn?'S/N '+x.sn:''))}).join('<br>')+'</div>':'')+
       (d.vonkajsia||d.vonkajsiaTyp?'<div class="modal-row"><strong>Vonkajšia jednotka (typ / S/N):</strong> '+esc((d.vonkajsiaTyp?'typ '+d.vonkajsiaTyp:'')+(d.vonkajsiaTyp&&d.vonkajsia?' · ':'')+(d.vonkajsia?'S/N '+d.vonkajsia:''))+'</div>':'')+(we?r('Záruka',d.zarukaRoky+' r. – do '+fmtD(we)):'');
   });
+  devs.forEach(function(d,i){var t=chlText(d);if(t)out+='<div class="modal-row"><strong>❄️ Chladivo'+(devs.length>1?' (zar. '+(i+1)+')':'')+':</strong> '+esc(t)+'</div>'});
   var sd=montazServiceDates(m);
   return out+(sd.length?r('🛠 Servisné termíny',sd.map(fmtD).join(', ')):'');
 }
@@ -1007,7 +1047,7 @@ function indList(d){
   return o;
 }
 function unitStr(sn,tp){return sn?(sn+(tp?' ('+tp+')':'')):(tp||'')}
-function emptyDev(){return {typ:'',znacka:'',system:'',vnutorne:[''],vnutorneTyp:[''],vonkajsia:'',vonkajsiaTyp:'',zarukaRoky:''}}
+function emptyDev(){return {typ:'',znacka:'',system:'',vnutorne:[''],vnutorneTyp:[''],vonkajsia:'',vonkajsiaTyp:'',zarukaRoky:'',chlTyp:'',chlKg:''}}
 function deviceBlock(d,i,total){
   var multi=norm(d.system||'').indexOf('multi')>-1;
   var ind=(d.vnutorne&&d.vnutorne.length)?d.vnutorne:[''];
@@ -1022,6 +1062,7 @@ function deviceBlock(d,i,total){
     }).join('')+
     (multi?'<button type="button" onclick="addInd('+i+')" style="margin-bottom:8px">➕ Pridať vnútornú jednotku</button>':'')+
     '<div class="dev-row"><input type="text" id="dOutT'+i+'" value="'+esc(d.vonkajsiaTyp||'')+'" placeholder="Typ vonkajšej"><input type="text" id="dOut'+i+'" value="'+esc(d.vonkajsia||'')+'" placeholder="S/N vonkajšej"></div>'+
+    '<div class="dev-row"><select id="dChT'+i+'"><option value="">-- Chladivo --</option>'+Object.keys(GWP).map(function(k){return '<option>'+k+'</option>'}).join('')+'</select><input type="text" inputmode="decimal" id="dChK'+i+'" value="'+esc(d.chlKg||'')+'" placeholder="Náplň (kg)"></div>'+
     '<select id="dZar'+i+'" data-iny data-iny-ph="Počet rokov (číslo)"><option value="">-- Záruka v rokoch --</option><option value="1">1 rok</option><option value="2">2 roky</option><option value="3">3 roky</option><option value="5">5 rokov</option></select></div>';
 }
 function readDevices(){
@@ -1030,7 +1071,7 @@ function readDevices(){
     out.push({typ:gv('dTyp'+i),znacka:($('dZn'+i)?$('dZn'+i).value.trim():''),system:gv('dSys'+i),
       vnutorne:Array.prototype.map.call(document.querySelectorAll('#mDevices input.dInd[data-d="'+i+'"]'),function(x){return x.value.trim()}),
       vnutorneTyp:Array.prototype.map.call(document.querySelectorAll('#mDevices input.dIndT[data-d="'+i+'"]'),function(x){return x.value.trim()}),
-      vonkajsia:$('dOut'+i).value.trim(),vonkajsiaTyp:$('dOutT'+i).value.trim(),zarukaRoky:gv('dZar'+i)});
+      vonkajsia:$('dOut'+i).value.trim(),vonkajsiaTyp:$('dOutT'+i).value.trim(),zarukaRoky:gv('dZar'+i),chlTyp:$('dChT'+i).value,chlKg:$('dChK'+i).value.trim()});
     i++;
   }
   return out;
@@ -1040,7 +1081,7 @@ function renderDevices(list){
   var box=$('mDevices');
   box.innerHTML=list.map(function(d,i){return deviceBlock(d,i,list.length)}).join('');
   initIny(box);
-  list.forEach(function(d,i){sv('dTyp'+i,d.typ||'');sv('dSys'+i,d.system||'');sv('dZar'+i,d.zarukaRoky||'')});
+  list.forEach(function(d,i){sv('dTyp'+i,d.typ||'');sv('dSys'+i,d.system||'');sv('dZar'+i,d.zarukaRoky||'');$('dChT'+i).value=d.chlTyp||''});
 }
 function devRefresh(){renderDevices(readDevices())}
 function addDevice(){var L=readDevices();L.push(emptyDev());renderDevices(L)}
@@ -1160,8 +1201,8 @@ function renderDue(){
   var tmHtml='<h3>📅 Pripomienky na zajtra ('+esc(fmtD(tmr))+')</h3>'+(tm.map(function(m){
     var ri=remGet(smsKey(m));
     return '<div class="day-row" style="border-left-color:'+srvColor(m)+';cursor:default'+(ri?';opacity:.7':'')+'">'+(ri?'<small style="color:#15803d">✅ SMS poslaná '+esc(new Date(ri.ts).toLocaleString('sk-SK'))+(ri.by?' ('+esc(ri.by)+')':'')+'</small><br>':'')+'<b>'+(m.time?esc(m.time)+' · ':'')+esc(srvIcon(m)+(m.title||'Zákazka'))+'</b><span>'+esc(m.clientName||'')+(mAddr(m)?' · '+esc(mAddr(m)):'')+'</span><div class="modal-actions" style="margin-top:6px;flex-wrap:wrap">'+(smsBtn(m)||'<span class="td-none">bez telefónu</span>')+'</div></div>';
-  }).join('')||'<div class="td-none">Na zajtra nie sú žiadne zákazky.</div>')+'<h3>🛠 Záručné servisy</h3>';
-  el.innerHTML=tmHtml+(a.map(function(x){
+  }).join('')||'<div class="td-none">Na zajtra nie sú žiadne zákazky.</div>');
+  el.innerHTML=tmHtml+leakHtml()+'<h3>🛠 Záručné servisy</h3>'+(a.map(function(x){
     var sms='Dobrý deň, pripomíname Vám blížiaci sa záručný servis Vašej klimatizácie ('+fmtD(x.ds)+'). Dohodneme si termín? '+(f.nazov||'Úsporné klímy S&N');
     var tel=String(x.tel||'').replace(/\s+/g,''),rk=remKey(x),ri=remInfo(x);
     var mk='onclick="markRem(\''+rk+'\')"';
@@ -1224,7 +1265,7 @@ function fillChladivo(){
   var c=$('chClient');if(!c)return;
   var adm=isAdmin(),cv=c.value;
   c.innerHTML='<option value="">-- Klient (komu) --</option>'+dbData.clients.slice().sort(function(a,b){return nm(a).localeCompare(nm(b))}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(nm(x))+(x.obec?' – '+esc(x.obec):'')+'</option>'}).join('');
-  c.value=cv;
+  c.value=cv;fillChPick();
   var t=$('chTech'),tv=t.value;
   if(adm){t.innerHTML='<option value="">-- Kto doplnil --</option>'+dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');t.value=tv;t.style.display=''}
   else{t.style.display='none';t.innerHTML=''}
@@ -1237,25 +1278,35 @@ function fillChladivo(){
   arr.forEach(function(x){var k=num(x.kg);tot+=k;by[x.typ||'?']=(by[x.typ||'?']||0)+k});
   $('chSum').innerHTML='<b>Spolu: '+(Math.round(tot*100)/100)+' kg</b> ('+arr.length+' záznamov)'+Object.keys(by).map(function(k){return ' · '+esc(k)+': '+(Math.round(by[k]*100)/100)+' kg'}).join('');
 }
+function fillChPick(){
+  var p=$('chPick');if(!p)return;
+  var cid=$('chClient').value,v=p.value,o='<option value="">-- Zariadenie (nepovinné) --</option>';
+  dbData.montaze.filter(function(m){return cid&&m.clientId===cid}).forEach(function(m){
+    devicesOf(m).forEach(function(d,i){o+='<option value="'+esc(m.id)+'|'+i+'">'+esc((m.title||'Montáž')+' – '+(d.znacka||d.typ||'zariadenie')+(d.chlTyp?' · '+d.chlTyp+' '+(d.chlKg||'')+' kg':''))+'</option>'});
+  });
+  p.innerHTML=o;p.value=v;if(p.value!==v)p.value='';
+}
 function chClear(){
-  $('chEditId').value='';['chClient','chDev','chKg','chNote'].forEach(function(i){$(i).value=''});
+  $('chEditId').value='';['chClient','chDev','chKg','chNote','chPick'].forEach(function(i){$(i).value=''});
   $('chDate').value=ymd(new Date());$('chTech').value='';$('chBtn').textContent='Uložiť záznam';
 }
 function saveChladivo(){
   var cid=$('chClient').value,cl=findById('clients',cid);
   if(!cl){toast('Vyber klienta');return}
   var kg=parseFloat(String($('chKg').value).replace(',','.'));
-  if(!(kg>0)){toast('Zadaj množstvo v kg');return}
+  if(isNaN(kg))kg=0;
+  var chk=$('chWhy').value==='Kontrola tesnosti';
+  if(!chk&&!(kg>0)){toast('Zadaj množstvo v kg');return}
   if(!$('chDate').value){toast('Zadaj dátum');return}
   var adm=isAdmin(),tid=adm?$('chTech').value:me,tm=findById('members',tid);
   if(!tm){toast(adm?'Vyber, kto chladivo doplnil':'Najprv vyber svoje meno');return}
   var id=$('chEditId').value||null;
-  put('chladivo',{date:$('chDate').value,clientId:cid,clientName:nm(cl),adresa:cl.adresa||'',zariadenie:$('chDev').value.trim(),typ:$('chTyp').value,kg:Math.round(kg*1000)/1000,dovod:$('chWhy').value,techId:tid,techName:tm.name||'',pozn:$('chNote').value.trim(),ts:Date.now()},id);
+  put('chladivo',{date:$('chDate').value,clientId:cid,clientName:nm(cl),adresa:cl.adresa||'',zariadenie:$('chDev').value.trim()||($('chPick').selectedIndex>0?$('chPick').options[$('chPick').selectedIndex].text:''),mid:$('chPick').value?$('chPick').value.split('|')[0]:'',di:$('chPick').value?parseInt($('chPick').value.split('|')[1],10):null,typ:$('chTyp').value,kg:Math.round(kg*1000)/1000,dovod:$('chWhy').value,techId:tid,techName:tm.name||'',pozn:$('chNote').value.trim(),ts:Date.now()},id);
   toast(id?'Záznam upravený':'Záznam uložený');chClear();
 }
 function editChladivo(id){
   var r=findById('chladivo',id);if(!r)return;
-  $('chEditId').value=id;$('chDate').value=r.date||'';$('chClient').value=r.clientId||'';$('chDev').value=r.zariadenie||'';
+  $('chEditId').value=id;$('chDate').value=r.date||'';$('chClient').value=r.clientId||'';fillChPick();$('chPick').value=r.mid?r.mid+'|'+r.di:'';$('chDev').value=r.zariadenie||'';
   $('chTyp').value=r.typ||'R32';$('chKg').value=r.kg;$('chWhy').value=r.dovod||'';$('chNote').value=r.pozn||'';
   if(isAdmin())$('chTech').value=r.techId||'';
   $('chBtn').textContent='Uložiť zmeny';openSection('chladivoSection','Chladivo');window.scrollTo(0,0);
@@ -1477,7 +1528,7 @@ function chStats(p){
   var o={kg:0,n:0,typ:{},tech:{}};
   dbData.chladivo.forEach(function(x){
     if((x.date||'').indexOf(p)!==0)return;
-    var k=num(x.kg);o.kg+=k;o.n++;
+    var k=num(x.kg);o.kg+=k;if(x.dovod!=='Kontrola tesnosti')o.n++;
     o.typ[x.typ||'?']=(o.typ[x.typ||'?']||0)+k;
     o.tech[x.techName||'?']=(o.tech[x.techName||'?']||0)+k;
   });
@@ -1798,7 +1849,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-03.22';
+var APP_VERSION='2026-11-04.1';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2382,11 +2433,12 @@ window.onload=function(){
     <input type="hidden" id="chEditId">
     <div class="form-grid">
       <label style="font-size:.85rem;color:#8e8e93">Dátum<input type="date" id="chDate"></label>
-      <select id="chClient" class="full-width-input"></select>
+      <select id="chClient" class="full-width-input" onchange="fillChPick()"></select>
+      <select id="chPick" class="full-width-input"><option value="">-- Zariadenie (nepovinné) --</option></select>
       <input type="text" id="chDev" class="full-width-input" placeholder="Zariadenie / umiestnenie (napr. obývačka, S/N) – nepovinné">
       <select id="chTyp"><option>R32</option><option>R410A</option><option>R290</option><option>R134a</option><option>R407C</option><option>R22</option><option>Iné</option></select>
       <input type="text" id="chKg" inputmode="decimal" placeholder="Množstvo (kg), napr. 0,45">
-      <select id="chWhy" class="full-width-input"><option>Doplnenie po úniku</option><option>Plnenie pri montáži</option><option>Servis / údržba</option><option>Iné</option></select>
+      <select id="chWhy" class="full-width-input"><option>Doplnenie po úniku</option><option>Plnenie pri montáži</option><option>Servis / údržba</option><option>Kontrola tesnosti</option><option>Iné</option></select>
       <select id="chTech" class="full-width-input"></select>
       <input type="text" id="chNote" class="full-width-input" placeholder="Poznámka (nepovinné)">
     </div>
