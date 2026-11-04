@@ -725,7 +725,7 @@ function editMontaz(id){
   var cid=m.clientId||'';
   if(!cid&&m.clientName){var f=dbData.clients.filter(function(x){return nm(x).toLowerCase()===m.clientName.toLowerCase()})[0];if(f)cid=f.id}
   $('mClient').value=cid;
-  renderDevices(devicesOf(m).map(function(d){return {typ:d.typ||'',znacka:d.znacka||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vnutorneTyp:(d.vnutorne&&d.vnutorne.length)?(d.vnutorneTyp||[]).concat(d.vnutorne.map(function(){return ''})).slice(0,d.vnutorne.length):[d.typove||''],vonkajsia:d.vonkajsia||'',vonkajsiaTyp:d.vonkajsiaTyp||'',zarukaRoky:d.zarukaRoky||''}}));
+  renderDevices(devicesOf(m).map(function(d){return {typ:d.typ||'',znacka:d.znacka||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vnutorneTyp:(d.vnutorne&&d.vnutorne.length)?(d.vnutorneTyp||[]).concat(d.vnutorne.map(function(){return ''})).slice(0,d.vnutorne.length):[d.typove||''],vonkajsia:d.vonkajsia||'',vonkajsiaTyp:d.vonkajsiaTyp||'',zarukaRoky:d.zarukaRoky||'',chlTyp:d.chlTyp||'',chlKg:d.chlKg||''}}));
   mTeam=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});
   $('mMember').value='';renderMontazChips();
   showMS('montaz');
@@ -739,8 +739,8 @@ function saveMontaz(){
   if(!leaveConflict(mTeam,$('mDate').value,$('mTime').value))return;
   var eid=$('editingMontazId').value||null;
   var cid=$('mClient').value,cl=dbData.clients.filter(function(x){return x.id===cid})[0];
-  var devs=readDevices().map(function(d){var il=indList(d);return {typ:d.typ,znacka:d.znacka,system:d.system,vnutorne:il.map(function(x){return x.sn}),vnutorneTyp:il.map(function(x){return x.tp}),vonkajsia:d.vonkajsia,vonkajsiaTyp:d.vonkajsiaTyp,zarukaRoky:d.zarukaRoky}})
-    .filter(function(d){return d.typ||d.znacka||d.system||d.vnutorne.length||d.vonkajsia||d.vonkajsiaTyp||d.zarukaRoky});
+  var devs=readDevices().map(function(d){var il=indList(d);return {typ:d.typ,znacka:d.znacka,system:d.system,vnutorne:il.map(function(x){return x.sn}),vnutorneTyp:il.map(function(x){return x.tp}),vonkajsia:d.vonkajsia,vonkajsiaTyp:d.vonkajsiaTyp,zarukaRoky:d.zarukaRoky,chlTyp:d.chlTyp||'',chlKg:d.chlKg||''}})
+    .filter(function(d){return d.typ||d.znacka||d.system||d.vnutorne.length||d.vonkajsia||d.vonkajsiaTyp||d.zarukaRoky||d.chlTyp});
   put('montaze',{title:t,clientId:cid||'',clientName:cl?nm(cl):'',date:$('mDate').value,time:$('mTime').value,
     zariadenia:devs,typ:'',system:'',vnutorne:[],vonkajsia:'',zarukaRoky:'',
     memberIds:mTeam.map(function(x){return x.id}),memberNames:mTeam.map(function(x){return x.name})},eid);
@@ -1871,7 +1871,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.8';
+var APP_VERSION='2026-11-04.9';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
