@@ -211,10 +211,10 @@ html[data-theme=dark] #updBar{color:#111}
 #lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:12px}
 #lightbox img{max-width:100%;max-height:100%;border-radius:8px}
 /* --- iOS navigácia --- */
-#mSteps.jb-steps,#eventModal .jb-steps{display:flex;gap:6px;margin:4px 0 8px}
-#mSteps.jb-steps span,#eventModal .jb-steps span{flex:1;text-align:center;padding:6px 0;border-radius:10px;background:#e2e8f0;color:#64748b;font-weight:700;font-size:.85rem;cursor:pointer}
-#mSteps.jb-steps span.on,#eventModal .jb-steps span.on{background:#0d9488;color:#fff}
-#mSteps.jb-steps span.ok,#eventModal .jb-steps span.ok{background:#ccfbf1;color:#0f766e}
+#mSteps.jb-steps,#clSteps.jb-steps,#rpSteps.jb-steps,#eventModal .jb-steps{display:flex;gap:6px;margin:4px 0 8px}
+#mSteps.jb-steps span,#clSteps.jb-steps span,#rpSteps.jb-steps span,#eventModal .jb-steps span{flex:1;text-align:center;padding:6px 0;border-radius:10px;background:#e2e8f0;color:#64748b;font-weight:700;font-size:.85rem;cursor:pointer}
+#mSteps.jb-steps span.on,#clSteps.jb-steps span.on,#rpSteps.jb-steps span.on,#eventModal .jb-steps span.on{background:#0d9488;color:#fff}
+#mSteps.jb-steps span.ok,#clSteps.jb-steps span.ok,#rpSteps.jb-steps span.ok,#eventModal .jb-steps span.ok{background:#ccfbf1;color:#0f766e}
 #eventModal .jb{width:100%;padding:10px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:1rem;background:#fff;color:#111;box-sizing:border-box}
 #eventModal .jb.need{border-color:#dc2626;background:#fef2f2}
 .jb-dev{border:1px solid #e2e8f0;border-radius:14px;padding:10px;margin:8px 0}
@@ -660,7 +660,33 @@ function mGo(n){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function newMontaz(){clearMontaz();showMS('montaz');mGo(1)}
-function newServis(p){clearServis(p);showMS(p==='cl'?'clean':'repair')}
+var svS={cl:1,rp:1},svIsNew={cl:false,rp:false};
+function svNew(p,on){
+  svIsNew[p]=!!on;
+  $(p+'ModeNew').style.background=on?'#0d9488':'#94a3b8';$(p+'ModeOld').style.background=on?'#94a3b8':'#0d9488';
+  $(p+'Name').placeholder=on?'Meno a priezvisko nového klienta':'🔍 Meno a priezvisko klienta (hľadanie v kartách klientov)';
+  $(p+'Sug').style.display='none';
+  if(on){$(p+'ClientId').value='';showWarranty(p,null);$(p+'Name').value='';$(p+'Phone').value='';$(p+'Email').value='';$(p+'Addr').value=''}
+}
+var SVN={cl:['Klient','Zariadenie a termín','Tím','Hotovo'],rp:['Klient','Porucha','Termín a tím','Záznam','Hotovo']};
+function svGo(p,n){
+  var N=SVN[p].length;n=Math.max(1,Math.min(N,n));svS[p]=n;
+  document.querySelectorAll('.svStep[data-p="'+p+'"]').forEach(function(d){d.style.display=(+d.getAttribute('data-s')===n)?'':'none'});
+  $(p+'Steps').innerHTML=SVN[p].map(function(k,i){return '<span class="'+(i+1===n?'on':(i+1<n?'ok':''))+'" onclick="svGo(\''+p+'\','+(i+1)+')">'+(i+1<n?'✓':(i+1))+'</span>'}).join('');
+  $(p+'StepH').textContent='Krok '+n+'/'+N+' · '+SVN[p][n-1];
+  $(p+'Back').style.display=n>1?'':'none';$(p+'Next').style.display=n<N?'':'none';
+  if(n===N){
+    var tm=(sTeam[p]||[]).map(function(t){return esc(t.name)}).join(', ')||'nikto';
+    var h='<div class="modal-row"><strong>👤 Klient:</strong> '+esc($(p+'Name').value||'-')+'</div>'+
+      '<div class="modal-row"><strong>📞</strong> '+esc($(p+'Phone').value||'-')+' · <strong>📍</strong> '+esc($(p+'Addr').value||'-')+'</div>';
+    if(p==='cl')h+='<div class="modal-row"><strong>Zariadenie:</strong> '+esc($('clDevice').value||'-')+'</div>';
+    else h+='<div class="modal-row"><strong>Porucha:</strong> '+esc($('rpDesc').value||'-')+'</div><div class="modal-row"><strong>Stav:</strong> '+esc($('rpStav').value)+($('rpPriorita').value?' · 🚨 Urgentné':'')+'</div>';
+    h+='<div class="modal-row"><strong>📅 Termín:</strong> '+($(p+'Date').value?esc(fmtD($(p+'Date').value)):'bez dátumu')+($(p+'Time').value?' o '+esc($(p+'Time').value):'')+'</div><div class="modal-row"><strong>👷 Tím:</strong> '+tm+'</div>';
+    $(p+'Summary').innerHTML=h;
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function newServis(p){clearServis(p);showMS(p==='cl'?'clean':'repair');svGo(p,1)}
 function clientAddr(c){
   var a=c.adresa||'';
   if(c.obec&&a.toLowerCase().indexOf(String(c.obec).toLowerCase())<0)a+=(a?', ':'')+c.obec;
@@ -668,6 +694,7 @@ function clientAddr(c){
 }
 function sugSearch(p){
   var inp=$(p+'Name'),box=$(p+'Sug'),q=norm(inp.value),qd=q.replace(/\s+/g,'');
+  if(svIsNew[p]){box.style.display='none';return}
   var cur=$(p+'ClientId').value,cc=cur?findById('clients',cur):null;
   if(cc&&norm(nm(cc))!==q)$(p+'ClientId').value='';
   if(!$(p+'ClientId').value)showWarranty(p,null);
@@ -717,13 +744,21 @@ function clearServis(p){
   if(p==='cl')$('clDevice').value='';else{$('rpDesc').value='';$('rpStav').value='Nová';$('rpPriorita').value='';$('rpWork').value='';$('rpParts').value='';$('rpPrice').value='';$('rpHours').value=''}
   $(p+'Sug').style.display='none';
   $(p+'SaveBtn').innerText=p==='cl'?'Uložiť čistenie':'Uložiť opravu';$(p+'CancelBtn').style.display='none';
+  if($(p+'Steps')){svNew(p,false);svGo(p,1)}
 }
 function saveServis(p){
-  var name=$(p+'Name').value.trim();if(!name){toast('Zadajte meno klienta');return}
+  var name=$(p+'Name').value.trim();if(!name){toast('Zadajte meno klienta');svGo(p,1);return}
   var pend=$(p+'Member').value;
   if(pend){var pm=findById('members',pend);if(pm&&!sTeam[p].some(function(x){return x.id===pend}))sTeam[p].push({id:pend,name:pm.name||''})}
   if(!leaveConflict(sTeam[p],$(p+'Date').value,$(p+'Time').value))return;
   var cid=$(p+'ClientId').value,c=cid?findById('clients',cid):null;
+  if(svIsNew[p]&&!c){
+    var parts=name.split(/\s+/),pr=parts.length>1?parts.pop():'',me_=parts.join(' ');
+    var nc={meno:me_,priezvisko:pr,name:name,telefon:$(p+'Phone').value.trim(),email:$(p+'Email').value.trim(),adresa:$(p+'Addr').value.trim()};
+    var dup=findDupClient(nc.telefon,null);
+    if(dup&&confirm('Klient s týmto telefónom už existuje:\n'+nm(dup)+(dup.adresa?' – '+dup.adresa:'')+'\n\nPoužiť existujúceho? (Zrušiť = vytvoriť nového)'))c=dup;
+    else{var nid=col('clients').doc().id;put('clients',nc,nid);c={id:nid,meno:nc.meno,priezvisko:nc.priezvisko,name:name,telefon:nc.telefon,email:nc.email,adresa:nc.adresa}}
+  }
   if(!c)c=dbData.clients.filter(function(x){return norm(nm(x))===norm(name)})[0]||null;
   var type=p==='cl'?'Čistenie':'Oprava',cname=c?nm(c):name;
   var o={kind:'servis',servisType:type,title:type+' – '+cname,clientId:c?c.id:'',clientName:cname,
@@ -749,7 +784,7 @@ function editServis(id){
   showWarranty(p,m.clientId?findById('clients',m.clientId):null);
   if(p==='cl')$('clDevice').value=m.zariadenie||'';else{$('rpDesc').value=m.popis||'';$('rpStav').value=m.stav||'Nová';$('rpPriorita').value=m.urgent?'urgent':'';$('rpWork').value=m.praca||'';$('rpParts').value=m.diely||'';$('rpPrice').value=m.cena||'';$('rpHours').value=m.hodiny||''}
   sTeam[p]=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});renderServisChips(p);
-  $(p+'EditId').value=m.id;$(p+'SaveBtn').innerText='Aktualizovať';$(p+'CancelBtn').style.display='block';
+  $(p+'EditId').value=m.id;$(p+'SaveBtn').innerText='Aktualizovať';$(p+'CancelBtn').style.display='block';svGo(p,1);
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function toggleNewClient(on){
@@ -1486,6 +1521,7 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
+['🧹 Čistenie a 🔨 Oprava krok za krokom',0,'V kroku Klient je tlačidlo <b>➕ Nový klient</b> (uloží kartu klienta). Čistenie: <b>Klient → Zariadenie a termín → Tím → Hotovo</b>. Oprava: <b>Klient → Porucha → Termín a tím → Záznam → Hotovo</b>. Na očíslované štvorčeky hore sa dá ťuknúť a skočiť na ľubovoľný krok.'],
 ['🔧 Montáž krok za krokom',0,'Práca → Montáž: <b>1 Klient</b> (tlačidlo 👤 Existujúci klient alebo ➕ Nový klient) → <b>2 Zákazka</b> (názov, dátum, čas) → <b>3 Zariadenia</b> → <b>4 Tím</b> → <b>5 Hotovo</b> (zhrnutie a uloženie). Na očíslované štvorčeky hore môžeš ťuknúť a skočiť na ľubovoľný krok, aj pri úprave montáže.'],
 ['📋 Zákazka krok za krokom',0,'Ťukni pri úlohe na <b>📋 Zákazka</b>. Ideš krokmi: <b>Príchod</b> (📞 Zavolať, 🧭 Navigovať, ▶ Som na mieste) → <b>Zariadenia</b> (červené polia treba doplniť) → <b>Kontrola</b> → <b>Fotky</b> → <b>Podpisy</b> → <b>Hotovo</b>. Každý krok sa ukladá pri ťuknutí na Ďalej. Technik má dole lištu: Dnes, Kalendár, Voľno, Správy.'],
 ['🧹 Čistenie v Moje úlohy',0,'Naplánované čistenie sa v <b>Moje úlohy</b> zobrazí až <b>14 dní pred termínom</b>. Skôr ho nájdeš v kalendári.'],
@@ -2061,7 +2097,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.19';
+var APP_VERSION='2026-11-04.21';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2822,8 +2858,11 @@ window.onload=function(){
   <div id="msClean" style="display:none">
     <button class="back-btn" onclick="showMS('servis')">⬅ Späť</button>
     <h3>🧹 Čistenie</h3>
+    <div id="clSteps" class="jb-steps"></div><h3 id="clStepH" style="margin:6px 0"></h3>
     <input type="hidden" id="clEditId" value="">
     <input type="hidden" id="clClientId" value="">
+    <div class="svStep" data-p="cl" data-s="1">
+    <div class="modal-actions" style="margin:0 0 8px"><button type="button" class="btn-edit" id="clModeOld" onclick="svNew('cl',false)">👤 Existujúci klient</button><button type="button" class="btn-edit" id="clModeNew" onclick="svNew('cl',true)">➕ Nový klient</button></div>
     <input type="text" id="clName" placeholder="🔍 Meno a priezvisko klienta (hľadanie v kartách klientov)" oninput="sugSearch('cl')" onfocus="sugSearch('cl')" onblur="setTimeout(function(){$('clSug').style.display='none'},150)" autocomplete="off">
     <div id="clSug" class="sug" style="display:none"></div>
     <div id="clWarranty" class="warr"></div>
@@ -2832,24 +2871,36 @@ window.onload=function(){
       <input type="email" id="clEmail" placeholder="E-mail (vyplní sa automaticky)">
     </div>
     <input type="text" id="clAddr" placeholder="Adresa (vyplní sa automaticky, inak ju zadajte)">
+    </div>
+    <div class="svStep" data-p="cl" data-s="2" style="display:none">
     <input type="text" id="clDevice" placeholder="Zariadenie (napr. Klimatizácia Daikin)">
+    <div class="form-grid">
+      <label class="fl">Dátum<input type="date" id="clDate"></label>
+      <label class="fl">Čas<input type="time" id="clTime"></label>
+    </div>
+    </div>
+    <div class="svStep" data-p="cl" data-s="3" style="display:none">
     <div class="form-grid">
       <select id="clMember"></select>
       <button type="button" onclick="addServisMember('cl')">➕ Pridať člena tímu</button>
     </div>
     <div id="clTeamChips" class="chips"></div>
-    <div class="form-grid">
-      <label class="fl">Dátum<input type="date" id="clDate"></label>
-      <label class="fl">Čas<input type="time" id="clTime"></label>
     </div>
+    <div class="svStep" data-p="cl" data-s="4" style="display:none">
+    <div id="clSummary"></div>
     <button class="action-btn" id="clSaveBtn" onclick="saveServis('cl')">Uložiť čistenie</button>
+    </div>
+    <div class="modal-actions" style="flex-wrap:wrap;margin:12px 0"><button class="btn-edit" id="clBack" style="background:#64748b" onclick="svGo('cl',svS.cl-1)">‹ Späť</button><button class="btn-edit" id="clNext" style="background:#0d9488;flex:1" onclick="svGo('cl',svS.cl+1)">Ďalej ›</button></div>
     <button class="back-btn" id="clCancelBtn" style="display:none" onclick="clearServis('cl');showMS('choice')">✖ Zrušiť úpravu</button>
   </div>
   <div id="msRepair" style="display:none">
     <button class="back-btn" onclick="showMS('servis')">⬅ Späť</button>
     <h3>🔨 Oprava</h3>
+    <div id="rpSteps" class="jb-steps"></div><h3 id="rpStepH" style="margin:6px 0"></h3>
     <input type="hidden" id="rpEditId" value="">
     <input type="hidden" id="rpClientId" value="">
+    <div class="svStep" data-p="rp" data-s="1">
+    <div class="modal-actions" style="margin:0 0 8px"><button type="button" class="btn-edit" id="rpModeOld" onclick="svNew('rp',false)">👤 Existujúci klient</button><button type="button" class="btn-edit" id="rpModeNew" onclick="svNew('rp',true)">➕ Nový klient</button></div>
     <input type="text" id="rpName" placeholder="🔍 Meno a priezvisko klienta (hľadanie v kartách klientov)" oninput="sugSearch('rp')" onfocus="sugSearch('rp')" onblur="setTimeout(function(){$('rpSug').style.display='none'},150)" autocomplete="off">
     <div id="rpSug" class="sug" style="display:none"></div>
     <div id="rpWarranty" class="warr"></div>
@@ -2858,11 +2909,26 @@ window.onload=function(){
       <input type="email" id="rpEmail" placeholder="E-mail (vyplní sa automaticky)">
     </div>
     <input type="text" id="rpAddr" placeholder="Adresa (vyplní sa automaticky, inak ju zadajte)">
+    </div>
+    <div class="svStep" data-p="rp" data-s="2" style="display:none">
     <textarea id="rpDesc" placeholder="Popis poruchy" style="min-height:90px"></textarea>
     <div class="form-grid">
       <select id="rpStav" title="Stav opravy"><option>Nová</option><option>Naplánovaná</option><option>Prebieha</option><option>Hotová</option></select>
       <select id="rpPriorita" title="Priorita"><option value="">Priorita: bežná</option><option value="urgent">🚨 Urgentné</option></select>
     </div>
+    </div>
+    <div class="svStep" data-p="rp" data-s="3" style="display:none">
+    <div class="form-grid">
+      <label class="fl">Dátum<input type="date" id="rpDate"></label>
+      <label class="fl">Čas<input type="time" id="rpTime"></label>
+    </div>
+    <div class="form-grid">
+      <select id="rpMember"></select>
+      <button type="button" onclick="addServisMember('rp')">➕ Pridať člena tímu</button>
+    </div>
+    <div id="rpTeamChips" class="chips"></div>
+    </div>
+    <div class="svStep" data-p="rp" data-s="4" style="display:none">
     <h4 style="margin:10px 0 4px">Záznam po oprave</h4>
     <textarea id="rpWork" placeholder="Vykonaná práca" style="min-height:70px"></textarea>
     <input type="text" id="rpParts" placeholder="Použité diely">
@@ -2870,16 +2936,12 @@ window.onload=function(){
       <input type="text" id="rpPrice" placeholder="Cena (€)" inputmode="decimal">
       <input type="text" id="rpHours" placeholder="Čas na mieste (napr. 1,5 h)">
     </div>
-    <div class="form-grid">
-      <select id="rpMember"></select>
-      <button type="button" onclick="addServisMember('rp')">➕ Pridať člena tímu</button>
     </div>
-    <div id="rpTeamChips" class="chips"></div>
-    <div class="form-grid">
-      <label class="fl">Dátum<input type="date" id="rpDate"></label>
-      <label class="fl">Čas<input type="time" id="rpTime"></label>
-    </div>
+    <div class="svStep" data-p="rp" data-s="5" style="display:none">
+    <div id="rpSummary"></div>
     <button class="action-btn" id="rpSaveBtn" onclick="saveServis('rp')">Uložiť opravu</button>
+    </div>
+    <div class="modal-actions" style="flex-wrap:wrap;margin:12px 0"><button class="btn-edit" id="rpBack" style="background:#64748b" onclick="svGo('rp',svS.rp-1)">‹ Späť</button><button class="btn-edit" id="rpNext" style="background:#0d9488;flex:1" onclick="svGo('rp',svS.rp+1)">Ďalej ›</button></div>
     <button class="back-btn" id="rpCancelBtn" style="display:none" onclick="clearServis('rp');showMS('choice')">✖ Zrušiť úpravu</button>
   </div>
     <h3>Zoznam montáží a servisov</h3>
