@@ -727,7 +727,16 @@ function editServis(id){
   $(p+'EditId').value=m.id;$(p+'SaveBtn').innerText='Aktualizovať';$(p+'CancelBtn').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
+function toggleNewClient(on){
+  var b=$('mNewBox'),open=(on===undefined)?b.style.display==='none':on;
+  b.style.display=open?'block':'none';
+  $('mNewBtn').textContent=open?'✖ Zrušiť nového klienta':'➕ Nový klient (zadať priamo tu)';
+  $('mClient').style.display=open?'none':'';
+  if(!open)['mNMeno','mNPriez','mNTel','mNAdr','mNMail'].forEach(function(i){$(i).value=''});
+  else $('mClient').value='';
+}
 function clearMontaz(){
+  toggleNewClient(false);
   ['mTitle','mClient','mDate','mTime','mMember'].forEach(function(i){$(i).value=''});
   renderDevices([emptyDev()]);
   mTeam=[];renderMontazChips();
@@ -736,7 +745,7 @@ function clearMontaz(){
 function editMontaz(id){
   var m=findById('montaze',id);if(!m)return;
   if(m.kind){editServis(id);return}
-  openSection('montazSection','Montáž / Servis');
+  openSection('montazSection','Montáž / Servis');toggleNewClient(false);
   $('mTitle').value=m.title||'';$('mDate').value=m.date||'';$('mTime').value=m.time||'';
   var cid=m.clientId||'';
   if(!cid&&m.clientName){var f=dbData.clients.filter(function(x){return nm(x).toLowerCase()===m.clientName.toLowerCase()})[0];if(f)cid=f.id}
@@ -754,10 +763,18 @@ function saveMontaz(){
   if(pend){var pm=findById('members',pend);if(pm&&!mTeam.some(function(x){return x.id===pend}))mTeam.push({id:pend,name:pm.name||''})}
   if(!leaveConflict(mTeam,$('mDate').value,$('mTime').value))return;
   var eid=$('editingMontazId').value||null;
-  var cid=$('mClient').value,cl=dbData.clients.filter(function(x){return x.id===cid})[0];
+  var cid=$('mClient').value,cl=dbData.clients.filter(function(x){return x.id===cid})[0],newName='';
+  if($('mNewBox').style.display!=='none'){
+    var nc={meno:$('mNMeno').value.trim(),priezvisko:$('mNPriez').value.trim(),telefon:$('mNTel').value.trim(),adresa:$('mNAdr').value.trim(),email:$('mNMail').value.trim()};
+    nc.name=(nc.meno+' '+nc.priezvisko).trim();
+    if(!nc.name){toast('Zadajte meno nového klienta');return}
+    var dup=findDupClient(nc.telefon,null);
+    if(dup&&confirm('Klient s týmto telefónom už existuje:\n'+nm(dup)+(dup.adresa?' – '+dup.adresa:'')+'\n\nPoužiť existujúceho? (Zrušiť = vytvoriť nového)')){cid=dup.id;cl=dup}
+    else{cid=col('clients').doc().id;newName=nc.name;put('clients',nc,cid)}
+  }
   var devs=readDevices().map(function(d){var il=indList(d);return {typ:d.typ,znacka:d.znacka,system:d.system,vnutorne:il.map(function(x){return x.sn}),vnutorneTyp:il.map(function(x){return x.tp}),vonkajsia:d.vonkajsia,vonkajsiaTyp:d.vonkajsiaTyp,zarukaRoky:d.zarukaRoky,chlTyp:d.chlTyp||'',chlKg:d.chlKg||''}})
     .filter(function(d){return d.typ||d.znacka||d.system||d.vnutorne.length||d.vonkajsia||d.vonkajsiaTyp||d.zarukaRoky||d.chlTyp});
-  put('montaze',{title:t,clientId:cid||'',clientName:cl?nm(cl):'',date:$('mDate').value,time:$('mTime').value,
+  put('montaze',{title:t,clientId:cid||'',clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,
     zariadenia:devs,typ:'',system:'',vnutorne:[],vonkajsia:'',zarukaRoky:'',
     memberIds:mTeam.map(function(x){return x.id}),memberNames:mTeam.map(function(x){return x.name})},eid);
   var back=fromCal;
@@ -1442,6 +1459,7 @@ var HELP=[
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
+['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
 ['📋 Zákazka (jedna obrazovka)',0,'Ťukni na úlohu a <b>📋 Zákazka</b> (alebo priamo v zozname). Hore je <b>📞 Zavolať, 💬 SMS, 🧭 Navigovať</b>, potom údaje z klienta a montáže. Červené polia sú to, čo chýba (výrobné čísla, chladivo, náplň). Dole sú kontrolný zoznam, fotky a podpisy. <b>✔ Uložiť a dokončiť</b> nastaví zákazku ako Hotová.'],
 ['📝 Treba doplniť',0,'V <b>Moje úlohy</b> je hore červený zoznam montáží (za posledných 90 dní), kde chýbajú <b>výrobné čísla</b> alebo <b>chladivo a náplň</b>. Ťuknutím sa otvorí montáž na doplnenie. Po doplnení zmizne zo zoznamu.'],
 ['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
@@ -1983,7 +2001,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.13';
+var APP_VERSION='2026-11-04.14';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2697,6 +2715,16 @@ window.onload=function(){
     <div class="form-grid">
       <input type="text" id="mTitle" placeholder="Názov montáže (napr. značka a model)" class="full-width-input">
       <select id="mClient" class="full-width-input"></select>
+      <button type="button" class="back-btn" id="mNewBtn" style="margin:0" onclick="toggleNewClient()">➕ Nový klient (zadať priamo tu)</button>
+      <div id="mNewBox" class="full-width-input" style="display:none;border:1.5px solid #0d9488;border-radius:14px;padding:10px">
+        <b>👤 Nový klient</b>
+        <input type="text" id="mNMeno" placeholder="Meno" class="full-width-input">
+        <input type="text" id="mNPriez" placeholder="Priezvisko" class="full-width-input">
+        <input type="tel" id="mNTel" placeholder="Telefón" class="full-width-input">
+        <input type="text" id="mNAdr" placeholder="Adresa (ulica, obec)" class="full-width-input">
+        <input type="email" id="mNMail" placeholder="E-mail (nepovinné)" class="full-width-input">
+        <small style="color:#64748b">Klient sa uloží pri uložení montáže a priradí sa k nej.</small>
+      </div>
       <label class="fl">Dátum montáže<input type="date" id="mDate"></label>
       <label class="fl">Čas<input type="time" id="mTime"></label>
       <div id="mDevices" class="full-width-input"></div>
