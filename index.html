@@ -118,7 +118,8 @@ h3{font-size:1.15rem;font-weight:600;margin:18px 2px 6px}
 input,select,textarea{background:#fff;border:none;border-radius:12px;padding:12px 14px;font-size:1rem;font-family:inherit;box-shadow:inset 0 0 0 1px var(--sep);-webkit-appearance:none;appearance:none;color:var(--text)}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:34px}
 input:focus,select:focus,textarea:focus{outline:none;box-shadow:inset 0 0 0 2px var(--primary)}
-input[type=checkbox]{width:auto;accent-color:var(--primary)}
+input[type=checkbox]{-webkit-appearance:none;appearance:none;width:26px!important;min-width:26px;height:26px;padding:0;margin:0 12px 0 0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 2px #c7c7cc;flex:none;vertical-align:middle;cursor:pointer}
+input[type=checkbox]:checked{background:var(--primary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E") center/16px no-repeat;box-shadow:none}
 button{font-family:inherit}
 button.action-btn{background:var(--primary);border-radius:14px;padding:14px;font-weight:600;font-size:1.02rem;transition:opacity .15s,transform .1s}
 button.action-btn:active{opacity:.8;transform:scale(.98)}
@@ -1804,7 +1805,7 @@ function showProtocol(id){
   lastDay=null;
   $('eventModalBody').innerHTML='<h3>🧾 '+esc(protocolTitle(m))+'</h3>'+
     protocolRows(m).map(function(r){return '<div class="modal-row"><strong>'+esc(r[0])+':</strong> '+esc(r[1])+'</div>'}).join('')+
-    (m.kind?'':'<div class="modal-sep"></div><div class="modal-row"><strong>Kontrolný zoznam</strong></div>'+CHECK.map(function(l,i){return '<label style="display:block;padding:4px 0"><input type="checkbox" class="chk" value="'+i+'"'+((m.checklist||[]).indexOf(l)>-1?' checked':'')+' style="width:auto;margin-right:8px">'+esc(l)+'</label>'}).join(''))+
+    (m.kind?'':'<div class="modal-sep"></div><div class="modal-row"><strong>Kontrolný zoznam</strong></div>'+CHECK.map(function(l,i){return '<label style="display:flex;align-items:center;padding:8px 0"><input type="checkbox" class="chk" value="'+i+'"'+((m.checklist||[]).indexOf(l)>-1?' checked':'')+'>'+esc(l)+'</label>'}).join(''))+
     '<div class="modal-sep"></div>'+
     '<div class="modal-row"><strong>Podpis technika</strong></div><canvas id="sigT" class="sig-pad" width="600" height="200"></canvas>'+
     '<button class="btn-edit" style="background:#64748b" onclick="clearPad(\'sigT\')">Vymazať podpis</button>'+
@@ -1849,7 +1850,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.1';
+var APP_VERSION='2026-11-04.2';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
