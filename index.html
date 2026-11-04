@@ -211,10 +211,10 @@ html[data-theme=dark] #updBar{color:#111}
 #lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:12px}
 #lightbox img{max-width:100%;max-height:100%;border-radius:8px}
 /* --- iOS navigácia --- */
-#eventModal .jb-steps{display:flex;gap:6px;margin:4px 0 8px}
-#eventModal .jb-steps span{flex:1;text-align:center;padding:6px 0;border-radius:10px;background:#e2e8f0;color:#64748b;font-weight:700;font-size:.85rem;cursor:pointer}
-#eventModal .jb-steps span.on{background:#0d9488;color:#fff}
-#eventModal .jb-steps span.ok{background:#ccfbf1;color:#0f766e}
+#mSteps.jb-steps,#eventModal .jb-steps{display:flex;gap:6px;margin:4px 0 8px}
+#mSteps.jb-steps span,#eventModal .jb-steps span{flex:1;text-align:center;padding:6px 0;border-radius:10px;background:#e2e8f0;color:#64748b;font-weight:700;font-size:.85rem;cursor:pointer}
+#mSteps.jb-steps span.on,#eventModal .jb-steps span.on{background:#0d9488;color:#fff}
+#mSteps.jb-steps span.ok,#eventModal .jb-steps span.ok{background:#ccfbf1;color:#0f766e}
 #eventModal .jb{width:100%;padding:10px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:1rem;background:#fff;color:#111;box-sizing:border-box}
 #eventModal .jb.need{border-color:#dc2626;background:#fef2f2}
 .jb-dev{border:1px solid #e2e8f0;border-radius:14px;padding:10px;margin:8px 0}
@@ -642,7 +642,24 @@ function showMS(v){
   $(map[v]).style.display=(v==='choice'?'grid':'block');
   var ob=document.querySelector('#montazSection > .back-btn');if(ob)ob.style.display=(v==='choice'?'':'none');
 }
-function newMontaz(){clearMontaz();showMS('montaz')}
+var mStep=1,MSN=['Klient','Zákazka','Zariadenia','Tím','Hotovo'];
+function mGo(n){
+  n=Math.max(1,Math.min(5,n));mStep=n;
+  document.querySelectorAll('#msMontaz .mStep').forEach(function(p){p.style.display=(+p.getAttribute('data-s')===n)?'grid':'none'});
+  $('mSteps').innerHTML=MSN.map(function(k,i){return '<span class="'+(i+1===n?'on':(i+1<n?'ok':''))+'" onclick="mGo('+(i+1)+')">'+(i+1<n?'✓':(i+1))+'</span>'}).join('');
+  $('mStepH').textContent='Krok '+n+'/5 · '+MSN[n-1];
+  $('mBack').style.display=n>1?'':'none';$('mNext').style.display=n<5?'':'none';
+  if(n===5){
+    var cid=$('mClient').value,c=findById('clients',cid),nn=$('mNewBox').style.display!=='none',dv=readDevices().filter(function(d){return d.typ||d.znacka});
+    $('mSummary').innerHTML='<div class="modal-row"><strong>👤 Klient:</strong> '+esc(nn?(($('mNMeno').value+' '+$('mNPriez').value).trim()+' (nový)'):(c?nm(c):'nevybraný'))+'</div>'+
+      '<div class="modal-row"><strong>🔧 Montáž:</strong> '+esc($('mTitle').value||'bez názvu')+'</div>'+
+      '<div class="modal-row"><strong>📅 Termín:</strong> '+($('mDate').value?esc(fmtD($('mDate').value)):'bez dátumu')+($('mTime').value?' o '+esc($('mTime').value):'')+'</div>'+
+      '<div class="modal-row"><strong>Zariadenia:</strong> '+(dv.length?dv.map(function(d){return esc([d.typ,d.system,d.znacka].filter(Boolean).join(' '))}).join('; '):'žiadne')+'</div>'+
+      '<div class="modal-row"><strong>👷 Tím:</strong> '+(mTeam.length?mTeam.map(function(t){return esc(t.name)}).join(', '):'nikto')+'</div>';
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function newMontaz(){clearMontaz();showMS('montaz');mGo(1)}
 function newServis(p){clearServis(p);showMS(p==='cl'?'clean':'repair')}
 function clientAddr(c){
   var a=c.adresa||'';
@@ -744,7 +761,7 @@ function toggleNewClient(on){
   else $('mClient').value='';
 }
 function clearMontaz(){
-  toggleNewClient(false);
+  toggleNewClient(false);if($('mSteps'))mGo(1);
   ['mTitle','mClient','mDate','mTime','mMember'].forEach(function(i){$(i).value=''});
   renderDevices([emptyDev()]);
   mTeam=[];renderMontazChips();
@@ -761,12 +778,12 @@ function editMontaz(id){
   renderDevices(devicesOf(m).map(function(d){return {typ:d.typ||'',znacka:d.znacka||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vnutorneTyp:(d.vnutorne&&d.vnutorne.length)?(d.vnutorneTyp||[]).concat(d.vnutorne.map(function(){return ''})).slice(0,d.vnutorne.length):[d.typove||''],vonkajsia:d.vonkajsia||'',vonkajsiaTyp:d.vonkajsiaTyp||'',zarukaRoky:d.zarukaRoky||'',chlTyp:d.chlTyp||'',chlKg:d.chlKg||''}}));
   mTeam=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});
   $('mMember').value='';renderMontazChips();
-  showMS('montaz');
+  showMS('montaz');mGo(1);
   $('editingMontazId').value=m.id;$('montazSaveBtn').innerText='Aktualizovať montáž';$('montazCancelBtn').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function saveMontaz(){
-  var t=$('mTitle').value.trim();if(!t){toast('Zadajte názov montáže');return}
+  var t=$('mTitle').value.trim();if(!t){toast('Zadajte názov montáže');mGo(2);return}
   var pend=$('mMember').value;
   if(pend){var pm=findById('members',pend);if(pm&&!mTeam.some(function(x){return x.id===pend}))mTeam.push({id:pend,name:pm.name||''})}
   if(!leaveConflict(mTeam,$('mDate').value,$('mTime').value))return;
@@ -1469,6 +1486,7 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
+['🔧 Montáž krok za krokom',0,'Práca → Montáž: <b>1 Klient</b> (existujúci alebo ➕ nový) → <b>2 Zákazka</b> (názov, dátum, čas) → <b>3 Zariadenia</b> → <b>4 Tím</b> → <b>5 Hotovo</b> (zhrnutie a uloženie). Na očíslované štvorčeky hore môžeš ťuknúť a skočiť na ľubovoľný krok, aj pri úprave montáže.'],
 ['📋 Zákazka krok za krokom',0,'Ťukni pri úlohe na <b>📋 Zákazka</b>. Ideš krokmi: <b>Príchod</b> (📞 Zavolať, 🧭 Navigovať, ▶ Som na mieste) → <b>Zariadenia</b> (červené polia treba doplniť) → <b>Kontrola</b> → <b>Fotky</b> → <b>Podpisy</b> → <b>Hotovo</b>. Každý krok sa ukladá pri ťuknutí na Ďalej. Technik má dole lištu: Dnes, Kalendár, Voľno, Správy.'],
 ['📝 Treba doplniť',0,'V <b>Moje úlohy</b> je hore červený zoznam montáží (za posledných 90 dní), kde chýbajú <b>výrobné čísla</b> alebo <b>chladivo a náplň</b>. Ťuknutím sa otvorí montáž na doplnenie. Po doplnení zmizne zo zoznamu.'],
 ['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
@@ -2042,7 +2060,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.15';
+var APP_VERSION='2026-11-04.17';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2755,8 +2773,10 @@ window.onload=function(){
     <div id="msMontaz" style="display:none">
     <button class="back-btn" onclick="showMS('choice')">⬅ Späť</button>
     <input type="hidden" id="editingMontazId" value="">
+    <div id="mSteps" class="jb-steps"></div>
+    <h3 id="mStepH" style="margin:6px 0"></h3>
     <div class="form-grid">
-      <input type="text" id="mTitle" placeholder="Názov montáže (napr. značka a model)" class="full-width-input">
+      <div class="mStep" data-s="1" style="grid-column:1/-1;display:grid;gap:10px">
       <select id="mClient" class="full-width-input"></select>
       <button type="button" class="back-btn" id="mNewBtn" style="margin:0" onclick="toggleNewClient()">➕ Nový klient (zadať priamo tu)</button>
       <div id="mNewBox" class="full-width-input" style="display:none;border:1.5px solid #0d9488;border-radius:14px;padding:10px">
@@ -2768,15 +2788,27 @@ window.onload=function(){
         <input type="email" id="mNMail" placeholder="E-mail (nepovinné)" class="full-width-input">
         <small style="color:#64748b">Klient sa uloží pri uložení montáže a priradí sa k nej.</small>
       </div>
+      </div>
+      <div class="mStep" data-s="2" style="grid-column:1/-1;display:none;gap:10px">
+      <input type="text" id="mTitle" placeholder="Názov montáže (napr. značka a model)" class="full-width-input">
       <label class="fl">Dátum montáže<input type="date" id="mDate"></label>
       <label class="fl">Čas<input type="time" id="mTime"></label>
+      </div>
+      <div class="mStep" data-s="3" style="grid-column:1/-1;display:none;gap:10px">
       <div id="mDevices" class="full-width-input"></div>
       <button type="button" class="full-width-input" onclick="addDevice()">➕ Pridať ďalšie zariadenie</button>
+      </div>
+      <div class="mStep" data-s="4" style="grid-column:1/-1;display:none;gap:10px">
       <select id="mMember"></select>
       <button type="button" onclick="addMontazMember()">➕ Pridať člena tímu</button>
+      <div id="mTeamChips" class="chips"></div>
+      </div>
+      <div class="mStep" data-s="5" style="grid-column:1/-1;display:none;gap:10px">
+      <div id="mSummary"></div>
+      <button class="action-btn" id="montazSaveBtn" onclick="saveMontaz()">Uložiť montáž</button>
+      </div>
     </div>
-    <div id="mTeamChips" class="chips"></div>
-    <button class="action-btn" id="montazSaveBtn" onclick="saveMontaz()">Uložiť montáž</button>
+    <div class="modal-actions" id="mNav" style="flex-wrap:wrap;margin:12px 0"><button class="btn-edit" id="mBack" style="background:#64748b" onclick="mGo(mStep-1)">‹ Späť</button><button class="btn-edit" id="mNext" style="background:#0d9488;flex:1" onclick="mGo(mStep+1)">Ďalej ›</button></div>
     <button class="back-btn" id="montazCancelBtn" style="display:none" onclick="clearMontaz()">✖ Zrušiť úpravu</button>
     </div>
     <div id="msServis" style="display:none">
