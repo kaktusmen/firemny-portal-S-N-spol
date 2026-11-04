@@ -1,0 +1,31 @@
+name: Ranný e-mail
+
+on:
+  schedule:
+    # dve spustenia, aby fungoval letný aj zimný čas; skript pošle e-mail len o 6. hodine miestneho času
+    - cron: "15 4 * * *"
+    - cron: "15 5 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Poslať hneď (ignorovať hodinu)"
+        default: "1"
+
+jobs:
+  rano:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Odoslať ranný prehľad
+        env:
+          FB_PROJECT: sandnspol
+          FB_API_KEY: AIzaSyC45Ejbu35zL2OHjAMEPp62ZzQuBT3UwL0
+          PORTAL_KEY: ${{ secrets.PORTAL_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          FORCE: ${{ github.event.inputs.force }}
+        run: python scripts/rano.py
