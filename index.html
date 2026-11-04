@@ -211,6 +211,10 @@ html[data-theme=dark] #updBar{color:#111}
 #lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:12px}
 #lightbox img{max-width:100%;max-height:100%;border-radius:8px}
 /* --- iOS navigácia --- */
+#eventModal .jb-steps{display:flex;gap:6px;margin:4px 0 8px}
+#eventModal .jb-steps span{flex:1;text-align:center;padding:6px 0;border-radius:10px;background:#e2e8f0;color:#64748b;font-weight:700;font-size:.85rem;cursor:pointer}
+#eventModal .jb-steps span.on{background:#0d9488;color:#fff}
+#eventModal .jb-steps span.ok{background:#ccfbf1;color:#0f766e}
 #eventModal .jb{width:100%;padding:10px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:1rem;background:#fff;color:#111;box-sizing:border-box}
 #eventModal .jb.need{border-color:#dc2626;background:#fef2f2}
 .jb-dev{border:1px solid #e2e8f0;border-radius:14px;padding:10px;margin:8px 0}
@@ -239,6 +243,8 @@ html[data-theme=dark] #eventModal .jb.need{background:#3b1414;border-color:#dc26
 #tabBar button.on{color:var(--primary)}
 #tabBar button.on span{filter:none;opacity:1}
 body.is-tech #tabBar button.admin-only{display:none!important}
+body:not(.is-tech) #tabBar button.tech-only{display:none!important}
+#tabMsgBadge{position:absolute;top:0;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:#ff3b30;color:#fff;font-style:normal;font-size:.7rem;font-weight:700;line-height:18px;text-align:center;padding:0 5px}
 html[data-theme=dark] .menu-list{background:#1c1c1e;box-shadow:none}
 html[data-theme=dark] #tabBar{background:rgba(29,29,31,.86)}
 .sec-fade{animation:secIn .22s ease}
@@ -448,7 +454,7 @@ function setTab(t){
 function tabFor(id){
   if(navBack==='more')return 'more';
   if(navBack==='work')return 'work';
-  var m={calendarSection:'cal',clientsSection:'clients',montazSection:'work',obhliadkaSection:'work',chladivoSection:'work',myTasksSection:'home',routeSection:'home'};
+  var m={spravySection:isAdmin()?'more':'msg',volnoSection:isAdmin()?'more':'leave',calendarSection:'cal',clientsSection:'clients',montazSection:'work',obhliadkaSection:'work',chladivoSection:'work',myTasksSection:'home',routeSection:'home'};
   return m[id]||'more';
 }
 function openSection(id,title,from){
@@ -470,6 +476,8 @@ function goTab(t){
   else if(t==='more')showMore();
   else if(t==='cal')openSection('calendarSection','Kalendár udalostí','');
   else if(t==='clients')openSection('clientsSection','Klienti','');
+  else if(t==='leave')openSection('volnoSection','Voľno','');
+  else if(t==='msg')openSection('spravySection','Správy','');
 }
 function goHome(){
   if(navBack==='more')showMore();else if(navBack==='work')showWork();else showHome();
@@ -1395,6 +1403,7 @@ function leaveOn(ds){
 }
 function updLeaveUi(){
   var n=isAdmin()?dbData.volno.filter(function(x){return x.stav==='Žiadosť'}).length:0;
+  var mb=$('tabMsgBadge');if(mb){var un=dbData.spravy.filter(msgUnread).length;mb.textContent=un;mb.style.display=un?'':'none'}
   var b=$('tabBadge');if(b){b.textContent=n;b.style.display=n?'':'none'}
   var bn=$('leaveBanner');if(!bn)return;
   bn.innerHTML=n?'🏖 <b>'+n+(n===1?' žiadosť':(n<5?' žiadosti':' žiadostí'))+' o voľno čaká na schválenie</b> ›':'';
@@ -1460,7 +1469,7 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
-['📋 Zákazka (jedna obrazovka)',0,'Ťukni na úlohu a <b>📋 Zákazka</b> (alebo priamo v zozname). Hore je <b>📞 Zavolať, 💬 SMS, 🧭 Navigovať</b>, potom údaje z klienta a montáže. Červené polia sú to, čo chýba (výrobné čísla, chladivo, náplň). Dole sú kontrolný zoznam, fotky a podpisy. <b>✔ Uložiť a dokončiť</b> nastaví zákazku ako Hotová.'],
+['📋 Zákazka krok za krokom',0,'Ťukni pri úlohe na <b>📋 Zákazka</b>. Ideš krokmi: <b>Príchod</b> (📞 Zavolať, 🧭 Navigovať, ▶ Som na mieste) → <b>Zariadenia</b> (červené polia treba doplniť) → <b>Kontrola</b> → <b>Fotky</b> → <b>Podpisy</b> → <b>Hotovo</b>. Každý krok sa ukladá pri ťuknutí na Ďalej. Technik má dole lištu: Dnes, Kalendár, Voľno, Správy.'],
 ['📝 Treba doplniť',0,'V <b>Moje úlohy</b> je hore červený zoznam montáží (za posledných 90 dní), kde chýbajú <b>výrobné čísla</b> alebo <b>chladivo a náplň</b>. Ťuknutím sa otvorí montáž na doplnenie. Po doplnení zmizne zo zoznamu.'],
 ['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
 ['🧪 Upozornenie na kontrolu tesnosti',0,'Správca vidí na úvodnej stránke Dnes červený pruh, keď je kontrola tesnosti chladiva po termíne alebo do 60 dní. Ťuknutím sa otvoria Servisné termíny, kde ju zapíšeš.'],
@@ -1896,54 +1905,14 @@ function jbN(el){el.classList.toggle('need',!String(el.value).trim())}
 function jbIn(id,val,ph,need,extra){
   return '<input id="'+id+'" class="jb'+(need&&!val?' need':'')+'" value="'+esc(val||'')+'" placeholder="'+esc(ph)+'" oninput="jbN(this)" '+(extra||'')+'>';
 }
-function showJob(id){
-  var m=findById('montaze',id);if(!m)return;
-  lastDay=null;
-  var c=clientOfMontaz(m),ph=jobPhone(m),ad=jobAddr(m),miss=jobMissing(m),isM=!m.kind;
-  var nmC=m.clientName||(c?nm(c):'');
-  var h='<h3>📋 Zákazka: '+esc(m.title||m.servisType||'Montáž')+'</h3>'+
-    '<div class="modal-row"><strong>👤 '+esc(nmC||'-')+'</strong></div>'+
-    '<div class="modal-actions" style="flex-wrap:wrap;margin:6px 0">'+
-      (ph?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" href="tel:'+esc(ph)+'">📞 Zavolať</a><a class="btn-edit" style="background:#2563eb;text-decoration:none" href="sms:'+esc(ph)+'">💬 SMS</a>':'')+
-      (ad?'<a class="btn-edit" style="background:#0d9488;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(ad)+'">🧭 Navigovať</a>':'')+
-    '</div>'+
-    '<div class="modal-row">'+(ph?'📞 '+telA(ph)+' · ':'')+(ad?'📍 '+esc(ad):'')+'</div>'+
-    '<div class="modal-row"><strong>Dátum:</strong> '+esc(m.date?fmtD(m.date):'-')+(m.time?' o '+esc(m.time):'')+(m.memberNames&&m.memberNames.length?' · 👷 '+m.memberNames.map(esc).join(', '):'')+'</div>'+
-    (miss.length?'<div class="jb-warn">🔴 Treba doplniť: <b>'+esc(miss.join(', '))+'</b></div>':'<div class="jb-ok">✅ Všetko vyplnené</div>');
-  if(isM){
-    h+='<div class="modal-sep"></div><div class="modal-row"><strong>🔧 Zariadenia</strong></div>';
-    var ds=devicesOf(m);if(!ds.length)ds=[emptyDev()];
-    ds.forEach(function(d,i){
-      var il=(d.vnutorne&&d.vnutorne.length)?d.vnutorne:[''];
-      h+='<div class="jb-dev"><b>'+esc(d.typ||'Zariadenie')+(d.znacka?' · '+esc(d.znacka):'')+'</b>'+
-        '<label class="fl">Značka / model</label>'+jbIn('jbBr'+i,d.znacka,'Značka / model',false)+
-        il.map(function(sn,k){return '<label class="fl">Výrobné číslo vnútornej jednotky'+(il.length>1?' '+(k+1):'')+'</label>'+jbIn('jbIn'+i+'_'+k,sn,'Výrobné číslo',true)}).join('')+
-        '<label class="fl">Výrobné číslo vonkajšej jednotky</label>'+jbIn('jbOut'+i,d.vonkajsia,'Výrobné číslo',true)+
-        '<label class="fl">Chladivo</label><select id="jbChT'+i+'" class="jb'+(d.chlTyp?'':' need')+'" onchange="jbN(this)"><option value="">-- vyber --</option>'+Object.keys(GWP).map(function(k){return '<option'+(d.chlTyp===k?' selected':'')+'>'+k+'</option>'}).join('')+'</select>'+
-        '<label class="fl">Náplň chladiva (kg)</label>'+jbIn('jbChK'+i,d.chlKg,'napr. 1,2',true,'type="text" inputmode="decimal"')+
-        '</div>';
-    });
-    h+='<div class="modal-sep"></div><div class="modal-row"><strong>Kontrolný zoznam</strong></div>'+CHECK.map(function(l,i){return '<label style="display:flex;align-items:center;padding:8px 0"><input type="checkbox" class="chk" value="'+i+'"'+((m.checklist||[]).indexOf(l)>-1?' checked':'')+'>'+esc(l)+'</label>'}).join('');
-  }
-  h+=fotoSection(m)+
-    '<div class="modal-sep"></div>'+
-    '<div class="modal-row"><strong>Podpis technika</strong></div><canvas id="sigT" class="sig-pad" width="600" height="200"></canvas>'+
-    '<button class="btn-edit" style="background:#64748b" onclick="clearPad(\'sigT\')">Vymazať podpis</button>'+
-    '<div class="modal-row" style="margin-top:12px"><strong>Podpis zákazníka</strong></div><canvas id="sigZ" class="sig-pad" width="600" height="200"></canvas>'+
-    '<button class="btn-edit" style="background:#64748b" onclick="clearPad(\'sigZ\')">Vymazať podpis</button>'+
-    '<div class="modal-actions" style="flex-wrap:wrap"><button class="btn-edit" style="background:#16a34a" onclick="saveJob(\''+esc(id)+'\',false)">💾 Uložiť</button>'+
-    (m.stav!=='Hotová'?'<button class="btn-edit" style="background:#0d9488" onclick="saveJob(\''+esc(id)+'\',true)">✔ Uložiť a dokončiť</button>':'')+
-    '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+esc(id)+'\')">🧾 Protokol</button>'+
-    '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
-  $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
-  fotoLoad(id);initPad('sigT',m.podpisT);initPad('sigZ',m.podpisZ);
-}
-function saveJob(id,done){
-  var m=findById('montaze',id);if(!m)return;
-  var u={podpisT:padData('sigT'),podpisZ:padData('sigZ')};
-  u.podpisAt=(u.podpisT||u.podpisZ)?Date.now():0;
-  if(!m.kind){
-    u.checklist=Array.prototype.filter.call(document.querySelectorAll('.chk'),function(c){return c.checked}).map(function(c){return CHECK[+c.value]});
+var jobStep=1;
+function jobSteps(m){return m.kind?['arrive','photos','sign','done']:['arrive','devs','check','photos','sign','done']}
+var JSN={arrive:'Príchod',devs:'Zariadenia',check:'Kontrola',photos:'Fotky',sign:'Podpisy',done:'Hotovo'};
+function jobCollect(m){
+  var u={};
+  if($('sigT')){u.podpisT=padData('sigT');u.podpisZ=padData('sigZ');u.podpisAt=(u.podpisT||u.podpisZ)?Date.now():0}
+  if(!m.kind&&document.querySelector('#eventModalBody .chk'))u.checklist=Array.prototype.filter.call(document.querySelectorAll('#eventModalBody .chk'),function(c){return c.checked}).map(function(c){return CHECK[+c.value]});
+  if(!m.kind&&$('jbOut0')){
     var ds=JSON.parse(JSON.stringify(devicesOf(m)));
     if(!ds.length)ds=[emptyDev()];
     ds.forEach(function(d,i){
@@ -1956,17 +1925,89 @@ function saveJob(id,done){
     });
     u.zariadenia=ds;
   }
+  return u;
+}
+function jobPersist(m,u){
+  if(!Object.keys(u).length)return Promise.resolve();
+  Object.keys(u).forEach(function(k){m[k]=u[k]});
+  return col('montaze').doc(m.id).update(u).catch(function(){toast('Nepodarilo sa uložiť')});
+}
+function jobGo(id,step){
+  var m=findById('montaze',id);if(!m)return;
+  jobPersist(m,jobCollect(m));
+  showJob(id,step);
+}
+function jobStart(id){
+  var m=findById('montaze',id);if(!m)return;
+  jobPersist(m,{stav:'Prebieha'});logAct('začal zákazku','montaze',m.title||m.clientName||'');toast('▶ Zákazka prebieha');
+  render();showJob(id,jobStep);
+}
+function showJob(id,step){
+  var m=findById('montaze',id);if(!m)return;
+  lastDay=null;
+  var st=jobSteps(m);
+  if(step===undefined)step=1;
+  step=Math.max(1,Math.min(st.length,step));jobStep=step;
+  var key=st[step-1],c=clientOfMontaz(m),ph=jobPhone(m),ad=jobAddr(m),miss=jobMissing(m);
+  var nmC=m.clientName||(c?nm(c):'');
+  var dots='<div class="jb-steps">'+st.map(function(k,i){return '<span class="'+(i+1===step?'on':(i+1<step?'ok':''))+'" onclick="jobGo(\''+esc(id)+'\','+(i+1)+')">'+(i+1<step?'✓':(i+1))+'</span>'}).join('')+'</div>';
+  var h='<div class="modal-row" style="color:#64748b">'+esc(m.title||m.servisType||'Montáž')+' · 👤 '+esc(nmC||'-')+'</div>'+dots+
+    '<h3 style="margin:6px 0">Krok '+step+'/'+st.length+' · '+JSN[key]+'</h3>';
+  if(key==='arrive'){
+    h+='<div class="modal-actions" style="flex-wrap:wrap;margin:6px 0">'+
+      (ph?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" href="tel:'+esc(ph)+'">📞 Zavolať</a><a class="btn-edit" style="background:#2563eb;text-decoration:none" href="sms:'+esc(ph)+'">💬 SMS</a>':'')+
+      (ad?'<a class="btn-edit" style="background:#0d9488;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(ad)+'">🧭 Navigovať</a>':'')+'</div>'+
+      '<div class="modal-row">'+(ph?'📞 '+telA(ph)+'<br>':'')+(ad?'📍 '+esc(ad)+'<br>':'')+'<strong>Dátum:</strong> '+esc(m.date?fmtD(m.date):'-')+(m.time?' o '+esc(m.time):'')+(m.memberNames&&m.memberNames.length?'<br>👷 '+m.memberNames.map(esc).join(', '):'')+'</div>'+
+      (m.popis?'<div class="modal-row"><strong>Popis:</strong> '+esc(m.popis)+'</div>':'')+
+      (m.stav==='Hotová'?'<div class="jb-ok">✅ Zákazka je hotová</div>':(m.stav==='Prebieha'?'<div class="jb-ok">▶ Prebieha</div>':'<button class="action-btn" style="background:#ca8a04" onclick="jobStart(\''+esc(id)+'\')">▶ Som na mieste – začať</button>'));
+  }else if(key==='devs'){
+    var ds=devicesOf(m);if(!ds.length)ds=[emptyDev()];
+    ds.forEach(function(d,i){
+      var il=(d.vnutorne&&d.vnutorne.length)?d.vnutorne:[''];
+      h+='<div class="jb-dev"><b>'+esc(d.typ||'Zariadenie')+(d.znacka?' · '+esc(d.znacka):'')+'</b>'+
+        '<label class="fl">Značka / model</label>'+jbIn('jbBr'+i,d.znacka,'Značka / model',false)+
+        il.map(function(sn,k){return '<label class="fl">Výrobné číslo vnútornej jednotky'+(il.length>1?' '+(k+1):'')+'</label>'+jbIn('jbIn'+i+'_'+k,sn,'Výrobné číslo',true)}).join('')+
+        '<label class="fl">Výrobné číslo vonkajšej jednotky</label>'+jbIn('jbOut'+i,d.vonkajsia,'Výrobné číslo',true)+
+        '<label class="fl">Chladivo</label><select id="jbChT'+i+'" class="jb'+(d.chlTyp?'':' need')+'" onchange="jbN(this)"><option value="">-- vyber --</option>'+Object.keys(GWP).map(function(k){return '<option'+(d.chlTyp===k?' selected':'')+'>'+k+'</option>'}).join('')+'</select>'+
+        '<label class="fl">Náplň chladiva (kg)</label>'+jbIn('jbChK'+i,d.chlKg,'napr. 1,2',true,'type="text" inputmode="decimal"')+'</div>';
+    });
+    h+='<div class="modal-row" style="color:#64748b">🔴 Červené polia treba doplniť.</div>';
+  }else if(key==='check'){
+    h+=CHECK.map(function(l,i){return '<label style="display:flex;align-items:center;padding:10px 0"><input type="checkbox" class="chk" value="'+i+'"'+((m.checklist||[]).indexOf(l)>-1?' checked':'')+'>'+esc(l)+'</label>'}).join('');
+  }else if(key==='photos'){
+    h+=fotoSection(m);
+  }else if(key==='sign'){
+    h+='<div class="modal-row"><strong>Podpis technika</strong></div><canvas id="sigT" class="sig-pad" width="600" height="200"></canvas>'+
+      '<button class="btn-edit" style="background:#64748b" onclick="clearPad(\'sigT\')">Vymazať podpis</button>'+
+      '<div class="modal-row" style="margin-top:12px"><strong>Podpis zákazníka</strong></div><canvas id="sigZ" class="sig-pad" width="600" height="200"></canvas>'+
+      '<button class="btn-edit" style="background:#64748b" onclick="clearPad(\'sigZ\')">Vymazať podpis</button>';
+  }else{
+    h+=(miss.length?'<div class="jb-warn">🔴 Ešte chýba: <b>'+esc(miss.join(', '))+'</b></div>':'<div class="jb-ok">✅ Všetko vyplnené</div>')+
+      (m.stav==='Hotová'?'<div class="jb-ok">✅ Zákazka je hotová</div>':'<button class="action-btn" style="background:#16a34a" onclick="saveJob(\''+esc(id)+'\',true)">✔ Dokončiť zákazku</button>')+
+      '<button class="btn-edit" style="background:#475569;margin-top:8px" onclick="showProtocol(\''+esc(id)+'\')">🧾 Protokol / tlač / poslať</button>';
+  }
+  h+='<div class="modal-actions" style="flex-wrap:wrap;margin-top:14px">'+
+    (step>1?'<button class="btn-edit" style="background:#64748b" onclick="jobGo(\''+esc(id)+'\','+(step-1)+')">‹ Späť</button>':'')+
+    (step<st.length?'<button class="btn-edit" style="background:#0d9488;flex:1" onclick="jobGo(\''+esc(id)+'\','+(step+1)+')">Ďalej ›</button>':'')+
+    '<button class="btn-delete" style="background:#94a3b8" onclick="jobPersist(findById(\'montaze\',\''+esc(id)+'\'),jobCollect(findById(\'montaze\',\''+esc(id)+'\')));closeEvent()">Zavrieť</button></div>';
+  $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
+  try{$('eventModalBody').scrollTop=0;$('eventModalBody').parentNode.scrollTop=0}catch(e){}
+  if(key==='photos')fotoLoad(id);
+  if(key==='sign'){initPad('sigT',m.podpisT);initPad('sigZ',m.podpisZ)}
+}
+function saveJob(id,done){
+  var m=findById('montaze',id);if(!m)return;
+  var u=jobCollect(m);
   Object.keys(u).forEach(function(k){m[k]=u[k]});
   var miss=jobMissing(m);
   if(done){
-    if(miss.length&&!confirm('Ešte chýba: '+miss.join(', ')+'.\nNaozaj dokončiť zákazku?'))
-      {col('montaze').doc(id).update(u).catch(function(){});showJob(id);return}
+    if(miss.length&&!confirm('Ešte chýba: '+miss.join(', ')+'.\nNaozaj dokončiť zákazku?')){jobPersist(m,u);showJob(id,jobStep);return}
     u.stav='Hotová';u.doneAt=Date.now();m.stav='Hotová';m.doneAt=u.doneAt;
   }
   col('montaze').doc(id).update(u).then(function(){toast(done?'Zákazka dokončená ✅':'Uložené')}).catch(function(){toast('Nepodarilo sa uložiť')});
   if(done)logAct('dokončil zákazku','montaze',m.title||m.clientName||'');
   render();
-  if(done)closeEvent();else showJob(id);
+  if(done)closeEvent();else showJob(id,jobStep);
 }
 function setStav(id,st){
   var m=findById('montaze',id);if(!m)return;
@@ -2001,7 +2042,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.14';
+var APP_VERSION='2026-11-04.15';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2504,9 +2545,11 @@ window.onload=function(){
 <nav id="tabBar">
   <button data-t="home" class="on" onclick="goTab('home')"><span>🏠</span>Dnes</button>
   <button data-t="cal" onclick="goTab('cal')"><span>📅</span>Kalendár</button>
-  <button data-t="work" onclick="goTab('work')"><span>🔧</span>Práca</button>
+  <button data-t="work" class="admin-only" onclick="goTab('work')"><span>🔧</span>Práca</button>
+  <button data-t="leave" class="tech-only" onclick="goTab('leave')"><span>🏖</span>Voľno</button>
+  <button data-t="msg" class="tech-only" onclick="goTab('msg')" style="position:relative"><span>💬</span>Správy<i id="tabMsgBadge" style="display:none"></i></button>
   <button data-t="clients" class="admin-only" onclick="goTab('clients')"><span>👥</span>Klienti</button>
-  <button data-t="more" onclick="goTab('more')" style="position:relative"><span>⋯</span>Viac<i id="tabBadge" style="display:none"></i></button>
+  <button data-t="more" class="admin-only" onclick="goTab('more')" style="position:relative"><span>⋯</span>Viac<i id="tabBadge" style="display:none"></i></button>
 </nav>
 <div id="updBar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:2000;background:#f59e0b;color:#111;padding:10px 14px;text-align:center;font-weight:bold">🔄 Je dostupná nová verzia aplikácie. <button onclick="hardRefresh()" style="width:auto;display:inline-block;margin:0 0 0 8px;padding:6px 12px">Aktualizovať</button></div>
 <div class="container">
