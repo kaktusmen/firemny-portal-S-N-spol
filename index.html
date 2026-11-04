@@ -401,7 +401,7 @@ function exportData(){
   a.download='portal_zaloha.json';document.body.appendChild(a);a.click();a.remove();
   try{localStorage.setItem('portal_last_backup',String(Date.now()))}catch(e){}
   var mm=me?findById('members',me):null;
-  col('nastavenia').doc('zaloha').set({ts:Date.now(),by:mm?mm.name:''},{merge:true}).catch(function(){});
+  col('nastavenia').doc('zaloha').set({ts:Date.now(),by:mm?mm.name:''},{merge:true}).catch(function(){toast('Zálohu sa nepodarilo zapísať do spoločného stavu, skús znova online')});
   updateBackupInfo();
 }
 function importData(ev){
@@ -1869,7 +1869,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-04.6';
+var APP_VERSION='2026-11-04.7';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2213,8 +2213,23 @@ function lastBackup(){
   var l=0;try{l=+localStorage.getItem('portal_last_backup')||0}catch(e){}
   var sh=sharedBackup();return Math.max(l,(sh&&sh.ts)||0);
 }
+var bkPushed=0;
+function bkSyncUp(){
+  // záloha urobená v tomto zariadení (aj staršou verziou appky) sa zdieľa ostatným zariadeniam
+  var l=0;try{l=+localStorage.getItem('portal_last_backup')||0}catch(e){}
+  var sh=sharedBackup();
+  if(!l||bkPushed===l||(sh&&sh.ts>=l))return;
+  bkPushed=l;
+  var ref=col('nastavenia').doc('zaloha');
+  ref.get().then(function(d){
+    var rt=(d.exists&&d.data().ts)||0;
+    if(rt>=l)return;
+    var mm=me?findById('members',me):null;
+    return ref.set({ts:l,by:mm?mm.name:''},{merge:true});
+  }).catch(function(){bkPushed=0});
+}
 function updateBackupInfo(){
-  var el=$('bkInfo');if(!el)return;var t=lastBackup();
+  var el=$('bkInfo');if(!el)return;bkSyncUp();var t=lastBackup();
   if(!t){el.innerHTML='<span style="color:#b91c1c">⚠️ Záloha ešte nebola stiahnutá</span>';return}
   var d=Math.floor((Date.now()-t)/86400000);
   el.innerHTML='<span style="color:'+(d>7?'#b91c1c':'#64748b')+'">💾 Záloha: '+esc(fmtD(ymd(new Date(t))))+((sharedBackup()||{}).by&&(sharedBackup().ts>=t)?' ('+esc(sharedBackup().by)+')':'')+(d>7?' (pred '+d+' d)':'')+'</span>';
