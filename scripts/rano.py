@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """Ranný e-mail pre správcu: dnešné zákazky, voľno tímu a čakajúce žiadosti o voľno."""
-import json, os, smtplib, ssl, sys, urllib.request, urllib.parse
+import json, os, re, smtplib, ssl, sys, urllib.request, urllib.parse
 from datetime import datetime
 from email.message import EmailMessage
 from html import escape
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("Europe/Bratislava")
-PROJECT = os.environ["FB_PROJECT"]
-API_KEY = os.environ["FB_API_KEY"]
-PORTAL = os.environ["PORTAL_KEY"]
+def env(k):
+    """Hodnota z prostredia bez medzier a zalomení (častá chyba pri kopírovaní)."""
+    return re.sub(r"\s+", "", os.environ[k])
+
+
+PROJECT = env("FB_PROJECT")
+API_KEY = env("FB_API_KEY")
+PORTAL = env("PORTAL_KEY")
 DRY = os.environ.get("DRY_RUN") == "1"
 FORCE = os.environ.get("FORCE") == "1"
 
@@ -104,11 +109,11 @@ def main():
     if DRY:
         print(subj); print(html); return
     msg = EmailMessage()
-    msg["Subject"], msg["From"], msg["To"] = subj, os.environ["GMAIL_USER"], os.environ["MAIL_TO"]
+    msg["Subject"], msg["From"], msg["To"] = subj, env("GMAIL_USER"), env("MAIL_TO")
     msg.set_content("Zobrazte e-mail v HTML.")
     msg.add_alternative(html, subtype="html")
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as s:
-        s.login(os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
+        s.login(env("GMAIL_USER"), env("GMAIL_APP_PASSWORD"))
         s.send_message(msg)
     print("Odoslané:", subj)
 
