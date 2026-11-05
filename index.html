@@ -422,7 +422,16 @@ function put(c,o,id){
   var isNew=!id;
   id=id||col(c).doc().id;
   delete o.id;
-  if(isNew&&me&&NEWC.indexOf(c)>-1&&!o.createdBy){o.createdBy=me;o.readBy=[me]}
+  if(isNew&&me&&NEWC.indexOf(c)>-1&&!o.createdBy){o.createdBy=me;o.readBy=[me];o.createdAt=Date.now();if(c==='montaze')o.ackBy=[me]}
+  if(!isNew&&c==='montaze'&&me){
+    var old0=findById('montaze',id);
+    if(old0){
+      var tm=function(x){return JSON.stringify((x||[]).slice().sort())};
+      if((o.date||'')!==(old0.date||'')||(o.time||'')!==(old0.time||'')||tm(o.memberIds)!==tm(old0.memberIds)){
+        o.chg=true;o.chgAt=Date.now();o.readBy=[me];o.ackBy=[me];
+      }
+    }
+  }
   if(c!=='spravy')logAct(isNew?'vytvoril':'upravil',c,recLabel(c,o,id));
   return col(c).doc(id).set(o,{merge:true}).catch(function(){toast('Uloženie zlyhalo!')});
 }
@@ -976,19 +985,28 @@ function saveObhliadka(){
   clearObhliadka();toast(eid?'Obhliadka aktualizovaná!':'Obhliadka uložená!');
 }
 function isNewFor(c,o){
-  if(!me||!o||NEWC.indexOf(c)<0||(o.readBy||[]).indexOf(me)>-1)return false;
-  if(c==='obhliadky')return isAdmin();
-  if(!o.createdBy)return false;
-  if(isAdmin())return true;
-  return c==='montaze'&&isMine(o);
+  if(!me||!o||NEWC.indexOf(c)<0)return false;
+  if(c==='obhliadky')return isAdmin()&&(o.readBy||[]).indexOf(me)<0;
+  if(!o.createdBy&&!o.chg)return false;
+  if(c==='montaze'&&(o.memberIds||[]).indexOf(me)>-1)return o.stav!=='Hotová'&&(o.ackBy||[]).indexOf(me)<0;
+  if(isAdmin())return (o.readBy||[]).indexOf(me)<0;
+  return false;
 }
 function markRead(c,id){
-  var o=findById(c,id);if(!o||!isNewFor(c,o))return;
+  var o=findById(c,id);if(!o||(o.readBy||[]).indexOf(me)>-1)return;
+  if(!isNewFor(c,o)&&!(c==='montaze'&&(o.memberIds||[]).indexOf(me)>-1))return;
   o.readBy=(o.readBy||[]).concat(me);
   col(c).doc(id).update({readBy:firebase.firestore.FieldValue.arrayUnion(me)}).catch(function(){});
   setTimeout(renderToday,50);
 }
 function obhRead(id){markRead('obhliadky',id)}
+function needsAck(m){return !!m&&(m.createdBy||m.chg)&&m.stav!=='Hotová'&&(m.memberIds||[]).indexOf(me)>-1&&(m.ackBy||[]).indexOf(me)<0}
+function ackJob(id){
+  var m=findById('montaze',id);if(!m||!me)return;
+  m.ackBy=(m.ackBy||[]).concat(me);m.readBy=(m.readBy||[]).indexOf(me)<0?(m.readBy||[]).concat(me):m.readBy;
+  col('montaze').doc(id).update({ackBy:firebase.firestore.FieldValue.arrayUnion(me),readBy:firebase.firestore.FieldValue.arrayUnion(me)}).catch(function(){});
+  toast('👍 Vzaté na vedomie');render();renderToday();if($('eventModal').style.display==='flex'&&typeof jobStep!=='undefined')showJob(id,jobStep);
+}
 function renderHomeObh(){
   if(!me)return '';
   var items=[];
@@ -1002,18 +1020,25 @@ function renderHomeObh(){
   if(!items.length)return '';
   return '<div class="td-h">🆕 Nové ('+items.length+')</div>'+items.map(function(x){
     var by=x.o.createdBy?findById('members',x.o.createdBy):null;
-    var act=x.c==='ponuky'?'editPonuka(\''+esc(x.o.id)+'\')':'showEvent(\''+esc(x.c)+'\',\''+esc(x.o.id)+'\')';
+    var asg=x.c==='montaze'&&(x.o.memberIds||[]).indexOf(me)>-1;
+    var act=asg?'showJob(\''+esc(x.o.id)+'\')':x.c==='ponuky'?'editPonuka(\''+esc(x.o.id)+'\')':'showEvent(\''+esc(x.c)+'\',\''+esc(x.o.id)+'\')';
     if(x.c==='ponuky')act="markRead('ponuky','"+esc(x.o.id)+"');"+act;
-    return '<div class="day-row" style="border-left-color:#7c3aed" onclick="'+act+'"><b>🆕 '+x.ic+' '+esc(x.tx)+'</b><span>'+(by?'zadal '+esc(by.name||''):'')+'</span></div>';
+    return '<div class="day-row" style="border-left-color:#7c3aed" onclick="'+act+'"><b>'+(x.o.chg?'🔄 Zmenené ':'🆕 ')+x.ic+' '+esc(x.tx)+'</b><span>'+(by&&!x.o.chg?'zadal '+esc(by.name||''):'')+(asg?(by&&!x.o.chg?' · ':'')+'čaká na tvoje potvrdenie'+(x.o.date?' · '+esc(fmtD(x.o.date))+(x.o.time?' '+esc(x.o.time):''):''):'')+'</span></div>';
   }).join('');
 }
 function readInfo(c,o){
-  if(!isAdmin()||NEWC.indexOf(c)<0||(c!=='obhliadky'&&!o.createdBy))return '';
+  if(!isAdmin()||NEWC.indexOf(c)<0||(c!=='obhliadky'&&!o.createdBy&&!o.chg))return '';
   var ids=dbData.members.filter(function(m){return m.rola==='Správca'||(c==='montaze'&&(o.memberIds||[]).indexOf(m.id)>-1)});
   if(!ids.length)return '';
   var rd=ids.filter(function(m){return (o.readBy||[]).indexOf(m.id)>-1}).map(function(m){return esc(m.name||'')}),
       nr=ids.filter(function(m){return (o.readBy||[]).indexOf(m.id)<0}).map(function(m){return esc(m.name||'')});
-  return '<div class="modal-row" style="font-size:.85rem"><strong>👁 Prečítali:</strong> '+(rd.join(', ')||'nikto')+(nr.length?'<br><strong>⏳ Ešte nečítali:</strong> <span style="color:#dc2626">'+nr.join(', ')+'</span>':' ✅ všetci')+'</div>';
+  var ak='';
+  if(c==='montaze'&&(o.memberIds||[]).length){
+    var as=dbData.members.filter(function(m){return (o.memberIds||[]).indexOf(m.id)>-1});
+    var ok=as.filter(function(m){return (o.ackBy||[]).indexOf(m.id)>-1}).map(function(m){return esc(m.name||'')}),no=as.filter(function(m){return (o.ackBy||[]).indexOf(m.id)<0}).map(function(m){return esc(m.name||'')});
+    ak='<br><strong>👍 Potvrdili:</strong> '+(ok.join(', ')||'nikto')+(no.length&&o.stav!=='Hotová'?'<br><strong>⏳ Nepotvrdili:</strong> <span style="color:#dc2626">'+no.join(', ')+'</span>':'');
+  }
+  return '<div class="modal-row" style="font-size:.85rem"><strong>👁 Prečítali:</strong> '+(rd.join(', ')||'nikto')+(nr.length?'<br><strong>⏳ Ešte nečítali:</strong> <span style="color:#dc2626">'+nr.join(', ')+'</span>':' ✅ všetci')+ak+'</div>';
 }
 function editObhliadka(id){
   var o=findById('obhliadky',id);if(!o)return;obhRead(id);
@@ -1661,6 +1686,7 @@ var HELP=[
 ['📍 Poloha tímu',0,'Apka odosiela polohu člena tímu (technika aj správcu) <b>iba keď ju používa</b> (pri otvorení, ťukaní v apke a každé 3 minúty kým je otvorená). iPhone sa pri prvom použití sám opýta na povolenie polohy. Člen tímu to môže vypnúť v Nastaveniach. Správca vidí posledné miesto v <b>Viac → Poloha tímu</b>. Nejde o živé sledovanie.'],
 ['🔍 Čas a technik pri obhliadke',0,'Pri obhliadke nastav <b>čas</b> a (nepovinne) <b>technika</b>. Technik ju uvidí v Dnes, Moje úlohy a Kalendári s časom a adresou. Ostatné obhliadky technik nevidí.'],
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
+['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
 ['🗺 Trasa dňa s obhliadkami',0,'Do Trasy dňa sa počítajú aj obhliadky priradené technikovi (🔍) – s časom, navigáciou a telefónom, aj v celej trase v Google mapách.'],
 ['🧹 Naplánované len 2 týždne vopred',0,'Moje úlohy, zoznam Montáž/Servis (predvolený filter „Najbližšie 2 týždne“) a prehľad Zákazky ukazujú len to, čo je do 14 dní alebo nemá dátum. Neskôr naplánované nájdeš v Kalendári, v Zákazky → „Naplánované neskôr“ alebo v zozname po zmene filtra na „všetko“.'],
 ['🏢 Veľkí klienti',0,'Pri obhliadke aj montáži je pole <b>Veľký klient</b> (VSE alebo „Iné…“ pre ďalšieho, ktorý sa zapamätá). Potom v <b>Práca → Veľkí klienti</b> vidíš obhliadky a montáže tohto klienta a pri každej tlačidlom (ťuk na riadok) zadáš faktúru: číslo, dátum a stav <b>Čaká na platbu / Zaplatené</b>. Červené = hotové bez faktúry alebo po splatnosti (30 dní). Hore sú počty a dole export CSV. Staré záznamy zaradíš cez Upraviť → Veľký klient.'],
@@ -2158,6 +2184,7 @@ function showJob(id,step){
   var h='<div class="modal-row" style="color:#64748b">'+esc(m.title||m.servisType||'Montáž')+' · 👤 '+esc(nmC||'-')+'</div>'+dots+
     '<h3 style="margin:6px 0">Krok '+step+'/'+st.length+' · '+JSN[key]+'</h3>';
   if(key==='arrive'){
+    if(needsAck(m))h+='<button class="action-btn" style="background:#16a34a" onclick="ackJob(\''+esc(id)+'\')">👍 Beriem na vedomie'+(m.chg?' (zmenený termín/tím)':'')+'</button>';
     h+='<div class="modal-actions" style="flex-wrap:wrap;margin:6px 0">'+
       (ph?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" href="tel:'+esc(ph)+'">📞 Zavolať</a><a class="btn-edit" style="background:#2563eb;text-decoration:none" href="sms:'+esc(ph)+'">💬 SMS</a>':'')+
       (ad?'<a class="btn-edit" style="background:#0d9488;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(ad)+'">🧭 Navigovať</a>':'')+'</div>'+
@@ -2218,12 +2245,14 @@ function saveJob(id,done){
 
 
 /* ===== Prehľad zákaziek ===== */
+function zkNoAck(m){return (!m.createdBy&&!m.chg)?[]:dbData.members.filter(function(x){return (m.memberIds||[]).indexOf(x.id)>-1&&(m.ackBy||[]).indexOf(x.id)<0})}
 function zkAll(){return dbData.montaze.filter(function(m){return m.date||m.kind})}
 function zkMatch(m,f){
   var td=ymd(new Date()),done=m.stav==='Hotová';
   var l14=ymd(new Date(Date.now()+14*86400000));
   if(f==='open')return !done&&(!m.date||m.date<=l14);
   if(f==='later')return !done&&m.date>l14;
+  if(f==='ack')return !done&&zkNoAck(m).length>0;
   if(f==='today')return m.date===td;
   if(f==='missing')return !done&&(!m.date||m.date<=l14)&&jobMissing(m).length>0;
   if(f==='run')return m.stav==='Prebieha';
@@ -2232,7 +2261,7 @@ function zkMatch(m,f){
 }
 function renderZakazky(){
   var el=$('zkList');if(!el)return;
-  var fs=$('zkF'),fv=fs.value||'open',L=[['open','Aktívne (do 2 týždňov)'],['later','Naplánované neskôr'],['today','Dnes'],['missing','Chýbajú údaje'],['run','Prebieha'],['done','Hotové'],['all','Všetky']],a=zkAll();
+  var fs=$('zkF'),fv=fs.value||'ack',L=[['ack','⏳ Čaká na potvrdenie'],['open','Aktívne (do 2 týždňov)'],['later','Naplánované neskôr'],['today','Dnes'],['missing','Chýbajú údaje'],['run','Prebieha'],['done','Hotové'],['all','Všetky']],a=zkAll();
   fs.innerHTML=L.map(function(x){return '<option value="'+x[0]+'">'+x[1]+' ('+a.filter(function(m){return zkMatch(m,x[0])}).length+')</option>'}).join('');
   fs.value=fv;
   var q=norm($('zkQ').value||'');
@@ -2241,8 +2270,10 @@ function renderZakazky(){
   el.innerHTML=rows.length?rows.map(function(m){
     var done=m.stav==='Hotová',mi=done?[]:jobMissing(m);
     var kind=!m.kind?'Montáž':(m.servisType||'Servis');
+    var na=done?[]:zkNoAck(m),soonD=m.date&&m.date<=ymd(new Date(Date.now()+86400000));
+    var rem=na.length?'<span class="ackrem" onclick="event.stopPropagation()" style="display:block;margin-top:4px">⏳ <b style="color:'+(soonD?'#dc2626':'#ca8a04')+'">nepotvrdil: '+na.map(function(x){return esc(x.name||'')}).join(', ')+'</b>'+(m.chgAt||m.createdAt?' · '+Math.max(0,Math.round((Date.now()-(m.chgAt||m.createdAt))/3600000))+' h':'')+' '+na.map(function(x){return waBtn(x,'Pripomienka: potvrď v apke zákazku '+(m.title||kind)+(m.date?' ('+fmtD(m.date)+(m.time?' '+m.time:'')+')':'')+'.')}).join('')+'</span>':'';
     return '<div class="day-row" style="border-left-color:'+srvColor(m)+'" onclick="showJob(\''+esc(m.id)+'\')"><b>'+(m.date?esc(fmtD(m.date))+(m.time?' '+esc(m.time):'')+' · ':'')+esc(kind)+' – '+esc(m.clientName||m.title||'')+'</b><span>'+
-      esc(m.stav||'Nová')+(m.memberNames&&m.memberNames.length?' · 👷 '+m.memberNames.map(esc).join(', '):'')+(mi.length?' · <b style="color:#dc2626">chýba '+mi.length+'</b>':(done?'':' · ✅ vyplnené'))+'</span></div>';
+      esc(m.stav||'Nová')+(m.memberNames&&m.memberNames.length?' · 👷 '+m.memberNames.map(esc).join(', '):'')+(mi.length?' · <b style="color:#dc2626">chýba '+mi.length+'</b>':(done?'':' · ✅ vyplnené'))+rem+'</span></div>';
   }).join(''):'<div class="td-none">Žiadne zákazky</div>';
 }
 
@@ -2468,7 +2499,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.33';
+var APP_VERSION='2026-11-05.34';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2569,7 +2600,7 @@ function dayRow(e){
     if(m&&isMine(m)||m&&isAdmin()){
       var ph=jobPhone(m),mi=m.stav==='Hotová'?[]:jobMissing(m);
       var st0=!m.stav||m.stav==='Nová',stel=smsTel(m);
-      q='<div class="dr-q" onclick="event.stopPropagation()">'+(ph?'<a href="tel:'+esc(ph)+'">📞 Zavolať</a>':'')+
+      q='<div class="dr-q" onclick="event.stopPropagation()">'+(needsAck(m)?'<a href="#" style="background:#16a34a;color:#fff" onclick="ackJob(\''+esc(e.id)+'\');return false">👍 Beriem na vedomie</a>':'')+(ph?'<a href="tel:'+esc(ph)+'">📞 Zavolať</a>':'')+
         (stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(smsText(m))+'" onclick="markRem(\''+smsKey(m)+'\')">💬 Odoslať SMS</a>':'')+
         '<a href="#" onclick="showJob(\''+esc(e.id)+'\');return false">📋 '+(st0?'Vytvoriť zákazku':'Zákazka')+(mi.length?' · <span style="color:#dc2626">chýba '+mi.length+'</span>':'')+'</a></div>';
     }
