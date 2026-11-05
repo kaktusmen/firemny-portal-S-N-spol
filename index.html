@@ -1747,14 +1747,19 @@ function renderHelp(){
 }
 function showWelcome(){
   lastDay=null;
+  var ad=isAdmin();
   $('eventModalBody').innerHTML='<h3>👋 Vitajte vo Firemnom portáli</h3>'+
     '<div class="modal-row"><b>1.</b> Na úvodnej stránke ťukni na <b>zmeniť</b> a vyber svoje meno.</div>'+
-    '<div class="modal-row"><b>2.</b> Svoje zákazky nájdeš v <b>Moje úlohy</b> a v zozname Dnes / Zajtra.</div>'+
-    '<div class="modal-row"><b>3.</b> Pri zákazke dávaj stav <b>Prebieha</b> a <b>Hotová</b>, vyplň <b>protokol</b> a nechaj ho podpísať.</div>'+
-    '<div class="modal-row"><b>4.</b> V dlaždici <b>❓ Nápoveda</b> nájdeš návod ku všetkému.</div>'+
-    '<div class="modal-actions"><button class="btn-edit" style="background:#16a34a" onclick="closeEvent();openSection(\'helpSection\',\'Nápoveda\')">📖 Otvoriť nápovedu</button><button class="btn-delete" style="background:#64748b;color:#fff" onclick="closeEvent()">Rozumiem</button></div>';
+    (ad?
+      '<div class="modal-row"><b>2.</b> Nové zákazky zadávaš v <b>Práca → Montáž / Servis</b>, obhliadky v <b>Práca → Obhliadky</b>.</div>'+
+      '<div class="modal-row"><b>3.</b> Prehľad všetkých zákaziek a kto ich potvrdil nájdeš vo <b>Viac → Zákazky</b>.</div>'
+    :
+      '<div class="modal-row"><b>2.</b> Nové zákazky potvrdíš tlačidlom <b>👍 Beriem na vedomie</b>. Svoje zákazky nájdeš v <b>Moje úlohy</b> a v Dnes / Zajtra.</div>'+
+      '<div class="modal-row"><b>3.</b> Pri zákazke ťukni na <b>📋 Zákazka</b>, vyplň kroky, pridaj fotky a podpisy a dokonči ju.</div>')+
+    '<div class="modal-row"><b>4.</b> Kompletný návod pre teba je v dlaždici <b>📖 Návod</b>.</div>'+
+    '<div class="modal-actions"><button class="btn-edit" style="background:#16a34a" onclick="closeEvent();openSection(\'tutSection\',\'Návod\',\'\')">📖 Otvoriť návod</button><button class="btn-delete" style="background:#64748b;color:#fff" onclick="closeEvent()">Rozumiem</button></div>';
   $('eventModal').style.display='flex';
-  try{localStorage.setItem('portal_welcome','1')}catch(e){}
+  try{localStorage.setItem('portal_welcome2','1')}catch(e){}
 }
 function smsKey(m){return 'k_sms_'+m.id+'_'+(m.date||'')}
 function remGet(k){var d=dbData.nastavenia.filter(function(y){return y.id==='pripomienky'})[0];return d&&d[k]}
@@ -2522,7 +2527,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.36';
+var APP_VERSION='2026-11-05.37';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3058,7 +3063,7 @@ window.onload=function(){
   if(!KEY){$('app').style.display='none';$('keyBox').style.display='block';return}
   start();
   updateBackupInfo();
-  setTimeout(function(){var seen='';try{seen=localStorage.getItem('portal_welcome')}catch(e){}if(!seen&&$('app').style.display!=='none')showWelcome()},1800);
+  setTimeout(function(){var seen='';try{seen=localStorage.getItem('portal_welcome2')}catch(e){}if(!seen&&$('app').style.display!=='none')showWelcome()},1800);
   setTimeout(backupPrompt,4500);
 };
 </script>
