@@ -85,8 +85,14 @@ body.is-tech .admin-only{display:none!important}
 body:not(.is-tech) .tutT{display:none!important}
 .tut-nav{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .tut-nav a{border:1.5px solid #0d9488;color:#0d9488;border-radius:999px;padding:6px 12px;font-size:.88rem;font-weight:600;text-decoration:none}
-#tutSection section{background:var(--card,#fff);border-radius:16px;padding:14px;margin:12px 0;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+#tutSection section{background:#fff;color:#1c1c1e;border-radius:16px;padding:14px;margin:12px 0;box-shadow:0 1px 6px rgba(0,0,0,.06)}
 #tutSection section h2{font-size:1.15rem;margin:0 0 6px}
+html[data-theme=dark] #tutSection section{background:#1c1c1e;color:#f2f2f7}
+html[data-theme=dark] #tutSection .b{background:rgba(255,255,255,.16)}
+html[data-theme=dark] #tutSection details{border-top-color:rgba(255,255,255,.14)}
+html[data-theme=dark] #tutSection section h2,html[data-theme=dark] #tutSection summary,html[data-theme=dark] #tutSection li,html[data-theme=dark] #tutSection p{color:#f2f2f7}
+#tutSection section h2,#tutSection summary,#tutSection li,#tutSection p{color:inherit}
+html[data-theme=dark] #tutSection section h2,html[data-theme=dark] #tutSection summary,html[data-theme=dark] #tutSection li,html[data-theme=dark] #tutSection p{color:#f2f2f7}
 #tutSection details{border-top:1px solid rgba(100,116,139,.25);padding:9px 0}
 #tutSection details:first-of-type{border-top:0}
 #tutSection summary{cursor:pointer;font-weight:600;list-style:none}
@@ -2553,7 +2559,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.40';
+var APP_VERSION='2026-11-05.41';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
