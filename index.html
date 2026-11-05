@@ -436,7 +436,7 @@ function put(c,o,id){
   var isNew=!id;
   id=id||col(c).doc().id;
   delete o.id;
-  if(isNew&&me&&NEWC.indexOf(c)>-1&&!o.createdBy){o.createdBy=me;o.readBy=[me];o.createdAt=Date.now();if(c==='montaze'||c==='obhliadky')o.ackBy=[me]}
+  if(isNew&&me&&(NEWC.indexOf(c)>-1||c==='volno')&&!o.createdBy){o.createdBy=me;o.readBy=[me];o.createdAt=Date.now();if(c==='montaze'||c==='obhliadky')o.ackBy=[me]}
   if(!isNew&&(c==='montaze'||c==='obhliadky')&&me){
     var old0=findById(c,id);
     if(old0){
@@ -528,6 +528,7 @@ function openSection(id,title,from){
   var el=$(id);el.style.display='block';el.classList.remove('sec-fade');void el.offsetWidth;el.classList.add('sec-fade');
   setTab(tabFor(id));render();
   if(id==='montazSection')showMS('choice');
+  if(id==='volnoSection')volnoSeen();
   window.scrollTo(0,0);
 }
 function showHome(){scr='home';navBack='';hideAll();updLeaveUi();$('todayBox').style.display='block';$('homeQuick').style.display='grid';$('pageTitle').innerText='Dnes';$('pageSub').style.display='none';$('statusBar').style.display='';setTab('home');window.scrollTo(0,0)}
@@ -1062,8 +1063,8 @@ function renderHomeObh(){
   }).join('');
 }
 function readInfo(c,o){
-  if(!isAdmin()||NEWC.indexOf(c)<0||(c!=='obhliadky'&&!o.createdBy&&!o.chg))return '';
-  var ids=dbData.members.filter(function(m){return m.rola==='Správca'||(c==='montaze'&&(o.memberIds||[]).indexOf(m.id)>-1)});
+  if(!isAdmin()||(NEWC.indexOf(c)<0&&c!=='volno')||(c!=='obhliadky'&&!o.createdBy&&!o.chg))return '';
+  var ids=dbData.members.filter(function(m){if(c==='volno')return (m.rola==='Správca'&&m.id!==o.memberId)||(o.stav!=='Žiadosť'&&m.id===o.memberId);return m.rola==='Správca'||(c==='montaze'&&(o.memberIds||[]).indexOf(m.id)>-1)});
   if(!ids.length)return '';
   var rd=ids.filter(function(m){return (o.readBy||[]).indexOf(m.id)>-1}).map(function(m){return esc(m.name||'')}),
       nr=ids.filter(function(m){return (o.readBy||[]).indexOf(m.id)<0}).map(function(m){return esc(m.name||'')});
@@ -1697,18 +1698,28 @@ function volnoSet(id,st){
   var v=findById('volno',id);if(!v)return;
   if(v.memberId===me){toast('Vlastné voľno musí schváliť iný správca');return}
   if(st==='Schválené'){var jl=jobsInLeave(v.memberId,v);if(jl.length&&!confirm((v.memberName||'Člen tímu')+' má v čase voľna naplánovanú činnosť:\n\n'+jobsText(jl)+'\n\nSchváliť voľno aj tak?'))return}
-  var me2=me?findById('members',me):null,u={stav:st,rozhodol:me2?me2.name:''};
+  var me2=me?findById('members',me):null,u={stav:st,rozhodol:me2?me2.name:'',readBy:me?[me]:[]};
   col('volno').doc(id).update(u).catch(function(){toast('Nepodarilo sa uložiť')});
   logAct(st==='Schválené'?'schválil voľno':'zamietol voľno','volno',(v.memberName||'')+' '+volnoWhen(v));
   toast(st);
 }
+function volnoSeen(){
+  if(!me)return;
+  dbData.volno.forEach(function(v){
+    if(!v.createdBy||(v.readBy||[]).indexOf(me)>-1)return;
+    var rcp=(isAdmin()&&v.memberId!==me)||(v.stav!=='Žiadosť'&&v.memberId===me);
+    if(!rcp)return;
+    v.readBy=(v.readBy||[]).concat(me);
+    col('volno').doc(v.id).update({readBy:firebase.firestore.FieldValue.arrayUnion(me)}).catch(function(){});
+  });
+}
 function showLeave(id){
-  var v=findById('volno',id);if(!v)return;
+  var v=findById('volno',id);if(!v)return;volnoSeen();
   lastDay=null;
   var own=isAdmin()||v.memberId===me;
   $('eventModalBody').innerHTML='<h3>🏖 Voľno: '+esc(v.memberName||'')+'</h3><div class="modal-row"><strong>Termín:</strong> '+esc(volnoWhen(v))+(v.casOd?'':' (celý deň)')+'</div><div class="modal-row"><strong>Stav:</strong> '+esc(v.stav||'')+'</div>'+
     (own&&v.dovod?'<div class="modal-row"><strong>Dôvod:</strong> '+esc(v.dovod)+'</div>':'')+
-    '<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
+    readInfo('volno',v)+'<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModal').style.display='flex';
 }
 var HELP=[
@@ -2542,7 +2553,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.39';
+var APP_VERSION='2026-11-05.40';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
