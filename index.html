@@ -326,6 +326,32 @@ function initIny(root){
     e.parentNode.insertBefore(x,e.nextSibling);
     e.addEventListener('change',function(){syncIny(e.id);if(e.value==='__iny')x.focus()});
   });
+  applyCustomOpts(root);
+}
+function inyKey(id){return String(id).replace(/\d+$/,'')}
+function inyDoc(){return dbData.nastavenia.filter(function(x){return x.id==='moznosti'})[0]||{}}
+function applyCustomOpts(root){
+  var d=inyDoc();
+  (root||document).querySelectorAll('select[data-iny][data-done]').forEach(function(e){
+    var list=d[inyKey(e.id)];if(!Array.isArray(list))return;
+    var iny=Array.prototype.filter.call(e.options,function(o){return o.value==='__iny'})[0];
+    list.forEach(function(v){
+      var has=Array.prototype.some.call(e.options,function(o){return o.value===v||o.text===v});
+      if(!has){var o=document.createElement('option');o.textContent=v;e.insertBefore(o,iny||null)}
+    });
+  });
+}
+function rememberIny(){
+  var d=inyDoc(),upd={},any=false;
+  document.querySelectorAll('select[data-iny][data-done]').forEach(function(e){
+    if(e.value!=='__iny')return;
+    var x=$(e.id+'Iny'),v=x?x.value.trim():'';if(!v)return;
+    var k=inyKey(e.id),list=(d[k]||[]).concat(upd[k]||[]);
+    var exists=list.indexOf(v)>-1||Array.prototype.some.call(e.options,function(o){return o.value!=='__iny'&&(o.value===v||o.text===v)});
+    if(exists)return;
+    upd[k]=(upd[k]||(d[k]||[]).slice());upd[k].push(v);any=true;
+  });
+  if(any)col('nastavenia').doc('moznosti').set(upd,{merge:true}).catch(function(){});
 }
 function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('show')},2200)}
 
@@ -573,7 +599,7 @@ function render(){
   fillMontazSelects();
   fillSpravySelects();
   fillServisMembers();
-  renderToday();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();renderDue();renderRoute();renderHelp();fillPonukaSelects();applyRole();
+  renderToday();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();renderDue();applyCustomOpts();renderRoute();renderHelp();fillPonukaSelects();applyRole();
 }
 
 // ---------- Klienti ----------
@@ -822,6 +848,7 @@ function saveMontaz(){
   var pend=$('mMember').value;
   if(pend){var pm=findById('members',pend);if(pm&&!mTeam.some(function(x){return x.id===pend}))mTeam.push({id:pend,name:pm.name||''})}
   if(!leaveConflict(mTeam,$('mDate').value,$('mTime').value))return;
+  rememberIny();
   var eid=$('editingMontazId').value||null;
   var cid=$('mClient').value,cl=dbData.clients.filter(function(x){return x.id===cid})[0],newName='';
   if($('mNewBox').style.display!=='none'){
@@ -887,6 +914,7 @@ function saveObhliadka(){
   o.name=(o.meno+' '+o.priezvisko).trim();
   if(!o.name){toast('Zadajte meno alebo priezvisko');return}
   o.date=$('oDate').value;
+  rememberIny();
   var eid=$('editingObhliadkaId').value||null;
   if(eid){var old=findById('obhliadky',eid);if(old&&old.klientId)o.klientId=old.klientId}
   put('obhliadky',o,eid);
@@ -1158,7 +1186,7 @@ function deviceBlock(d,i,total){
     }).join('')+
     (multi?'<button type="button" onclick="addInd('+i+')" style="margin-bottom:8px">➕ Pridať vnútornú jednotku</button>':'')+
     '<div class="dev-row"><input type="text" id="dOutT'+i+'" value="'+esc(d.vonkajsiaTyp||'')+'" placeholder="Typ vonkajšej"><input type="text" id="dOut'+i+'" value="'+esc(d.vonkajsia||'')+'" placeholder="S/N vonkajšej"></div>'+
-    '<div class="dev-row"><select id="dChT'+i+'"><option value="">-- Chladivo --</option>'+Object.keys(GWP).map(function(k){return '<option>'+k+'</option>'}).join('')+'</select><input type="text" inputmode="decimal" id="dChK'+i+'" value="'+esc(d.chlKg||'')+'" placeholder="Náplň (kg)"></div>'+
+    '<div class="dev-row"><select id="dChT'+i+'" data-iny data-iny-ph="Iné chladivo"><option value="">-- Chladivo --</option>'+Object.keys(GWP).map(function(k){return '<option>'+k+'</option>'}).join('')+'</select><input type="text" inputmode="decimal" id="dChK'+i+'" value="'+esc(d.chlKg||'')+'" placeholder="Náplň (kg)"></div>'+
     '<select id="dZar'+i+'" data-iny data-iny-ph="Počet rokov (číslo)"><option value="">-- Záruka v rokoch --</option><option value="1">1 rok</option><option value="2">2 roky</option><option value="3">3 roky</option><option value="5">5 rokov</option></select></div>';
 }
 function readDevices(){
@@ -1167,7 +1195,7 @@ function readDevices(){
     out.push({typ:gv('dTyp'+i),znacka:($('dZn'+i)?$('dZn'+i).value.trim():''),system:gv('dSys'+i),
       vnutorne:Array.prototype.map.call(document.querySelectorAll('#mDevices input.dInd[data-d="'+i+'"]'),function(x){return x.value.trim()}),
       vnutorneTyp:Array.prototype.map.call(document.querySelectorAll('#mDevices input.dIndT[data-d="'+i+'"]'),function(x){return x.value.trim()}),
-      vonkajsia:$('dOut'+i).value.trim(),vonkajsiaTyp:$('dOutT'+i).value.trim(),zarukaRoky:gv('dZar'+i),chlTyp:$('dChT'+i).value,chlKg:$('dChK'+i).value.trim()});
+      vonkajsia:$('dOut'+i).value.trim(),vonkajsiaTyp:$('dOutT'+i).value.trim(),zarukaRoky:gv('dZar'+i),chlTyp:gv('dChT'+i),chlKg:$('dChK'+i).value.trim()});
     i++;
   }
   return out;
@@ -1177,7 +1205,7 @@ function renderDevices(list){
   var box=$('mDevices');
   box.innerHTML=list.map(function(d,i){return deviceBlock(d,i,list.length)}).join('');
   initIny(box);
-  list.forEach(function(d,i){sv('dTyp'+i,d.typ||'');sv('dSys'+i,d.system||'');sv('dZar'+i,d.zarukaRoky||'');$('dChT'+i).value=d.chlTyp||''});
+  list.forEach(function(d,i){sv('dTyp'+i,d.typ||'');sv('dSys'+i,d.system||'');sv('dZar'+i,d.zarukaRoky||'');sv('dChT'+i,d.chlTyp||'')});
 }
 function devRefresh(){renderDevices(readDevices())}
 function addDevice(){var L=readDevices();L.push(emptyDev());renderDevices(L)}
@@ -1384,7 +1412,7 @@ function fillChPick(){
 }
 function chClear(){
   $('chEditId').value='';['chClient','chDev','chKg','chNote','chPick'].forEach(function(i){$(i).value=''});
-  $('chDate').value=ymd(new Date());$('chTech').value='';$('chBtn').textContent='Uložiť záznam';
+  $('chDate').value=ymd(new Date());$('chTech').value='';$('chBtn').textContent='Uložiť záznam';sv('chTyp','R32');sv('chWhy','Doplnenie po úniku');
 }
 function saveChladivo(){
   var cid=$('chClient').value,cl=findById('clients',cid);
@@ -1394,16 +1422,17 @@ function saveChladivo(){
   var chk=$('chWhy').value==='Kontrola tesnosti';
   if(!chk&&!(kg>0)){toast('Zadaj množstvo v kg');return}
   if(!$('chDate').value){toast('Zadaj dátum');return}
+  rememberIny();
   var adm=isAdmin(),tid=adm?$('chTech').value:me,tm=findById('members',tid);
   if(!tm){toast(adm?'Vyber, kto chladivo doplnil':'Najprv vyber svoje meno');return}
   var id=$('chEditId').value||null;
-  put('chladivo',{date:$('chDate').value,clientId:cid,clientName:nm(cl),adresa:cl.adresa||'',zariadenie:$('chDev').value.trim()||($('chPick').selectedIndex>0?$('chPick').options[$('chPick').selectedIndex].text:''),mid:$('chPick').value?$('chPick').value.split('|')[0]:'',di:$('chPick').value?parseInt($('chPick').value.split('|')[1],10):null,typ:$('chTyp').value,kg:Math.round(kg*1000)/1000,dovod:$('chWhy').value,techId:tid,techName:tm.name||'',pozn:$('chNote').value.trim(),ts:Date.now()},id);
+  put('chladivo',{date:$('chDate').value,clientId:cid,clientName:nm(cl),adresa:cl.adresa||'',zariadenie:$('chDev').value.trim()||($('chPick').selectedIndex>0?$('chPick').options[$('chPick').selectedIndex].text:''),mid:$('chPick').value?$('chPick').value.split('|')[0]:'',di:$('chPick').value?parseInt($('chPick').value.split('|')[1],10):null,typ:gv('chTyp'),kg:Math.round(kg*1000)/1000,dovod:gv('chWhy'),techId:tid,techName:tm.name||'',pozn:$('chNote').value.trim(),ts:Date.now()},id);
   toast(id?'Záznam upravený':'Záznam uložený');chClear();
 }
 function editChladivo(id){
   var r=findById('chladivo',id);if(!r)return;
   $('chEditId').value=id;$('chDate').value=r.date||'';$('chClient').value=r.clientId||'';fillChPick();$('chPick').value=r.mid?r.mid+'|'+r.di:'';$('chDev').value=r.zariadenie||'';
-  $('chTyp').value=r.typ||'R32';$('chKg').value=r.kg;$('chWhy').value=r.dovod||'';$('chNote').value=r.pozn||'';
+  sv('chTyp',r.typ||'R32');$('chKg').value=r.kg;sv('chWhy',r.dovod||'');$('chNote').value=r.pozn||'';
   if(isAdmin())$('chTech').value=r.techId||'';
   $('chBtn').textContent='Uložiť zmeny';openSection('chladivoSection','Chladivo');window.scrollTo(0,0);
 }
@@ -1521,6 +1550,7 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
+['✏️ Iné…',0,'Pri výbere <b>Iné…</b> sa zobrazí políčko, kam napíšeš vlastný text. Po uložení formulára sa tento text <b>pridá do ponuky</b> a nabudúce ho nájdeš v zozname (vidia ho všetci).'],
 ['📝 Poznámky v obhliadke',0,'Vo formulári obhliadky je dole políčko <b>Poznámky</b> (rozmery, dohody, cena…). Zobrazí sa aj v zozname a v detaile obhliadky.'],
 ['🧹 Čistenie a 🔨 Oprava krok za krokom',0,'V kroku Klient je tlačidlo <b>➕ Nový klient</b> (uloží kartu klienta). Čistenie: <b>Klient → Zariadenie a termín → Tím → Hotovo</b>. Oprava: <b>Klient → Porucha → Termín a tím → Záznam → Hotovo</b>. Na očíslované štvorčeky hore sa dá ťuknúť a skočiť na ľubovoľný krok.'],
 ['🔧 Montáž krok za krokom',0,'Práca → Montáž: <b>1 Klient</b> (tlačidlo 👤 Existujúci klient alebo ➕ Nový klient) → <b>2 Zákazka</b> (názov, dátum, čas) → <b>3 Zariadenia</b> → <b>4 Tím</b> → <b>5 Hotovo</b> (zhrnutie a uloženie). Na očíslované štvorčeky hore môžeš ťuknúť a skočiť na ľubovoľný krok, aj pri úprave montáže.'],
@@ -2024,7 +2054,7 @@ function showJob(id,step){
         '<label class="fl">Značka / model</label>'+jbIn('jbBr'+i,d.znacka,'Značka / model',false)+
         il.map(function(sn,k){return '<label class="fl">Výrobné číslo vnútornej jednotky'+(il.length>1?' '+(k+1):'')+'</label>'+jbIn('jbIn'+i+'_'+k,sn,'Výrobné číslo',true)}).join('')+
         '<label class="fl">Výrobné číslo vonkajšej jednotky</label>'+jbIn('jbOut'+i,d.vonkajsia,'Výrobné číslo',true)+
-        '<label class="fl">Chladivo</label><select id="jbChT'+i+'" class="jb'+(d.chlTyp?'':' need')+'" onchange="jbN(this)"><option value="">-- vyber --</option>'+Object.keys(GWP).map(function(k){return '<option'+(d.chlTyp===k?' selected':'')+'>'+k+'</option>'}).join('')+'</select>'+
+        '<label class="fl">Chladivo</label><select id="jbChT'+i+'" class="jb'+(d.chlTyp?'':' need')+'" onchange="jbN(this)"><option value="">-- vyber --</option>'+Object.keys(GWP).concat(d.chlTyp&&!GWP[d.chlTyp]?[d.chlTyp]:[]).map(function(k){return '<option'+(d.chlTyp===k?' selected':'')+'>'+esc(k)+'</option>'}).join('')+'</select>'+
         '<label class="fl">Náplň chladiva (kg)</label>'+jbIn('jbChK'+i,d.chlKg,'napr. 1,2',true,'type="text" inputmode="decimal"')+'</div>';
     });
     h+='<div class="modal-row" style="color:#64748b">🔴 Červené polia treba doplniť.</div>';
@@ -2098,7 +2128,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.4';
+var APP_VERSION='2026-11-05.6';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2728,9 +2758,9 @@ window.onload=function(){
       <select id="chClient" class="full-width-input" onchange="fillChPick()"></select>
       <select id="chPick" class="full-width-input"><option value="">-- Zariadenie (nepovinné) --</option></select>
       <input type="text" id="chDev" class="full-width-input" placeholder="Zariadenie / umiestnenie (napr. obývačka, S/N) – nepovinné">
-      <select id="chTyp"><option>R32</option><option>R410A</option><option>R290</option><option>R134a</option><option>R407C</option><option>R22</option><option>Iné</option></select>
+      <select id="chTyp" data-iny data-iny-ph="Iné chladivo (napr. R454B)"><option>R32</option><option>R410A</option><option>R290</option><option>R134a</option><option>R407C</option><option>R22</option></select>
       <input type="text" id="chKg" inputmode="decimal" placeholder="Množstvo (kg), napr. 0,45">
-      <select id="chWhy" class="full-width-input"><option>Doplnenie po úniku</option><option>Plnenie pri montáži</option><option>Servis / údržba</option><option>Kontrola tesnosti</option><option>Iné</option></select>
+      <select id="chWhy" class="full-width-input" data-iny data-iny-ph="Iný dôvod (napíšte)"><option>Doplnenie po úniku</option><option>Plnenie pri montáži</option><option>Servis / údržba</option><option>Kontrola tesnosti</option></select>
       <select id="chTech" class="full-width-input"></select>
       <input type="text" id="chNote" class="full-width-input" placeholder="Poznámka (nepovinné)">
     </div>
