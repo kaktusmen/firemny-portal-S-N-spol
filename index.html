@@ -806,8 +806,10 @@ function saveServis(p){
   var eid=$(p+'EditId').value||null;
   put('montaze',o,eid);
   var back=fromCal;
+  var waO={title:o.title,servisType:o.servisType,clientName:o.clientName,date:o.date,time:o.time,address:o.address,memberIds:o.memberIds};
   clearServis(p);toast(eid?'Servis aktualizovaný!':'Servis uložený!');
   if(back)backToCalendar();else showMS('choice');
+  waAfterSave(waO,!!eid);
 }
 function editServis(id){
   var m=findById('montaze',id);if(!m)return;
@@ -875,8 +877,10 @@ function saveMontaz(){
     zariadenia:devs,typ:'',system:'',vnutorne:[],vonkajsia:'',zarukaRoky:'',
     memberIds:mTeam.map(function(x){return x.id}),memberNames:mTeam.map(function(x){return x.name})},eid);
   var back=fromCal;
+  var waO={title:t,clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,address:(cl?clientAddr(cl):(typeof nc!=='undefined'&&nc?nc.adresa:''))||'',memberIds:mTeam.map(function(x){return x.id})};
   clearMontaz();toast(eid?'Montáž aktualizovaná!':'Montáž uložená!');
   if(back)backToCalendar();
+  waAfterSave(waO,!!eid);
 }
 function clearMember(){
   $('tName').value='';$('tTel').value='';$('tRola').value='Technik';$('tHeslo').value='';$('editingMemberId').value='';
@@ -1564,7 +1568,7 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
-['💬 WhatsApp',0,'Po odoslaní správy (aj v jej detaile v histórii) sú tlačidlá <b>💬 WhatsApp: Meno</b> pre príjemcov, ktorí majú v tíme zadaný telefón. Otvorí sa WhatsApp s hotovým textom, stačí dať Odoslať. To isté je v detaile zákazky pre členov tímu zákazky. Telefónne čísla členov dopĺňa správca v Tíme.'],
+['💬 WhatsApp',0,'Po odoslaní správy (aj v jej detaile v histórii) sú tlačidlá <b>💬 WhatsApp: Meno</b> pre príjemcov, ktorí majú v tíme zadaný telefón. Otvorí sa WhatsApp s hotovým textom, stačí dať Odoslať. To isté je v detaile zákazky aj hneď po uložení montáže, čistenia alebo opravy pre členov tímu zákazky. Telefónne čísla členov dopĺňa správca v Tíme.'],
 ['💬 Správy',0,'Správa sa odosiela automaticky <b>od teba</b> (podľa mena, ktoré máš zvolené na úvodnej stránke). Vyberieš len príjemcov a napíšeš text.'],
 ['✏️ Iné…',0,'Pri výbere <b>Iné…</b> sa výber zmení na písacie políčko na tom istom mieste, kam napíšeš vlastný text (tlačidlo ▾ vráti zoznam). Po uložení formulára sa tento text <b>pridá do ponuky</b> a nabudúce ho nájdeš v zozname (vidia ho všetci).'],
 ['📝 Poznámky v obhliadke',0,'Vo formulári obhliadky je dole políčko <b>Poznámky</b> (rozmery, dohody, cena…). Zobrazí sa aj v zozname a v detaile obhliadky.'],
@@ -2146,7 +2150,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.10';
+var APP_VERSION='2026-11-05.11';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2305,6 +2309,11 @@ function waJobBtns(o){
   var txt='Zákazka: '+(o.title||o.servisType||'')+(o.clientName?'\nKlient: '+o.clientName:'')+(o.date?'\nTermín: '+fmtD(o.date)+(o.time?' o '+o.time:''):'')+((o.address||'')?'\nAdresa: '+o.address:'');
   var l=dbData.members.filter(function(m){return ids.indexOf(m.id)>-1&&m.id!==me}).map(function(m){return waBtn(m,txt)}).join('');
   return l?'<div class="modal-row"><strong>Poslať tímu cez WhatsApp:</strong></div><div class="modal-actions" style="flex-wrap:wrap">'+l+'</div>':'';
+}
+function waAfterSave(o,isEdit){
+  var b=waJobBtns(o);if(!b)return;
+  $('eventModalBody').innerHTML='<h3>✅ '+(isEdit?'Zákazka upravená':'Zákazka uložená')+'</h3><div class="modal-row"><strong>'+esc(o.title||'')+'</strong>'+(o.clientName?' · '+esc(o.clientName):'')+(o.date?'<br>'+esc(fmtD(o.date))+(o.time?' o '+esc(o.time):''):'')+'</div>'+b+'<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
+  $('eventModal').style.display='flex';
 }
 function showMsg(id){
   var x=findById('spravy',id);if(!x)return;
