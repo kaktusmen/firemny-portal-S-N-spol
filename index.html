@@ -243,7 +243,7 @@ html[data-theme=dark] #eventModal .jb.need{background:#3b1414;border-color:#dc26
 #tabBar button.on{color:var(--primary)}
 #tabBar button.on span{filter:none;opacity:1}
 body.is-tech #tabBar button.admin-only{display:none!important}
-body:not(.is-tech) #tabBar button.tech-only,body:not(.is-tech) .menu-card.tech-only{display:none!important}
+body:not(.is-tech) #tabBar button.tech-only{display:none!important}
 #tabMsgBadge{position:absolute;top:0;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:#ff3b30;color:#fff;font-style:normal;font-size:.7rem;font-weight:700;line-height:18px;text-align:center;padding:0 5px}
 html[data-theme=dark] .menu-list{background:#1c1c1e;box-shadow:none}
 html[data-theme=dark] #tabBar{background:rgba(29,29,31,.86)}
@@ -573,7 +573,7 @@ function render(){
   fillMontazSelects();
   fillSpravySelects();
   fillServisMembers();
-  renderToday();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();renderDue();renderPoloha();locTick();renderRoute();renderHelp();fillPonukaSelects();applyRole();
+  renderToday();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();renderDue();renderRoute();renderHelp();fillPonukaSelects();applyRole();
 }
 
 // ---------- Klienti ----------
@@ -1521,7 +1521,6 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
-['📍 Poloha tímu',0,'Apka odosiela polohu technika <b>iba keď ju používa</b> (pri otvorení, ťukaní v apke a každé 3 minúty kým je otvorená). iPhone sa pri prvom použití sám opýta na povolenie polohy. Technik to môže vypnúť v Nastaveniach. Správca vidí posledné miesto v <b>Viac → Poloha tímu</b>. Nejde o živé sledovanie.'],
 ['🧹 Čistenie a 🔨 Oprava krok za krokom',0,'V kroku Klient je tlačidlo <b>➕ Nový klient</b> (uloží kartu klienta). Čistenie: <b>Klient → Zariadenie a termín → Tím → Hotovo</b>. Oprava: <b>Klient → Porucha → Termín a tím → Záznam → Hotovo</b>. Na očíslované štvorčeky hore sa dá ťuknúť a skočiť na ľubovoľný krok.'],
 ['🔧 Montáž krok za krokom',0,'Práca → Montáž: <b>1 Klient</b> (tlačidlo 👤 Existujúci klient alebo ➕ Nový klient) → <b>2 Zákazka</b> (názov, dátum, čas) → <b>3 Zariadenia</b> → <b>4 Tím</b> → <b>5 Hotovo</b> (zhrnutie a uloženie). Na očíslované štvorčeky hore môžeš ťuknúť a skočiť na ľubovoľný krok, aj pri úprave montáže.'],
 ['📋 Zákazka krok za krokom',0,'Ťukni pri úlohe na <b>📋 Zákazka</b>. Ideš krokmi: <b>Príchod</b> (📞 Zavolať, 🧭 Navigovať, ▶ Som na mieste) → <b>Zariadenia</b> (červené polia treba doplniť) → <b>Kontrola</b> → <b>Fotky</b> → <b>Podpisy</b> → <b>Hotovo</b>. Každý krok sa ukladá pri ťuknutí na Ďalej. Technik má dole lištu: Dnes, Kalendár, Voľno, Správy.'],
@@ -1995,7 +1994,7 @@ function jobGo(id,step){
 }
 function jobStart(id){
   var m=findById('montaze',id);if(!m)return;
-  locPing(true);jobPersist(m,{stav:'Prebieha'});logAct('začal zákazku','montaze',m.title||m.clientName||'');toast('▶ Zákazka prebieha');
+  jobPersist(m,{stav:'Prebieha'});logAct('začal zákazku','montaze',m.title||m.clientName||'');toast('▶ Zákazka prebieha');
   render();showJob(id,jobStep);
 }
 function showJob(id,step){
@@ -2058,44 +2057,12 @@ function saveJob(id,done){
   var miss=jobMissing(m);
   if(done){
     if(miss.length&&!confirm('Ešte chýba: '+miss.join(', ')+'.\nNaozaj dokončiť zákazku?')){jobPersist(m,u);showJob(id,jobStep);return}
-    u.stav='Hotová';u.doneAt=Date.now();m.stav='Hotová';m.doneAt=u.doneAt;locPing(true);
+    u.stav='Hotová';u.doneAt=Date.now();m.stav='Hotová';m.doneAt=u.doneAt;
   }
   col('montaze').doc(id).update(u).then(function(){toast(done?'Zákazka dokončená ✅':'Uložené')}).catch(function(){toast('Nepodarilo sa uložiť')});
   if(done)logAct('dokončil zákazku','montaze',m.title||m.clientName||'');
   render();
   if(done)closeEvent();else showJob(id,jobStep);
-}
-/* ===== Poloha technika (len keď apku používa) ===== */
-var locLast=0,locAsking=false,locBusy=false;
-function locVal(){try{return localStorage.getItem('portal_loc')}catch(e){return null}}
-function locSet(v){try{localStorage.setItem('portal_loc',v)}catch(e){}locUi()}
-function locUi(){var b=$('locBtn');if(b)b.textContent='📍 Odosielať polohu správcovi: '+(locVal()==='1'?'áno':'nie')}
-function toggleLoc(){
-  if(locVal()==='1'){locSet('0');toast('Poloha sa už neodosiela')}
-  else{locSet('1');toast('Poloha sa odosiela, keď apku používate');locPing(true)}
-}
-function locPing(force){
-  if(isAdmin()||!me||locVal()!=='1'||!navigator.geolocation)return;
-  var now=Date.now();if(locBusy||(!force&&now-locLast<180000))return;locBusy=true;
-  navigator.geolocation.getCurrentPosition(function(p){locBusy=false;locLast=Date.now();
-    var mm=findById('members',me);
-    col('nastavenia').doc('poloha_'+me).set({memberId:me,name:mm?mm.name:'',lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy||0),ts:Date.now()},{merge:true}).catch(function(){});
-  },function(){locBusy=false},{enableHighAccuracy:false,timeout:10000,maximumAge:60000});
-}
-function locTick(){
-  if(isAdmin()||!me||!findById('members',me))return;
-  if(locVal()===null)locSet('1');
-  locPing(false);
-}
-document.addEventListener('click',function(){locPing(false)},true);
-setInterval(function(){if(!document.hidden)locPing(false)},120000);
-function renderPoloha(){
-  var el=$('polohaList');if(!el)return;
-  var a=dbData.nastavenia.filter(function(x){return String(x.id).indexOf('poloha_')===0&&x.lat!=null}).sort(function(x,y){return (y.ts||0)-(x.ts||0)});
-  el.innerHTML=a.length?a.map(function(x){
-    var min=Math.round((Date.now()-(x.ts||0))/60000),ago=min<1?'práve teraz':(min<60?'pred '+min+' min':(min<1440?'pred '+Math.round(min/60)+' h':fmtD(ymd(new Date(x.ts)))));
-    return '<div class="day-row" style="border-left-color:'+(min<30?'#16a34a':(min<240?'#ca8a04':'#94a3b8'))+'"><b>👷 '+esc(x.name||'')+'</b><span>'+ago+' · '+esc(new Date(x.ts).toLocaleString('sk-SK'))+(x.acc?' · ±'+x.acc+' m':'')+'</span><span><a href="https://www.google.com/maps/search/?api=1&query='+x.lat+','+x.lng+'" target="_blank" rel="noopener">📍 Zobraziť na mape</a></span></div>';
-  }).join(''):'<div class="td-none">Zatiaľ žiadna poloha. Technici ju odošlú, keď apku použijú a súhlasia.</div>';
 }
 function setStav(id,st){
   var m=findById('montaze',id);if(!m)return;
@@ -2130,7 +2097,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.3';
+var APP_VERSION='2026-11-04.21';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2175,7 +2142,7 @@ function submitPw(id){
   });
 }
 function cancelPw(){closeEvent();setMeHome('')}
-function applyRole(){document.body.classList.toggle('is-tech',!isAdmin());locUi();awakeUi();awakeApply()}
+function applyRole(){document.body.classList.toggle('is-tech',!isAdmin());awakeUi();awakeApply()}
 function hardRefresh(){
   toast('🔄 Aktualizujem…');
   var go=function(){location.replace(location.pathname+'?v='+Date.now())};
@@ -2289,7 +2256,7 @@ function toggleAwake(){
   awakeOn=!awakeOn;try{localStorage.setItem('portal_awake',awakeOn?'1':'0')}catch(e){}
   awakeUi();awakeApply();toast(awakeOn?'Obrazovka nezhasne, kým je appka otvorená':'Obrazovka sa môže zhasnúť');
 }
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){awakeApply();locPing(false)}});
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')awakeApply()});
 function leaveBlock(d0){
   var arr=dbData.volno.filter(function(v){
     if(v.stav==='Zamietnuté'||(v.do||v.od)<d0)return false;
@@ -2670,7 +2637,6 @@ window.onload=function(){
   </div>
   <div id="mainMenu" class="menu-list" style="display:none">
     <div class="menu-card admin-only" onclick="openSection('ponukySection','Cenové ponuky','more')">💶 Ponuky</div>
-    <div class="menu-card admin-only" onclick="openSection('polohaSection','Poloha tímu','more')">📍 Poloha tímu</div>
     <div class="menu-card admin-only" id="dueTile" onclick="openSection('dueSection','Servisné termíny','more')">🛠 Servisné termíny</div>
     <div class="menu-card" id="volnoTile" onclick="openSection('volnoSection','Voľno','more')">🏖 Voľno</div>
     <div class="menu-card" onclick="openSection('spravySection','Správy pre tím','more')">💬 Správy</div>
@@ -2688,7 +2654,6 @@ window.onload=function(){
       <div class="menu-card" id="themeBtn" onclick="cycleTheme()">🌓 Vzhľad</div>
     </div>
     <div class="menu-list">
-      <div class="menu-card tech-only" id="locBtn" onclick="toggleLoc()">📍 Odosielať polohu správcovi</div>
       <div class="menu-card admin-only" id="awakeBtn" onclick="toggleAwake()">📱 Nezhasínať obrazovku</div>
       <div class="menu-card admin-only" onclick="shareLink()">🔗 Odkaz pre kolegu</div>
       <div class="menu-card admin-only" onclick="exportClientsCsv()">📊 Klienti (CSV)</div>
@@ -2787,12 +2752,6 @@ window.onload=function(){
     <h3>Zoznam</h3><div id="volnoList">Načítavam...</div>
   </div>
 
-  <div id="polohaSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
-    <h2>📍 Poloha tímu</h2>
-    <p style="color:#64748b;font-size:.9rem;margin-top:0">Posledné miesto, kde technik používal apku (nie živé sledovanie). Technik s tým musí súhlasiť.</p>
-    <div id="polohaList"></div>
-  </div>
   <div id="routeSection" class="section-content">
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Trasa dňa</h2>
