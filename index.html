@@ -1838,7 +1838,7 @@ function bookClash(team,ds,time,selfId){
       src[1].forEach(function(j){
         if(j.id===selfId||j.date!==ds||!j.time||j.stav==='Hotová')return;
         var mine=(j.memberIds||[]).indexOf(x.id)>-1||(j.memberNames||[]).some(function(n){return norm(n)===norm(mm.name||x.name)});
-        if(!mine||Math.abs(mn(j.time)-mn(time))>=120)return;
+        if(!mine||Math.abs(mn(j.time)-mn(time))>=30)return;
         out.ids.push(j.id);out.push((x.name||mm.name)+': '+j.time+' – '+(src[0]==='obhliadky'?'obhliadka '+onm(j):(j.title||j.clientName||'zákazka')));
       });
     });
@@ -1847,7 +1847,7 @@ function bookClash(team,ds,time,selfId){
 }
 function leaveConflict(team,ds,time,selfId){
   var bc=bookClash(team,ds,time,selfId);
-  if(bc.length&&!confirm('⚠️ Technik už má v tom čase (±2 hodiny) inú úlohu:\n\n'+bc.join('\n')+'\n\nUložiť aj tak?'))return false;
+  if(bc.length&&!confirm('⚠️ Technik už má v tom čase (±30 minút) inú úlohu:\n\n'+bc.join('\n')+'\n\nUložiť aj tak?'))return false;
   var names=(team||[]).map(function(x){var v=onLeave(x.id,ds,time);return v?x.name+(v.casOd?' ('+v.casOd+'–'+v.casDo+')':''):''}).filter(Boolean);
   return names.length?confirm((time?'V čase zákazky':'Na tento deň')+' má schválené voľno: '+names.join(', ')+'.\n\nUložiť aj tak?'):true;
 }
@@ -1938,7 +1938,7 @@ var HELP=[
 ['🔍 Čas a technik pri obhliadke',0,'Pri obhliadke nastav <b>čas</b> a (nepovinne) <b>technika</b>. Technik ju uvidí v Dnes, Moje úlohy a Kalendári s časom a adresou. Ostatné obhliadky technik nevidí.'],
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
-['🔥 Prehľad správcu',1,'<b>Viac → Prehľad</b> (a červený riadok na úvodnej stránke): <b>Čo horí</b> – zákazky/obhliadky bez technika, nepotvrdené, prekrývanie termínov technika, obhliadky bez ponuky, ponuky bez odpovede 7+ dní, faktúry veľkých klientov, neprečítané správy, stará záloha. <b>SMS na zajtra</b> – tlačidlo Ďalšia SMS otvorí SMS ďalšiemu klientovi. <b>Týždeň</b> – kto kedy pracuje, voľno. <b>Súhrn dňa</b> – čo technik stihol. <b>Čistenie</b> – klimatizácie 11+ mesiacov po montáži bez čistenia. Pri ukladaní termínu ťa appka upozorní, ak má technik v ±2 hodinách inú úlohu.'],
+['🔥 Prehľad správcu',1,'<b>Viac → Prehľad</b> (a červený riadok na úvodnej stránke): <b>Čo horí</b> – zákazky/obhliadky bez technika, nepotvrdené, prekrývanie termínov technika, obhliadky bez ponuky, ponuky bez odpovede 7+ dní, faktúry veľkých klientov, neprečítané správy, stará záloha. <b>SMS na zajtra</b> – tlačidlo Ďalšia SMS otvorí SMS ďalšiemu klientovi. <b>Týždeň</b> – kto kedy pracuje, voľno. <b>Súhrn dňa</b> – čo technik stihol. <b>Čistenie</b> – klimatizácie 11+ mesiacov po montáži bez čistenia. Pri ukladaní termínu ťa appka upozorní, ak má technik v ±30 minútach inú úlohu.'],
 ['🤝 Stretneme sa',0,'Správy → tlačidlo 🤝 Stretneme sa: vyberieš dátum, čas a miesto (U teba / V sklade / Iné…), text sa vloží do správy (bez príjemcu sa nastaví Všetci). Skontroluj a stlač Odoslať správu. Členovia ju uvidia ako Nové a vidíš, kto ju prečítal.'],
 ['👀 Kto čo videl',0,'Platí pre montáže, servisy, opravy, čistenia aj obhliadky: priradený člen tímu musí stlačiť 👍 Beriem na vedomie, zmena termínu/tímu ho vráti do 🔄 Zmenené. Pri obhliadke aj zákazke vidíš Prečítali/Potvrdili/Nepotvrdili. V Správach vidíš pri každej, kto ju prečítal a kto ešte nie (⏳ Ešte nečítali).'],
 ['📖 Návod v aplikácii',0,'Dlaždica <b>📖 Návod</b> na úvodnej stránke (správca aj vo Viac): technik vidí návod len pre svoju prácu, správca všetko. Obsahuje postupy krok za krokom.'],
@@ -2760,7 +2760,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.46';
+var APP_VERSION='2026-11-05.47';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
