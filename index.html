@@ -1023,16 +1023,18 @@ function fillSpravySelects(){
   if(mm){f.value=mm.id;f.style.display='none';fi.style.display='block';fi.innerHTML='✉️ Od: <b>'+esc(mm.name||'')+'</b>'}
   else{f.style.display='';fi.style.display='none'}
 }
+function showSTo(){var t=$('sTo');t.style.display='';$('sAddBtn').style.display='none';try{t.focus()}catch(e){}}
 function renderSpravaChips(){
+  var t0=$('sTo'),b0=$('sAddBtn');if(t0)t0.style.display=sTo.length?'none':'';if(b0)b0.style.display=sTo.length?'':'none';
   $('sToChips').innerHTML=sTo.map(function(x,i){return '<span class="chip">'+esc(x.name)+'<b onclick="removeSpravaTo('+i+')">×</b></span>'}).join('');
 }
-function addSpravaTo(){
-  var v=$('sTo').value;if(!v){toast('Vyberte príjemcu');return}
+function addSpravaTo(auto){
+  var v=$('sTo').value;if(!v){if(!auto)toast('Vyberte príjemcu');return}
   if(v==='__all'){sTo=[{id:'__all',name:'Všetci'}]}
   else{
     var m=findById('members',v);if(!m)return;
     sTo=sTo.filter(function(x){return x.id!=='__all'});
-    if(sTo.some(function(x){return x.id===v})){toast('Príjemca je už pridaný');return}
+    if(sTo.some(function(x){return x.id===v})){toast('Príjemca je už pridaný');$('sTo').value='';return}
     sTo.push({id:v,name:m.name||''});
   }
   $('sTo').value='';renderSpravaChips();
@@ -1040,7 +1042,8 @@ function addSpravaTo(){
 function removeSpravaTo(i){sTo.splice(i,1);renderSpravaChips()}
 function saveSprava(){
   var fm=findById('members',$('sFrom').value);if(!fm){toast(dbData.members.length?'Vyberte, od koho správa je':'Najprv pridajte členov tímu');return}
-  if(!sTo.length){toast('Pridajte aspoň jedného príjemcu');return}
+  if($('sTo').value)addSpravaTo(true);
+  if(!sTo.length){toast('Vyberte príjemcu správy');return}
   var t=$('sText').value.trim();if(!t){toast('Napíšte text správy');return}
   put('spravy',{author:fm.name||'Anonym',fromId:fm.id,toNames:sTo.map(function(x){return x.name}),toIds:sTo.map(function(x){return x.id}),text:t,ts:Date.now(),timestamp:new Date().toLocaleString('sk-SK')});
   var sent={author:fm.name||'Anonym',toIds:sTo.map(function(x){return x.id}),text:t};$('sText').value='';$('sTo').value='';sTo=[];renderSpravaChips();toast('Správa odoslaná!');
@@ -2330,7 +2333,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.20';
+var APP_VERSION='2026-11-05.21';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3273,8 +3276,8 @@ window.onload=function(){
     <div class="form-grid">
       <div id="sFromInfo" class="full-width-input" style="display:none;color:#64748b"></div>
       <select id="sFrom" class="full-width-input"></select>
-      <select id="sTo"></select>
-      <button type="button" onclick="addSpravaTo()">➕ Pridať príjemcu</button>
+      <select id="sTo" onchange="addSpravaTo(true)"></select>
+      <button type="button" id="sAddBtn" style="display:none" onclick="showSTo()">➕ Pridaj príjemcu</button>
     </div>
     <div id="sToChips" class="chips"></div>
     <div class="form-grid"><textarea id="sText" placeholder="Text správy..." class="full-width-input"></textarea></div>
