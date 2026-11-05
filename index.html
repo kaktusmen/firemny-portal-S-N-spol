@@ -547,7 +547,7 @@ var V={
   members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
     return card('members',t,'🛡️ '+esc(t.name||''),'Tel: '+esc(t.telefon||'-')+'\nRola: '+(t.rola==='Správca'?'🛡 Správca'+(t.pwHash?' · 🔑 heslo nastavené':' · ⚠️ bez hesla'):'🔧 Technik'),'editMember')}],
   obhliadky:['obhliadkaList','Žiadne obhliadky.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')},function(o){
-    return card('obhliadky',o,'🔍 '+esc(onm(o))+(o.obec?' – '+esc(o.obec):'')+(o.date?' ('+esc(o.date)+')':'')+(o.klientId?' ✅':''),
+    return card('obhliadky',o,'🔍 '+(o.big?'<span style="background:#7c3aed;color:#fff;border-radius:8px;padding:1px 7px;font-size:.8em">🏢 '+esc(o.big)+'</span> ':'')+esc(onm(o))+(o.obec?' – '+esc(o.obec):'')+(o.date?' ('+esc(o.date)+(o.time?' '+esc(o.time):'')+')':'')+(o.memberNames&&o.memberNames.length?' · 👷 '+esc(o.memberNames.join(', ')):'')+(o.klientId?' ✅':''),
       obhliadkaBody(o),'editObhliadka',true,
       o.klientId?'':'<button class="btn-edit" style="background:#16a34a" onclick="convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>')}],
   ponuky:['ponukyList','Žiadne cenové ponuky.',function(a,b){return (b.ts||0)-(a.ts||0)},function(p){
@@ -595,6 +595,27 @@ function render(){
         empty='Filtru nezodpovedá žiadny záznam.';
       }
     }
+    if(c==='obhliadky'){
+      var of_=$('obFilter');
+      if(of_){
+        var ov=of_.value,td=ymd(new Date());
+        of_.innerHTML='<option value="">Zobraziť: všetky obhliadky</option><option value="__reg">Bežní zákazníci</option>'+bigNames().map(function(n){return '<option value="b:'+esc(n)+'">🏢 '+esc(n)+'</option>'}).join('')+'<option value="__up">Nadchádzajúce</option><option value="__past">Minulé</option><option value="__nt">Bez technika</option>';
+        of_.value=ov;ov=of_.value;
+        if(ov){
+          arr=arr.filter(function(x){
+            if(ov==='__reg')return !x.big;
+            if(ov.indexOf('b:')===0)return x.big===ov.slice(2);
+            if(ov==='__up')return x.date&&x.date>=td;
+            if(ov==='__past')return !x.date||x.date<td;
+            if(ov==='__nt')return !(x.memberIds&&x.memberIds.length);
+            return true;
+          });
+          empty='Filtru nezodpovedá žiadna obhliadka.';
+        }
+      }
+      var oq=norm($('obSearch')?$('obSearch').value:'');
+      if(oq){arr=arr.filter(function(x){return norm([onm(x),x.obec,x.adresa,(x.memberNames||[]).join(' '),x.big].join(' ')).indexOf(oq)>=0});empty='Hľadaniu nezodpovedá žiadna obhliadka.'}
+    }
     if(c==='montaze'&&!isAdmin())arr=arr.filter(isMine);
     if(c==='volno'&&!isAdmin())arr=arr.filter(function(x){return x.memberId===me});
     if(c==='chladivo'){arr=chFiltered()}
@@ -615,7 +636,7 @@ function render(){
   fillMontazSelects();
   fillSpravySelects();
   fillServisMembers();
-  renderToday();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();renderDue();renderBig();renderPoloha();locTick();applyCustomOpts();renderRoute();renderHelp();fillPonukaSelects();applyRole();
+  renderToday();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();renderDue();fillObhMember();renderBig();renderPoloha();locTick();applyCustomOpts();renderRoute();renderHelp();fillPonukaSelects();applyRole();
 }
 
 // ---------- Klienti ----------
@@ -926,12 +947,17 @@ function editMember(id){
 var OF=['Meno','Priezvisko','Obec','Adresa','Telefon','Email','Zariadenie','Budova','Stena','Vnutorna','Vonkajsia','Elektro','Odvod','Poznamky'];
 var OL=[['zariadenie','Typ zariadenia'],['budova','Typ budovy'],['stena','Stena'],['vnutorna','Vnútorná jednotka'],['vonkajsia','Vonkajšia jednotka'],['elektro','Elektrické pripojenie'],['odvod','Odvod kondenzátu'],['poznamky','Poznámky']];
 function onm(o){return o.name||((o.meno||'')+' '+(o.priezvisko||'')).trim()||'Obhliadka'}
+function fillObhMember(){
+  var m=$('oMember');if(!m)return;var v=m.value;
+  m.innerHTML='<option value="">-- Technik na obhliadku (nepovinné) --</option>'+dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');
+  m.value=v;
+}
 function obhliadkaBody(o){
-  return '<strong>Telefón:</strong> '+telA(o.telefon)+' | <strong>E-mail:</strong> '+mailA(o.email)+'\n<strong>Adresa:</strong> '+mapA(o)+
+  return '<strong>Telefón:</strong> '+telA(o.telefon)+' | <strong>E-mail:</strong> '+mailA(o.email)+'\n<strong>Adresa:</strong> '+mapA(o)+(o.memberNames&&o.memberNames.length?'\n<strong>👷 Technik:</strong> '+o.memberNames.map(esc).join(', '):'')+
     OL.map(function(x){return o[x[0]]?'\n<strong>'+x[1]+':</strong> '+esc(o[x[0]]):''}).join('')+(o.big?'\n<strong>🏢 Veľký klient:</strong> '+esc(o.big)+(o.faktStav?' · 🧾 '+esc(o.faktStav):' · bez faktúry'):'');
 }
 function clearObhliadka(){
-  OF.forEach(function(n){sv('o'+n,'')});$('oDate').value='';sv('oBig','');
+  OF.forEach(function(n){sv('o'+n,'')});$('oDate').value='';$('oTime').value='';sv('oBig','');if($('oMember'))$('oMember').value='';
   $('editingObhliadkaId').value='';$('obhliadkaSaveBtn').innerText='Uložiť obhliadku';$('obhliadkaCancelBtn').style.display='none';
 }
 function saveObhliadka(){
@@ -939,7 +965,8 @@ function saveObhliadka(){
   OF.forEach(function(n){o[lf(n)]=gv('o'+n)});
   o.name=(o.meno+' '+o.priezvisko).trim();
   if(!o.name){toast('Zadajte meno alebo priezvisko');return}
-  o.date=$('oDate').value;o.big=gv('oBig');
+  o.date=$('oDate').value;o.time=$('oTime').value;o.big=gv('oBig');
+  var om=findById('members',$('oMember').value);o.memberIds=om?[om.id]:[];o.memberNames=om?[om.name||'']:[];
   rememberIny();
   var eid=$('editingObhliadkaId').value||null;
   if(eid){var old=findById('obhliadky',eid);if(old&&old.klientId)o.klientId=old.klientId}
@@ -991,7 +1018,7 @@ function editObhliadka(id){
   openSection('obhliadkaSection','Obhliadky');
   OF.forEach(function(n){sv('o'+n,o[lf(n)]||'')});
   if(!o.meno&&!o.priezvisko)$('oMeno').value=o.name||'';
-  $('oDate').value=o.date||'';sv('oBig',o.big||'');
+  $('oDate').value=o.date||'';$('oTime').value=o.time||'';sv('oBig',o.big||'');fillObhMember();$('oMember').value=(o.memberIds||[])[0]||'';
   $('editingObhliadkaId').value=o.id;$('obhliadkaSaveBtn').innerText='Aktualizovať obhliadku';$('obhliadkaCancelBtn').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1196,7 +1223,7 @@ function clientEvents(c){
       sub:m.kind?[m.zariadenie,m.popis,m.praca].filter(Boolean).join(' · '):deviceSummary(m)});
   });
   dbData.obhliadky.forEach(function(o){
-    if(o.klientId===c.id)out.push({d:o.date||'',type:'obhliadky',id:o.id,color:'#7c3aed',label:'🔍 Obhliadka',sub:[o.zariadenie,o.budova].filter(Boolean).join(' · ')});
+    if(o.klientId===c.id)out.push({d:o.date||'',type:'obhliadky',id:o.id,color:'#7c3aed',time:o.time||'',label:'🔍 Obhliadka',sub:[o.zariadenie,o.budova].filter(Boolean).join(' · ')});
   });
   return out.sort(function(a,b){return b.d.localeCompare(a.d)});
 }
@@ -1626,6 +1653,7 @@ var HELP=[
 ['💬 WhatsApp',0,'Po odoslaní správy (aj v jej detaile v histórii) sú tlačidlá <b>💬 WhatsApp: Meno</b> pre príjemcov, ktorí majú v tíme zadaný telefón. Otvorí sa WhatsApp s hotovým textom, stačí dať Odoslať. Pri viacerých príjemcoch je navyše <b>👥 Všetkým naraz</b>: otvorí WhatsApp s textom a v zozname vyberieš skupinu alebo viac kontaktov (WhatsApp nedovolí poslať na viac čísel automaticky). To isté je v detaile zákazky aj hneď po uložení montáže, čistenia alebo opravy pre členov tímu zákazky. Telefónne čísla členov dopĺňa správca v Tíme.'],
 ['🗺 Mapa klientov',0,'Správca: <b>Viac → Mapa klientov</b> (alebo tlačidlo v Klientoch), technik: dlaždica <b>Mapa klientov</b> na úvodnej stránke (vidí len klientov svojich zákaziek). Adresy sa pri prvom otvorení automaticky vyhľadajú v OpenStreetMap (zadarmo, trvá ~1 s na klienta) a uložia, takže ďalej je mapa hneď. Ťukni na bod → meno, telefón, navigácia. Zelený bod = posledná poloha technika z posledných 12 hodín (vidí len správca), oranžový = len približne podľa obce. Potrebuje internet.'],
 ['📍 Poloha tímu',0,'Apka odosiela polohu technika <b>iba keď ju používa</b> (pri otvorení, ťukaní v apke a každé 3 minúty kým je otvorená). iPhone sa pri prvom použití sám opýta na povolenie polohy. Technik to môže vypnúť v Nastaveniach. Správca vidí posledné miesto v <b>Viac → Poloha tímu</b>. Nejde o živé sledovanie.'],
+['🔍 Čas a technik pri obhliadke',0,'Pri obhliadke nastav <b>čas</b> a (nepovinne) <b>technika</b>. Technik ju uvidí v Dnes, Moje úlohy a Kalendári s časom a adresou. Ostatné obhliadky technik nevidí.'],
 ['🏢 Veľkí klienti',0,'Pri obhliadke aj montáži je pole <b>Veľký klient</b> (VSE alebo „Iné…“ pre ďalšieho, ktorý sa zapamätá). Potom v <b>Práca → Veľkí klienti</b> vidíš obhliadky a montáže tohto klienta a pri každej tlačidlom (ťuk na riadok) zadáš faktúru: číslo, dátum a stav <b>Čaká na platbu / Zaplatené</b>. Červené = hotové bez faktúry alebo po splatnosti (30 dní). Hore sú počty a dole export CSV. Staré záznamy zaradíš cez Upraviť → Veľký klient.'],
 ['🆕 Nové a kto prečítal',0,'Nové obhliadky, zákazky (montáž/servis/čistenie/oprava), klienti a ponuky sa ostatným ukážu na úvodnej stránke v bloku <b>🆕 Nové</b> (správcom všetko, technikovi jeho zákazky). Po otvorení sa označia ako prečítané a zo začiatku zmiznú, v zoznamoch ostanú. Zadávateľ ich ako nové nevidí. Správca v zozname vidí <b>👁 kto prečítal</b> a kto ešte nie. Staré záznamy sa ako nové neukazujú (okrem jednej starej obhliadky). Obhliadky sa v Dnes/Zajtra nezobrazujú.'],
 ['💬 Správy',0,'Správa sa odosiela automaticky <b>od teba</b> (podľa mena, ktoré máš zvolené na úvodnej stránke). Vyberieš len príjemcov a napíšeš text.'],
@@ -2401,7 +2429,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.24';
+var APP_VERSION='2026-11-05.27';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2613,7 +2641,8 @@ function renderToday(){
   var t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1));
   el.innerHTML=renderHomeMsgs()+renderHomeObh()+leaveBlock(d0)+[['Dnes',d0],['Zajtra',d1]].map(function(x){
     var ev=dayEvents(x[1]).filter(function(e){
-      if(e.type==='volno'||e.type==='obhliadky')return false;
+      if(e.type==='volno')return false;
+      if(e.type==='obhliadky'){var ob=findById('obhliadky',e.id);return !isAdmin()&&!!ob&&(ob.memberIds||[]).indexOf(me)>-1}
       if(e.type==='montaze'){var q=findById('montaze',e.id);if(q&&q.stav==='Hotová')return false}
       if(isAdmin())return true;
       var o=findById(e.type,e.id);
@@ -2664,6 +2693,10 @@ function renderMyTasks(){
     if(!m.date){if(m.kind&&open)nodate.push(e)}
     else if(m.date>=today){if(m.kind&&m.servisType==='Čistenie'&&m.date>cl14)return;soon.push(e)}
     else if(m.servisType==='Oprava'&&open)late.push(e);
+  });
+  dbData.obhliadky.forEach(function(o){
+    if((o.memberIds||[]).indexOf(me)<0||!o.date||o.date<today)return;
+    soon.push({type:'obhliadky',id:o.id,time:o.time||'',color:'#7c3aed',text:'🔍 Obhliadka: '+onm(o),sub:[fmtD(o.date),o.adresa?'📍 '+o.adresa:(o.obec?'📍 '+o.obec:'')].filter(Boolean).join(' · '),d:o.date});
   });
   var lim=ymd(new Date(Date.now()-90*86400000)),todo=dbData.montaze.filter(function(m){return !m.kind&&isMine(m)&&m.date&&m.date<=today&&m.date>=lim&&missingOf(m).length}).sort(function(a,b){return b.date.localeCompare(a.date)});
   var by=function(a,b){return (a.d+(a.time||'')).localeCompare(b.d+(b.time||''))};
@@ -2833,8 +2866,8 @@ function dayEvents(ds){
   dbData.montaze.forEach(function(m){if(m.date===ds&&techPass(m))out.push({type:'montaze',id:m.id,time:m.time||'',color:srvColor(m),text:srvIcon(m)+(m.title||'Montáž'),
     sub:m.kind?[m.address?'📍 '+m.address:'',m.zariadenie||m.popis||'',m.memberNames&&m.memberNames.length?'👷 '+m.memberNames.join(', '):''].filter(Boolean).join(' · '):[m.clientName?'👤 '+m.clientName:'',m.memberNames&&m.memberNames.length?'👷 '+m.memberNames.join(', '):''].filter(Boolean).join(' · ')})});
   leaveOn(ds).forEach(function(v){if(techF()&&v.memberId!==techF())return;out.push({type:'volno',id:v.id,color:v.stav==='Schválené'?'#0891b2':'#67b7c9',text:(v.stav==='Schválené'?'🏖 Voľno: ':'⏳ Žiadosť o voľno: ')+(v.memberName||'')+(v.casOd?' '+v.casOd+'–'+v.casDo:''),time:v.casOd||'',sub:''})});
+  dbData.obhliadky.forEach(function(o){if(o.date===ds&&(!techF()||(o.memberIds||[]).indexOf(techF())>-1))out.push({type:'obhliadky',id:o.id,time:o.time||'',color:'#7c3aed',text:'🔍 Obhliadka: '+onm(o),sub:[o.obec,o.memberNames&&o.memberNames.length?'👷 '+o.memberNames.join(', '):''].filter(Boolean).join(' · ')})});
   if(techF())return out;
-  dbData.obhliadky.forEach(function(o){if(o.date===ds)out.push({type:'obhliadky',id:o.id,color:'#7c3aed',text:'🔍 Obhliadka: '+onm(o),sub:o.obec||''})});
   dbData.clients.forEach(function(c){
     if(c.datumMontaze===ds&&!dbData.montaze.some(function(m){return m.date===ds&&!m.kind&&m.clientId===c.id}))out.push({type:'clients',id:c.id,color:'#d97706',text:'👤 Montáž: '+nm(c),sub:c.obec||''});
   });
@@ -2906,7 +2939,7 @@ function renderCalendar(){
     var ds=viewYear+'-'+p(viewMonth+1)+'-'+p(d),ev='';
     dbData.montaze.forEach(function(m){if(m.date===ds&&techPass(m))ev+='<div class="cal-event-card" style="background:'+srvColor(m)+'" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">'+srvIcon(m)+esc(m.title)+'</div>'});
     leaveOn(ds).forEach(function(v){if(techF()&&v.memberId!==techF())return;ev+='<div class="cal-event-card" style="background:'+(v.stav==='Schválené'?'#0891b2':'#67b7c9')+'" onclick="showEvent(\'volno\',\''+esc(v.id)+'\')">🏖 '+esc(v.memberName||'')+(v.casOd?' '+esc(v.casOd)+'–'+esc(v.casDo):'')+'</div>'});
-    if(!techF())dbData.obhliadky.forEach(function(o){if(o.date===ds)ev+='<div class="cal-event-card" style="background:#7c3aed" onclick="showEvent(\'obhliadky\',\''+esc(o.id)+'\')">🔍 '+esc(o.name)+'</div>'});
+    dbData.obhliadky.forEach(function(o){if(o.date===ds&&(!techF()||(o.memberIds||[]).indexOf(techF())>-1))ev+='<div class="cal-event-card" style="background:#7c3aed" onclick="showEvent(\'obhliadky\',\''+esc(o.id)+'\')">🔍 '+esc(o.name)+'</div>'});
     if(!techF())dbData.clients.forEach(function(c){if(c.datumMontaze===ds&&!dbData.montaze.some(function(m){return m.date===ds&&!m.kind&&m.clientId===c.id}))ev+='<div class="cal-event-card" style="background:#d97706" onclick="showEvent(\'clients\',\''+esc(c.id)+'\')">👤 '+esc(nm(c))+'</div>'});
     if(!techF())serviceItemsOn(ds).forEach(function(x){ev+='<div class="cal-event-card" style="background:#dc2626" onclick="showEvent(\''+(x.cid?'clients':'montaze')+'\',\''+esc(x.cid||x.mid)+'\')">🛠 Servis: '+esc(x.name)+'</div>'});
     h+='<div class="calendar-cell'+(ds===today?' today':'')+'" onclick="openDay(\''+ds+'\',event)"><div class="calendar-day-number">'+d+'</div><div class="cal-full">'+ev+'</div><div class="cal-dots">'+dotsHtml(ds)+'</div></div>';
@@ -3341,6 +3374,8 @@ window.onload=function(){
       <input type="text" id="oObec" placeholder="Obec">
       <input type="text" id="oAdresa" placeholder="Adresa">
       <label class="fl full-width-input">Dátum obhliadky<input type="date" id="oDate"></label>
+      <label class="fl full-width-input">Čas obhliadky<input type="time" id="oTime"></label>
+      <select id="oMember" class="full-width-input"></select>
       <select id="oBig" data-iny data-iny-ph="Názov veľkého klienta" class="full-width-input"><option value="">-- Bežný zákazník (nie veľký klient) --</option><option>VSE</option></select>
       <select id="oZariadenie" data-iny><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Multisplit</option><option>Tepelné čerpadlo</option></select>
       <select id="oBudova" data-iny><option value="">-- Typ budovy --</option><option>Dom</option><option>Byt</option></select>
@@ -3353,7 +3388,10 @@ window.onload=function(){
     <textarea id="oPoznamky" placeholder="📝 Poznámky k obhliadke (rozmery, dohodnuté veci, cena, čo doniesť…)" style="min-height:110px;margin-top:10px"></textarea>
     <button class="action-btn" id="obhliadkaSaveBtn" onclick="saveObhliadka()">Uložiť obhliadku</button>
     <button class="back-btn" id="obhliadkaCancelBtn" style="display:none" onclick="clearObhliadka()">✖ Zrušiť úpravu</button>
-    <h3>Zoznam obhliadok</h3><div id="obhliadkaList">Načítavam...</div>
+    <h3>Zoznam obhliadok</h3>
+    <input id="obSearch" placeholder="🔍 Hľadať podľa mena, obce, technika…" oninput="render()" style="width:100%;box-sizing:border-box;margin-bottom:6px">
+    <select id="obFilter" onchange="render()" style="width:100%;margin-bottom:8px"></select>
+    <div id="obhliadkaList">Načítavam...</div>
   </div>
 
   <div id="spravySection" class="section-content">
