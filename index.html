@@ -1466,17 +1466,21 @@ function renderRoute(){
   tsel.innerHTML='<option value="">👷 Všetci technici</option>'+dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');
   tsel.value=tv==='__none'?'':tv;tsel.style.display=adm?'':'none';
   var arr=dbData.montaze.filter(function(m){return m.date===ds&&(!tv||(m.memberIds||[]).indexOf(tv)>-1)&&m.stav!=='Hotová'});
+  dbData.obhliadky.forEach(function(o){
+    if(o.date!==ds||(tv&&(o.memberIds||[]).indexOf(tv)<0))return;
+    arr.push({id:o.id,_obh:true,time:o.time||'',title:'Obhliadka',clientName:onm(o),address:[o.adresa,o.obec].filter(Boolean).join(', '),telefon:o.telefon||'',date:o.date});
+  });
   arr.sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99')});
   var ord=rtOrder[ds];
   if(ord)arr.sort(function(a,b){var x=ord.indexOf(a.id),y=ord.indexOf(b.id);return (x<0?999:x)-(y<0?999:y)});
   rtCur=arr;
   var addrs=arr.map(mAddr);
-  el.innerHTML=(arr.length?'<p style="color:#64748b;font-size:.9rem">Poradie je podľa času, šípkami ▲▼ ho môžeš upraviť. Hotové zákazky sa nezobrazujú.</p>':'')+arr.map(function(m,i){
+  el.innerHTML=(arr.length?'<p style="color:#64748b;font-size:.9rem">Poradie je podľa času, šípkami ▲▼ ho môžeš upraviť. Hotové zákazky sa nezobrazujú. Obhliadky sú označené 🔍.</p>':'')+arr.map(function(m,i){
     var a=addrs[i],tel=m.telefon||((clientOfMontaz(m)||{}).telefon)||'';
-    return '<div class="day-row" style="border-left-color:'+srvColor(m)+';cursor:default"><b>'+(i+1)+'. '+(m.time?esc(m.time)+' – ':'')+esc(srvIcon(m)+(m.title||'Zákazka'))+'</b><span>'+(m.clientName?'👤 '+esc(m.clientName)+' · ':'')+esc(a||'bez adresy')+'</span>'+
-      '<div class="modal-actions" style="margin-top:6px;flex-wrap:wrap">'+(a?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" target="_blank" rel="noopener" href="'+mapsDir([a])+'">🧭 Navigovať</a>':'')+(tel?'<a class="btn-edit" style="background:#2563eb;text-decoration:none" href="tel:'+esc(String(tel).replace(/\s+/g,''))+'">📞</a>':'')+smsBtn(m)+
-      '<button class="btn-edit" style="background:#64748b" onclick="rtMove('+i+',-1)">▲</button><button class="btn-edit" style="background:#64748b" onclick="rtMove('+i+',1)">▼</button><button class="btn-edit" style="background:#475569" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')">Detail</button></div></div>';
-  }).join('')+(arr.length>1&&addrs.filter(Boolean).length>1?'<a class="action-btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="'+mapsDir(addrs)+'">🗺 Celá trasa v Google mapách</a>':'')||'<div class="td-none">Na tento deň nie sú žiadne otvorené zákazky.</div>';
+    return '<div class="day-row" style="border-left-color:'+(m._obh?'#7c3aed':srvColor(m))+';cursor:default"><b>'+(i+1)+'. '+(m.time?esc(m.time)+' – ':'')+esc(m._obh?'🔍 Obhliadka':srvIcon(m)+(m.title||'Zákazka'))+'</b><span>'+(m.clientName?'👤 '+esc(m.clientName)+' · ':'')+esc(a||'bez adresy')+'</span>'+
+      '<div class="modal-actions" style="margin-top:6px;flex-wrap:wrap">'+(a?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" target="_blank" rel="noopener" href="'+mapsDir([a])+'">🧭 Navigovať</a>':'')+(tel?'<a class="btn-edit" style="background:#2563eb;text-decoration:none" href="tel:'+esc(String(tel).replace(/\s+/g,''))+'">📞</a>':'')+(m._obh?'':smsBtn(m))+
+      '<button class="btn-edit" style="background:#64748b" onclick="rtMove('+i+',-1)">▲</button><button class="btn-edit" style="background:#64748b" onclick="rtMove('+i+',1)">▼</button><button class="btn-edit" style="background:#475569" onclick="showEvent(\''+(m._obh?'obhliadky':'montaze')+'\',\''+esc(m.id)+'\')">Detail</button></div></div>';
+  }).join('')+(arr.length>1&&addrs.filter(Boolean).length>1?'<a class="action-btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="'+mapsDir(addrs)+'">🗺 Celá trasa v Google mapách</a>':'')||'<div class="td-none">Na tento deň nie sú žiadne otvorené zákazky ani obhliadky.</div>';
 }
 function chFiltered(){
   var arr=dbData.chladivo.slice();
@@ -1657,6 +1661,7 @@ var HELP=[
 ['📍 Poloha tímu',0,'Apka odosiela polohu technika <b>iba keď ju používa</b> (pri otvorení, ťukaní v apke a každé 3 minúty kým je otvorená). iPhone sa pri prvom použití sám opýta na povolenie polohy. Technik to môže vypnúť v Nastaveniach. Správca vidí posledné miesto v <b>Viac → Poloha tímu</b>. Nejde o živé sledovanie.'],
 ['🔍 Čas a technik pri obhliadke',0,'Pri obhliadke nastav <b>čas</b> a (nepovinne) <b>technika</b>. Technik ju uvidí v Dnes, Moje úlohy a Kalendári s časom a adresou. Ostatné obhliadky technik nevidí.'],
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
+['🗺 Trasa dňa s obhliadkami',0,'Do Trasy dňa sa počítajú aj obhliadky priradené technikovi (🔍) – s časom, navigáciou a telefónom, aj v celej trase v Google mapách.'],
 ['🧹 Naplánované len 2 týždne vopred',0,'Moje úlohy, zoznam Montáž/Servis (predvolený filter „Najbližšie 2 týždne“) a prehľad Zákazky ukazujú len to, čo je do 14 dní alebo nemá dátum. Neskôr naplánované nájdeš v Kalendári, v Zákazky → „Naplánované neskôr“ alebo v zozname po zmene filtra na „všetko“.'],
 ['🏢 Veľkí klienti',0,'Pri obhliadke aj montáži je pole <b>Veľký klient</b> (VSE alebo „Iné…“ pre ďalšieho, ktorý sa zapamätá). Potom v <b>Práca → Veľkí klienti</b> vidíš obhliadky a montáže tohto klienta a pri každej tlačidlom (ťuk na riadok) zadáš faktúru: číslo, dátum a stav <b>Čaká na platbu / Zaplatené</b>. Červené = hotové bez faktúry alebo po splatnosti (30 dní). Hore sú počty a dole export CSV. Staré záznamy zaradíš cez Upraviť → Veľký klient.'],
 ['🆕 Nové a kto prečítal',0,'Nové obhliadky, zákazky (montáž/servis/čistenie/oprava), klienti a ponuky sa ostatným ukážu na úvodnej stránke v bloku <b>🆕 Nové</b> (správcom všetko, technikovi jeho zákazky). Po otvorení sa označia ako prečítané a zo začiatku zmiznú, v zoznamoch ostanú. Zadávateľ ich ako nové nevidí. Správca v zozname vidí <b>👁 kto prečítal</b> a kto ešte nie. Staré záznamy sa ako nové neukazujú (okrem jednej starej obhliadky). Obhliadky sa v Dnes/Zajtra nezobrazujú.'],
@@ -2463,7 +2468,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.29';
+var APP_VERSION='2026-11-05.30';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
