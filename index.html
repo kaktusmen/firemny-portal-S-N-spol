@@ -987,7 +987,8 @@ function saveSprava(){
   if(!sTo.length){toast('Pridajte aspoň jedného príjemcu');return}
   var t=$('sText').value.trim();if(!t){toast('Napíšte text správy');return}
   put('spravy',{author:fm.name||'Anonym',fromId:fm.id,toNames:sTo.map(function(x){return x.name}),toIds:sTo.map(function(x){return x.id}),text:t,ts:Date.now(),timestamp:new Date().toLocaleString('sk-SK')});
-  $('sText').value='';$('sTo').value='';sTo=[];renderSpravaChips();toast('Správa odoslaná!');
+  var sent={author:fm.name||'Anonym',toIds:sTo.map(function(x){return x.id}),text:t};$('sText').value='';$('sTo').value='';sTo=[];renderSpravaChips();toast('Správa odoslaná!');
+  if(waMsgBtns(sent)){$('eventModalBody').innerHTML='<h3>✅ Správa odoslaná</h3><div class="modal-row" style="white-space:pre-wrap">'+esc(t)+'</div>'+waMsgBtns(sent)+'<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';$('eventModal').style.display='flex'}
 }
 
 // ---------- Kalendár ----------
@@ -1563,6 +1564,7 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
+['💬 WhatsApp',0,'Po odoslaní správy (aj v jej detaile v histórii) sú tlačidlá <b>💬 WhatsApp: Meno</b> pre príjemcov, ktorí majú v tíme zadaný telefón. Otvorí sa WhatsApp s hotovým textom, stačí dať Odoslať. To isté je v detaile zákazky pre členov tímu zákazky. Telefónne čísla členov dopĺňa správca v Tíme.'],
 ['💬 Správy',0,'Správa sa odosiela automaticky <b>od teba</b> (podľa mena, ktoré máš zvolené na úvodnej stránke). Vyberieš len príjemcov a napíšeš text.'],
 ['✏️ Iné…',0,'Pri výbere <b>Iné…</b> sa výber zmení na písacie políčko na tom istom mieste, kam napíšeš vlastný text (tlačidlo ▾ vráti zoznam). Po uložení formulára sa tento text <b>pridá do ponuky</b> a nabudúce ho nájdeš v zozname (vidia ho všetci).'],
 ['📝 Poznámky v obhliadke',0,'Vo formulári obhliadky je dole políčko <b>Poznámky</b> (rozmery, dohody, cena…). Zobrazí sa aj v zozname a v detaile obhliadky.'],
@@ -1840,7 +1842,7 @@ function showEvent(type,id){
     var nmx=(o.clientName||o.name||'').trim().toLowerCase();
     if(!c&&nmx)c=dbData.clients.filter(function(x){return nm(x).toLowerCase()===nmx})[0]||null;
   }
-  var h=info+(typeof stB!=='undefined'?stB:'')+(type==='montaze'?fotoSection(o):'')+(info?'<div class="modal-sep"></div>':'')+
+  var h=info+((type==='montaze')?waJobBtns(o):'')+(typeof stB!=='undefined'?stB:'')+(type==='montaze'?fotoSection(o):'')+(info?'<div class="modal-sep"></div>':'')+
     (c?clientDetail(c):(type==='obhliadky'?'':'<div class="modal-row">Karta klienta sa nenašla.</div>'))+
     '<div class="modal-actions">'+(lastDay?'<button class="btn-delete" style="background:#0d9488" onclick="openDay(\''+lastDay+'\')">⬅ Späť na deň</button>':'')+(typeof edO!=='undefined'?edO:'')+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
     '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
@@ -2144,7 +2146,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.9';
+var APP_VERSION='2026-11-05.10';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2279,13 +2281,38 @@ function renderHomeMsgs(){
       return '<div class="day-row" style="border-left-color:#7c3aed" onclick="showMsg(\''+esc(x.id)+'\')"><b>🆕 Od: '+esc(x.author||'Anonym')+'</b><span>'+esc(t.length>90?t.slice(0,90)+'…':t)+'</span></div>';
     }).join(''):'<div class="td-none">Žiadne nové správy</div>');
 }
+function waNum(t){
+  var d=String(t||'').replace(/[^\d+]/g,'');if(!d)return '';
+  if(d.indexOf('+')===0)return d.slice(1);
+  if(d.indexOf('00')===0)return d.slice(2);
+  if(d.indexOf('0')===0)return '421'+d.slice(1);
+  return d;
+}
+function waBtn(m,text){
+  var n=waNum(m&&m.telefon);if(!n)return '';
+  return '<a class="btn-edit" style="background:#25d366;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/'+n+'?text='+encodeURIComponent(text)+'">💬 WhatsApp: '+esc((m.name||'').split(' ')[0])+'</a>';
+}
+function waRecipients(ids){
+  var all=ids.indexOf('__all')>-1;
+  return dbData.members.filter(function(m){return (all||ids.indexOf(m.id)>-1)&&m.id!==me});
+}
+function waMsgBtns(x){
+  var l=waRecipients(x.toIds||[]).map(function(m){return waBtn(m,'Správa od '+(x.author||'')+':\n'+(x.text||''))}).join('');
+  return l?'<div class="modal-row"><strong>Poslať aj cez WhatsApp:</strong></div><div class="modal-actions" style="flex-wrap:wrap">'+l+'</div>':'';
+}
+function waJobBtns(o){
+  var ids=o.memberIds||[];if(!ids.length)return '';
+  var txt='Zákazka: '+(o.title||o.servisType||'')+(o.clientName?'\nKlient: '+o.clientName:'')+(o.date?'\nTermín: '+fmtD(o.date)+(o.time?' o '+o.time:''):'')+((o.address||'')?'\nAdresa: '+o.address:'');
+  var l=dbData.members.filter(function(m){return ids.indexOf(m.id)>-1&&m.id!==me}).map(function(m){return waBtn(m,txt)}).join('');
+  return l?'<div class="modal-row"><strong>Poslať tímu cez WhatsApp:</strong></div><div class="modal-actions" style="flex-wrap:wrap">'+l+'</div>':'';
+}
 function showMsg(id){
   var x=findById('spravy',id);if(!x)return;
   lastDay=null;
   $('eventModalBody').innerHTML='<h3>💬 Správa od '+esc(x.author||'Anonym')+'</h3>'+
     (x.toNames&&x.toNames.length?'<div class="modal-row"><strong>Pre:</strong> '+x.toNames.map(esc).join(', ')+'</div>':'')+
     '<div class="modal-row" style="white-space:pre-wrap;background:#f8fafc;border-radius:6px;padding:10px">'+esc(x.text||'')+'</div>'+
-    (x.timestamp?'<div class="modal-row" style="color:#94a3b8;font-size:.8rem">'+esc(x.timestamp)+'</div>':'')+
+    (x.timestamp?'<div class="modal-row" style="color:#94a3b8;font-size:.8rem">'+esc(x.timestamp)+'</div>':'')+waMsgBtns(x)+
     '<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModal').style.display='flex';
   markReadMsg(id);
