@@ -82,6 +82,20 @@ button.action-btn{background:var(--primary);color:#fff;border:none;font-weight:b
 .td-none{color:#64748b;font-size:.9rem;margin:2px 0 6px}
 .sig-pad{width:100%;aspect-ratio:3/1;height:auto;border:1px dashed #94a3b8;border-radius:8px;background:#fff;touch-action:none;display:block;margin:6px 0}
 body.is-tech .admin-only{display:none!important}
+body:not(.is-tech) .tutT{display:none!important}
+.tut-nav{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.tut-nav a{border:1.5px solid #0d9488;color:#0d9488;border-radius:999px;padding:6px 12px;font-size:.88rem;font-weight:600;text-decoration:none}
+#tutSection section{background:var(--card,#fff);border-radius:16px;padding:14px;margin:12px 0;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+#tutSection section h2{font-size:1.15rem;margin:0 0 6px}
+#tutSection details{border-top:1px solid rgba(100,116,139,.25);padding:9px 0}
+#tutSection details:first-of-type{border-top:0}
+#tutSection summary{cursor:pointer;font-weight:600;list-style:none}
+#tutSection summary::-webkit-details-marker{display:none}
+#tutSection summary::before{content:"▸ ";color:#0d9488}
+#tutSection details[open] summary::before{content:"▾ "}
+#tutSection ol,#tutSection ul{padding-left:1.2rem;margin:6px 0}
+#tutSection .b{background:rgba(100,116,139,.2);border-radius:6px;padding:1px 7px;font-size:.9em;white-space:nowrap}
+#tutSection .tip,#tutSection .warn{border-radius:12px;padding:9px 11px;margin:8px 0;font-size:.93rem;background:rgba(14,165,233,.12)}
 body.is-tech .btn-delete[onclick^="delItem"]{display:none!important}
 body.is-tech #teamList .btn-edit{display:none!important}
 .calendar-cell{cursor:pointer}
@@ -1695,6 +1709,7 @@ var HELP=[
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
 ['👀 Kto čo videl',0,'Platí pre montáže, servisy, opravy, čistenia aj obhliadky: priradený člen tímu musí stlačiť 👍 Beriem na vedomie, zmena termínu/tímu ho vráti do 🔄 Zmenené. Pri obhliadke aj zákazke vidíš Prečítali/Potvrdili/Nepotvrdili. V Správach vidíš pri každej, kto ju prečítal a kto ešte nie (⏳ Ešte nečítali).'],
+['📖 Návod v aplikácii',0,'Dlaždica <b>📖 Návod</b> na úvodnej stránke (správca aj vo Viac): technik vidí návod len pre svoju prácu, správca všetko. Obsahuje postupy krok za krokom.'],
 ['🗺 Trasa dňa s obhliadkami',0,'Do Trasy dňa sa počítajú aj obhliadky priradené technikovi (🔍) – s časom, navigáciou a telefónom, aj v celej trase v Google mapách.'],
 ['🧹 Naplánované len 2 týždne vopred',0,'Moje úlohy, zoznam Montáž/Servis (predvolený filter „Najbližšie 2 týždne“) a prehľad Zákazky ukazujú len to, čo je do 14 dní alebo nemá dátum. Neskôr naplánované nájdeš v Kalendári, v Zákazky → „Naplánované neskôr“ alebo v zozname po zmene filtra na „všetko“.'],
 ['🏢 Veľkí klienti',0,'Pri obhliadke aj montáži je pole <b>Veľký klient</b> (VSE alebo „Iné…“ pre ďalšieho, ktorý sa zapamätá). Potom v <b>Práca → Veľkí klienti</b> vidíš obhliadky a montáže tohto klienta a pri každej tlačidlom (ťuk na riadok) zadáš faktúru: číslo, dátum a stav <b>Čaká na platbu / Zaplatené</b>. Červené = hotové bez faktúry alebo po splatnosti (30 dní). Hore sú počty a dole export CSV. Staré záznamy zaradíš cez Upraviť → Veľký klient.'],
@@ -2507,7 +2522,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.35';
+var APP_VERSION='2026-11-05.36';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3082,6 +3097,7 @@ window.onload=function(){
     <div class="menu-card" onclick="openSection('myTasksSection','Moje úlohy')">✅ Moje úlohy</div>
     <div class="menu-card" onclick="openSection('routeSection','Trasa dňa')">🗺 Trasa dňa</div>
     <div class="menu-card" onclick="openMapa()">📍 Mapa klientov</div>
+    <div class="menu-card" onclick="openSection('tutSection','Návod','')">📖 Návod</div>
   </div>
   <div id="workMenu" class="menu-list" style="display:none">
     <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis','work')">🔧 Montáž / Servis</div>
@@ -3090,6 +3106,7 @@ window.onload=function(){
     <div class="menu-card admin-only" onclick="openSection('bigSection','Veľkí klienti','work')">🏢 Veľkí klienti</div>
   </div>
   <div id="mainMenu" class="menu-list" style="display:none">
+    <div class="menu-card" onclick="openSection('tutSection','Návod','more')">📖 Návod</div>
     <div class="menu-card admin-only" onclick="openSection('zakazkySection','Zákazky','more')">📋 Zákazky</div>
     <div class="menu-card admin-only" onclick="openSection('ponukySection','Cenové ponuky','more')">💶 Ponuky</div>
     <div class="menu-card" onclick="openMapa()">🗺 Mapa klientov</div>
@@ -3209,6 +3226,185 @@ window.onload=function(){
       <div id="vTime" class="form-grid full-width-input" style="margin:0;display:none"><label style="font-size:.85rem;color:#8e8e93">Dátum<input type="date" id="vOdT"></label><div class="form-grid" style="margin:0"><label style="font-size:.85rem;color:#8e8e93">Od hodiny<input type="time" id="vCasOd"></label><label style="font-size:.85rem;color:#8e8e93">Do hodiny<input type="time" id="vCasDo"></label></div></div><input type="text" id="vDovod" class="full-width-input" placeholder="Dôvod (dovolenka, lekár, …)"></div>
     <button class="action-btn" id="vBtn" onclick="saveVolno()">Požiadať o voľno</button>
     <h3>Zoznam</h3><div id="volnoList">Načítavam...</div>
+  </div>
+
+  <div id="tutSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <h2>📖 Návod</h2>
+    <p style="color:#64748b;margin-top:0" class="tutT">Návod pre technika. Ťukni na nadpis a ukáže sa postup.</p>
+    <p style="color:#64748b;margin-top:0" class="admin-only">Návod pre správcu (vidíš aj časti pre technikov). Ťukni na nadpis a ukáže sa postup.</p>
+    <div class="tut-nav">
+      <a href="#" onclick="document.getElementById('tut_zaciatok').scrollIntoView({behavior:'smooth'});return false">🚀 Začiatok</a><a href="#" onclick="document.getElementById('tut_technik').scrollIntoView({behavior:'smooth'});return false">🔧 Technik</a><a class="admin-only" href="#" onclick="document.getElementById('tut_spravca').scrollIntoView({behavior:'smooth'});return false">🛡 Správca</a><a class="admin-only" href="#" onclick="document.getElementById('tut_velki').scrollIntoView({behavior:'smooth'});return false">🏢 Veľkí klienti</a><a href="#" onclick="document.getElementById('tut_notif').scrollIntoView({behavior:'smooth'});return false">🔔 Upozornenia</a><a href="#" onclick="document.getElementById('tut_tipy').scrollIntoView({behavior:'smooth'});return false">💡 Tipy</a>
+    </div>
+<section id="tut_zaciatok">
+<h2>🚀 Začiatok</h2>
+<details open><summary>Otvorenie a výber, kto si</summary>
+<ol>
+<li>Otvor aplikáciu cez odkaz, ktorý ti poslal správca.</li>
+<li>Na úvodnej stránke <b>Dnes</b> vyber svoje meno v zozname „Vyberte, kto ste“. Apka si ho zapamätá.</li>
+<li><span class="admin-only">Správca sa prihlasuje heslom.</span></li>
+<li>Keď sa zobrazí zelený riadok <span class="b">Synchronizované s databázou</span>, všetko je v poriadku.</li>
+</ol>
+</details>
+<details><summary>Pridanie na plochu telefónu (iPhone)</summary>
+<ol>
+<li>Otvor aplikáciu v <b>Safari</b>.</li>
+<li>Ťukni na tlačidlo <b>Zdieľať</b> (štvorec so šípkou).</li>
+<li>Vyber <b>Pridať na plochu</b>. Odteraz sa otvára ako bežná aplikácia.</li>
+</ol>
+</details>
+<details class="admin-only"><summary>Aktualizácia aplikácie</summary>
+<p>Keď dostaneš novú verziu, ťukni na <span class="b">Viac → 🔄 Aktualizovať aplikáciu</span>. Verziu vidíš úplne dole na stránke <b>Viac</b>.</p>
+</details>
+<details class="tutT"><summary>Aplikácia vyzerá stará</summary>
+<p>Zavri ju úplne (potiahni hore v prepínači aplikácií) a otvor znova. Ak to nepomôže, napíš správcovi.</p>
+</details>
+<details><summary>Čo znamená spodná lišta</summary>
+<ul>
+<li class="tutT">Dnes · Kalendár · Voľno · Správy.</li>
+<li class="admin-only">Dnes · Kalendár · Práca · Klienti · Správy · Viac.</li>
+</ul>
+</details>
+</section>
+<section id="tut_technik">
+<h2>🔧 Práca technika (denná práca)</h2>
+<details open><summary>Čo vidím na úvodnej stránke (Dnes)</summary>
+<ul>
+<li>Nové správy pre teba a nové alebo zmenené zákazky v bloku <b>🆕 Nové</b> / <b>🔄 Zmenené</b>.</li>
+<li>Dnešné a zajtrajšie zákazky s časom, adresou a tlačidlami <b>📞 Zavolať</b>, <b>💬 Odoslať SMS</b> a <b>📋 Zákazka</b>.</li>
+<li>V <b>Moje úlohy</b> vidíš to, čo ťa čaká v najbližších 2 týždňoch, a čo treba doplniť.</li>
+<li><b>Trasa dňa</b> ukáže zákazky a obhliadky v poradí s navigáciou.</li>
+</ul>
+</details>
+<details><summary>1. Potvrď novú zákazku</summary>
+<p>Keď ti správca pridelí zákazku alebo zmení termín, ukáže sa v bloku <b>Nové</b>. Otvor ju a stlač <span class="b">👍 Beriem na vedomie</span>. Správca tak vie, že si ju videl.</p>
+</details>
+<details><summary>2. Zákazka krok za krokom</summary>
+<ol>
+<li>Ťukni na <span class="b">📋 Zákazka</span> (alebo <span class="b">Vytvoriť zákazku</span>).</li>
+<li><b>Príchod:</b> kontakt na zákazníka, 🧭 Navigovať a tlačidlo <span class="b">▶ Som na mieste – začať</span>.</li>
+<li><b>Zariadenia:</b> doplň značku, výrobné čísla a chladivo. <b>Červené polia</b> treba vyplniť.</li>
+<li><b>Kontrola:</b> odškrtni, čo si skontroloval.</li>
+<li><b>Fotky:</b> odfoť montáž a zariadenia.</li>
+<li><b>Podpisy:</b> podpíšete sa ty aj zákazník prstom na displeji.</li>
+<li><b>Hotovo:</b> skontroluj, čo ešte chýba, a stlač <span class="b">✔ Dokončiť zákazku</span>. <span class="b">🧾 Protokol</span> môžeš vytlačiť alebo poslať zákazníkovi.</li>
+</ol>
+<div class="tip">Všetko, čo vyplníš, sa ukladá priebežne. Zákazku môžeš zavrieť a vrátiť sa k nej neskôr.</div>
+</details>
+<details><summary>3. Správy</summary>
+<p>Dolu v lište ťukni na <b>Správy</b>. Napíš text, vyber príjemcu a stlač <b>Odoslať správu</b>. Prvý príjemca sa pridá hneď po výbere, ďalších pridáš tlačidlom <span class="b">➕ Pridaj príjemcu</span>. Správu môžeš poslať aj cez WhatsApp (tlačidlá po odoslaní).</p>
+</details>
+<details><summary>4. Voľno</summary>
+<p>V lište ťukni na <b>Voľno</b> a vyplň od kedy do kedy chceš voľno. Žiadosť schvaľuje správca. Stav vidíš v zozname.</p>
+</details>
+<details><summary>5. Kalendár a obhliadky</summary>
+<p>V <b>Kalendári</b> vidíš svoje zákazky a obhliadky, ktoré ti pridelili. Obhliadka má čas a adresu a zobrazí sa aj v Trase dňa.</p>
+</details>
+<details><summary>6. Chladivo</summary>
+<p>Pri zákazke zadaj typ a množstvo chladiva v kroku <b>Zariadenia</b>. Slúži aj na evidenciu a kontroly tesnosti.</p>
+</details>
+<details><summary>Poloha</summary>
+<p>Apka odosiela správcovi posledné miesto, kde si ju použil (nie živé sledovanie). iPhone sa pri prvom použití opýta na povolenie.<span class="admin-only"> Člen tímu si to môže vypnúť v <b>Viac → Nastavenia</b>, svoju polohu vidíš v <b>Viac → Poloha tímu</b>.</span></p>
+</details>
+</section>
+<section id="tut_spravca" class="admin-only">
+<h2>🛡 Správca</h2>
+<details open><summary>Nová montáž (krok za krokom)</summary>
+<ol>
+<li><span class="b">Práca → Montáž / Servis → Montáž</span>.</li>
+<li><b>Krok 1 – Klient:</b> vyber existujúceho alebo ťukni <b>➕ Nový klient</b>. Ak je zákazka pre veľkého klienta (VSE…), vyber ho v poli <b>🏢 Veľký klient</b>.</li>
+<li>Ďalšie kroky: názov, zariadenia, tím (technik sa pridá hneď po výbere, ďalšieho tlačidlom <b>➕ Pridaj člena</b>), dátum a čas, a súhrn.</li>
+<li><b>Uložiť montáž</b> – technik ju dostane ako novú. Môžeš mu poslať WhatsApp.</li>
+</ol>
+</details>
+<details><summary>Čistenie a oprava</summary>
+<p><span class="b">Práca → Montáž / Servis → Čistenie / Oprava</span>. Postup je rovnaký ako pri montáži: klient (alebo nový klient), zariadenie a termín, tím, súhrn.</p>
+</details>
+<details><summary>Obhliadka</summary>
+<ol>
+<li><span class="b">Práca → Obhliadky</span>, vyplň meno, adresu, zariadenie, dátum a <b>čas</b>.</li>
+<li>Voliteľne vyber <b>technika</b>. Ten ju uvidí v Dnes a Kalendári.</li>
+<li>Poznámky, cena a čo doniesť patria do poľa poznámok.</li>
+<li>Keď klient potvrdí, ťukni <b>✅ Na klienta</b>, vznikne karta klienta.</li>
+<li>Ostatní správcovia ju vidia v bloku <b>Nové</b>. V zozname vidíš, kto ju už prečítal.</li>
+</ol>
+</details>
+<details><summary>Zoznamy a prehľad zákaziek</summary>
+<ul>
+<li><b>Práca → Montáž / Servis:</b> zoznam s hľadaním a filtrom, predvolene najbližšie 2 týždne.</li>
+<li><b>Viac → Zákazky:</b> prehľad všetkých zákaziek. Filter <b>⏳ Čaká na potvrdenie</b> ukáže, kto zákazku ešte nepotvrdil. Pri každej je WhatsApp pripomienka.</li>
+<li><b>Kalendár:</b> všetko na jednom mieste, aj ďaleko dopredu.</li>
+<li><b>Trasa dňa:</b> poradie zákaziek a obhliadok technika s navigáciou.</li>
+</ul>
+</details>
+<details><summary>Klienti a mapa</summary>
+<ul>
+<li><b>Klienti:</b> karty klientov, hľadanie a pridanie. Karta ukazuje zariadenia a históriu.</li>
+<li><b>Viac → Mapa klientov:</b> klienti na mape. Ťuk na bod ukáže kontakt a navigáciu. Pri prvom otvorení sa adresy vyhľadajú, trvá to chvíľu.</li>
+<li><b>Viac → Poloha tímu:</b> posledné polohy členov tímu.</li>
+</ul>
+</details>
+<details><summary>Tím a voľno</summary>
+<ul>
+<li><b>Viac → Tím:</b> pridanie členov a nastavenie roly (Technik / Správca), telefónu a hesla správcu.</li>
+<li><b>Voľno:</b> žiadosti technikov schvaľuješ v zozname. Voľno správcu schvaľuje iný správca.</li>
+</ul>
+</details>
+<details><summary>Ponuky</summary>
+<p><span class="b">Viac → Ponuky</span>. Nová ponuka z cenníka alebo vlastných položiek, číslo sa pridelí samo.</p>
+</details>
+<details><summary>Záloha dát</summary>
+<p><span class="b">Viac → 💾 Stiahnuť zálohu</span> uloží všetky dáta do súboru. Rob to pravidelne, apka ti pripomenie termín.</p>
+</details>
+<details><summary>Kto videl a kto potvrdil</summary>
+<ul>
+<li>Pri zákazkách a obhliadkach vidíš <b>👁 Prečítali</b> a <b>👍 Potvrdili / ⏳ Nepotvrdili</b>.</li>
+<li>Pri správach vidíš, kto ju ešte nečítal.</li>
+<li>Ak zmeníš termín alebo tím, technik dostane zákazku znova ako <b>🔄 Zmenené</b>.</li>
+</ul>
+</details>
+</section>
+<section id="tut_velki" class="admin-only">
+<h2>🏢 Veľkí klienti (VSE) a faktúry</h2>
+<ol>
+<li>Pri montáži aj obhliadke vyber <b>Veľký klient</b>. Ďalšieho pridáš cez <b>Iné…</b>, ostane v zozname.</li>
+<li><span class="b">Práca → 🏢 Veľkí klienti</span> – vyber klienta a záložku <b>Obhliadky</b> alebo <b>Montáže</b>.</li>
+<li>Ťukni na riadok a zadaj <b>číslo faktúry</b>, dátum a stav <b>Čaká na platbu</b> alebo <b>Zaplatené</b>.</li>
+<li>Farby: červená = hotové a bez faktúry (alebo po splatnosti 30 dní), oranžová = čaká na platbu, zelená = zaplatené.</li>
+<li>Dole je export do CSV.</li>
+</ol>
+<div class="tip">Samotné faktúry vystavuješ vo svojom fakturačnom programe. Apka si len pamätá, či je faktúra vystavená a zaplatená.</div>
+</section>
+<section id="tut_notif">
+<h2>🔔 Upozornenia</h2>
+<ul>
+<li><b>WhatsApp:</b> po uložení správy alebo zákazky sa ukážu tlačidlá pre každého člena tímu a <b>👥 Všetkým naraz</b> (otvorí WhatsApp, kde vyberieš skupinu).</li>
+<li><b>SMS klientovi:</b> pri zákazke na Dnes je <b>💬 Odoslať SMS</b> s hotovým textom, kedy prídeme.</li>
+<li class="admin-only"><b>Ranný e-mail</b> pre správcov chodí o 6:00.</li>
+<li>Apka zatiaľ neposiela automatické push upozornenia.</li>
+</ul>
+</section>
+<section id="tut_tipy">
+<h2>💡 Tipy a riešenie problémov</h2>
+<details open><summary>Apka vyzerá stará alebo nemá novú funkciu</summary>
+<p><span class="admin-only">Ťukni na <span class="b">Viac → 🔄 Aktualizovať aplikáciu</span>. </span>Ak nepomôže, zavri ju úplne a otvor znova.</p>
+</details>
+<details><summary>Nemám internet</summary>
+<p>Apka funguje aj bez internetu, údaje sa odošlú po pripojení. Mapa a prvé vyhľadanie adries internet potrebujú.</p>
+</details>
+<details><summary>Zadávam „Iné…“</summary>
+<p>V rozbaľovacích poliach vyber <b>Iné…</b> a napíš vlastnú hodnotu. Uloží sa a nabudúce ju nájdeš v zozname.</p>
+</details>
+<details><summary>Nemôžem nájsť zákazku</summary>
+<p>Pozri do <b>Kalendára</b> alebo do <b>Moje úlohy</b>.<span class="admin-only"> V zozname Montáž / Servis zmeň filter na <b>Zobraziť: všetko</b>, alebo ju nájdi v <b>Viac → Zákazky</b>.</span></p>
+</details>
+<details class="admin-only"><summary>Zmazal som niečo omylom</summary>
+<p>Zmazané položky idú do koša, správca ich môže obnoviť v časti <b>Správa</b>.</p>
+</details>
+<details class="admin-only"><summary>Nápoveda priamo v apke</summary>
+<p><span class="b">Viac → ❓ Nápoveda</span> obsahuje podrobný popis jednotlivých funkcií.</p>
+</details>
+</section>
   </div>
 
   <div id="zakazkySection" class="section-content">
