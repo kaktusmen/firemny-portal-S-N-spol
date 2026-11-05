@@ -1658,7 +1658,7 @@ var HELP=[
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
 ['💬 WhatsApp',0,'Po odoslaní správy (aj v jej detaile v histórii) sú tlačidlá <b>💬 WhatsApp: Meno</b> pre príjemcov, ktorí majú v tíme zadaný telefón. Otvorí sa WhatsApp s hotovým textom, stačí dať Odoslať. Pri viacerých príjemcoch je navyše <b>👥 Všetkým naraz</b>: otvorí WhatsApp s textom a v zozname vyberieš skupinu alebo viac kontaktov (WhatsApp nedovolí poslať na viac čísel automaticky). To isté je v detaile zákazky aj hneď po uložení montáže, čistenia alebo opravy pre členov tímu zákazky. Telefónne čísla členov dopĺňa správca v Tíme.'],
 ['🗺 Mapa klientov',0,'Správca: <b>Viac → Mapa klientov</b> (alebo tlačidlo v Klientoch), technik: dlaždica <b>Mapa klientov</b> na úvodnej stránke (vidí len klientov svojich zákaziek). Adresy sa pri prvom otvorení automaticky vyhľadajú v OpenStreetMap (zadarmo, trvá ~1 s na klienta) a uložia, takže ďalej je mapa hneď. Ťukni na bod → meno, telefón, navigácia. Zelený bod = posledná poloha technika z posledných 12 hodín (vidí len správca), oranžový = len približne podľa obce. Potrebuje internet.'],
-['📍 Poloha tímu',0,'Apka odosiela polohu člena tímu (technika aj správcu) <b>iba keď ju používa</b> (pri otvorení, ťukaní v apke a každé 3 minúty kým je otvorená). iPhone sa pri prvom použití sám opýta na povolenie polohy. V Nastaveniach je o tom viditeľná informácia a nedá sa vypnúť; povolenie polohy v telefóne si však každý riadi sám. Správca vidí posledné miesto v <b>Viac → Poloha tímu</b>. Nejde o živé sledovanie.'],
+['📍 Poloha tímu',0,'Apka odosiela polohu člena tímu (technika aj správcu) <b>iba keď ju používa</b> (pri otvorení, ťukaní v apke a každé 3 minúty kým je otvorená). iPhone sa pri prvom použití sám opýta na povolenie polohy. Člen tímu to môže vypnúť v Nastaveniach. Správca vidí posledné miesto v <b>Viac → Poloha tímu</b>. Nejde o živé sledovanie.'],
 ['🔍 Čas a technik pri obhliadke',0,'Pri obhliadke nastav <b>čas</b> a (nepovinne) <b>technika</b>. Technik ju uvidí v Dnes, Moje úlohy a Kalendári s časom a adresou. Ostatné obhliadky technik nevidí.'],
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['🗺 Trasa dňa s obhliadkami',0,'Do Trasy dňa sa počítajú aj obhliadky priradené technikovi (🔍) – s časom, navigáciou a telefónom, aj v celej trase v Google mapách.'],
@@ -2407,9 +2407,8 @@ function clearPoloha(){
 }
 function locVal(){try{return localStorage.getItem('portal_loc')}catch(e){return null}}
 function locSet(v){try{localStorage.setItem('portal_loc',v)}catch(e){}locUi()}
-function locUi(){var b=$('locBtn');if(b)b.textContent='📍 Poloha sa odosiela správcovi, keď apku používate (určuje správca)'}
+function locUi(){var b=$('locBtn');if(b)b.textContent='📍 Odosielať polohu správcovi: '+(locVal()==='1'?'áno':'nie')}
 function toggleLoc(){
-  toast('Odosielanie polohy určuje správca – nedá sa vypnúť');return;
   if(locVal()==='1'){locSet('0');toast('Poloha sa už neodosiela')}
   else{locSet('1');toast('Poloha sa odosiela, keď apku používate');locPing(true)}
 }
@@ -2423,7 +2422,7 @@ function locPing(force){
 }
 function locTick(){
   if(!me||!findById('members',me))return;
-  if(locVal()!=='1')locSet('1');
+  if(locVal()===null)locSet('1');
   locPing(false);
 }
 document.addEventListener('click',function(){locPing(false)},true);
@@ -2469,7 +2468,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.32';
+var APP_VERSION='2026-11-05.33';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
