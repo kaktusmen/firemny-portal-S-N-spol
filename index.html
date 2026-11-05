@@ -2166,7 +2166,7 @@ function drawMapa(fit){
     L.circleMarker([c.lat,c.lng],{radius:8,color:'#fff',weight:2,fillColor:col_,fillOpacity:.95}).bindPopup(pop).bindTooltip(nm(c)).addTo(mapLayer);
     pts.push([c.lat,c.lng]);
   });
-  (isAdmin()?dbData.nastavenia:[]).filter(function(x){return String(x.id).indexOf('poloha_')===0&&x.lat!=null}).forEach(function(x){
+  (isAdmin()?polohaList():[]).forEach(function(x){
     var min=Math.round((Date.now()-(x.ts||0))/60000);
     L.circleMarker([x.lat,x.lng],{radius:11,color:'#fff',weight:3,fillColor:'#16a34a',fillOpacity:1}).bindPopup('<b>👷 '+esc(x.name||'')+'</b><br>'+(min<1?'práve teraz':(min<60?'pred '+min+' min':new Date(x.ts).toLocaleString('sk-SK')))).bindTooltip('👷 '+(x.name||''),{permanent:true,direction:'top'}).addTo(mapLayer);
     pts.push([x.lat,x.lng]);
@@ -2206,6 +2206,19 @@ function geoRetry(){
 
 /* ===== Poloha technika (len keď apku používa) ===== */
 var locLast=0,locAsking=false,locBusy=false;
+function polohaList(){
+  return dbData.nastavenia.filter(function(x){
+    if(String(x.id).indexOf('poloha_')!==0||x.lat==null)return false;
+    var mm=findById('members',x.memberId||String(x.id).slice(7));
+    if(!mm||mm.rola==='Správca')return false;
+    return true;
+  });
+}
+function clearPoloha(){
+  if(!confirm('Vymazať všetky uložené polohy? Technici ich pošlú znova, keď apku použijú.'))return;
+  dbData.nastavenia.filter(function(x){return String(x.id).indexOf('poloha_')===0}).forEach(function(x){col('nastavenia').doc(x.id).delete().catch(function(){})});
+  toast('Polohy vymazané');setTimeout(function(){renderPoloha();if(mapObj)drawMapa(false)},500);
+}
 function locVal(){try{return localStorage.getItem('portal_loc')}catch(e){return null}}
 function locSet(v){try{localStorage.setItem('portal_loc',v)}catch(e){}locUi()}
 function locUi(){var b=$('locBtn');if(b)b.textContent='📍 Odosielať polohu správcovi: '+(locVal()==='1'?'áno':'nie')}
@@ -2230,7 +2243,7 @@ document.addEventListener('click',function(){locPing(false)},true);
 setInterval(function(){if(!document.hidden)locPing(false)},120000);
 function renderPoloha(){
   var el=$('polohaList');if(!el)return;
-  var a=dbData.nastavenia.filter(function(x){return String(x.id).indexOf('poloha_')===0&&x.lat!=null}).sort(function(x,y){return (y.ts||0)-(x.ts||0)});
+  var a=polohaList().sort(function(x,y){return (y.ts||0)-(x.ts||0)});
   el.innerHTML=a.length?a.map(function(x){
     var min=Math.round((Date.now()-(x.ts||0))/60000),ago=min<1?'práve teraz':(min<60?'pred '+min+' min':(min<1440?'pred '+Math.round(min/60)+' h':fmtD(ymd(new Date(x.ts)))));
     return '<div class="day-row" style="border-left-color:'+(min<30?'#16a34a':(min<240?'#ca8a04':'#94a3b8'))+'"><b>👷 '+esc(x.name||'')+'</b><span>'+ago+' · '+esc(new Date(x.ts).toLocaleString('sk-SK'))+(x.acc?' · ±'+x.acc+' m':'')+'</span><span><a href="https://www.google.com/maps/search/?api=1&query='+x.lat+','+x.lng+'" target="_blank" rel="noopener">📍 Zobraziť na mape</a></span></div>';
@@ -2269,7 +2282,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.14';
+var APP_VERSION='2026-11-05.15';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2972,6 +2985,7 @@ window.onload=function(){
     <div id="mapBox"></div>
     <p style="color:#64748b;font-size:.8rem"><span id="mapLegend">🔵 klient · 🟠 adresa len približne (obec)</span><span class="admin-only"> · 🟢 technik (posledná poloha)</span></p>
     <button class="btn-edit" style="background:#64748b" onclick="geoRetry()">🔄 Znovu vyhľadať nenájdené adresy</button>
+    <button class="btn-edit admin-only" style="background:#dc2626" onclick="clearPoloha()">🗑 Vymazať uložené polohy tímu</button>
   </div>
 
   <div id="polohaSection" class="section-content">
@@ -2979,6 +2993,7 @@ window.onload=function(){
     <h2>📍 Poloha tímu</h2>
     <p style="color:#64748b;font-size:.9rem;margin-top:0">Posledné miesto, kde technik používal apku (nie živé sledovanie). Technik s tým musí súhlasiť.</p>
     <div id="polohaList"></div>
+    <button class="btn-edit" style="background:#dc2626;margin-top:10px" onclick="clearPoloha()">🗑 Vymazať uložené polohy</button>
   </div>
   <div id="routeSection" class="section-content">
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
