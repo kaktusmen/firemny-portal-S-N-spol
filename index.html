@@ -22,6 +22,7 @@ h1{color:var(--primary);margin-top:0}
 .menu-card{background:#f1f5f9;padding:24px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #cbd5e1;font-weight:bold;color:var(--primary)}
 .menu-card:hover{border-color:var(--primary);background:#e2e8f0}
 .section-content{display:none;margin-top:20px}
+.iny-wrap{position:relative}.iny-wrap select,.iny-wrap input.inyTxt{width:100%;box-sizing:border-box}.iny-back{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:34px;height:34px;margin:0;padding:0;border:none;border-radius:50%;background:rgba(142,142,147,.18);color:#8e8e93;font-size:1rem;cursor:pointer}.iny-wrap input.inyTxt{padding-right:48px}
 .form-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:12px}
 @media(min-width:600px){.form-grid{grid-template-columns:1fr 1fr}.full-width-input{grid-column:1/-1}}
 input,select,textarea,button{width:100%;padding:10px;margin-top:4px;margin-bottom:8px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;font-size:1rem}
@@ -307,7 +308,12 @@ function mapA(c){
   var q=encodeURIComponent(c.adresa+(c.obec?', '+c.obec:''));
   return '<a href="https://www.google.com/maps/search/?api=1&query='+q+'" target="_blank" rel="noopener">📍 '+esc(c.adresa)+'</a>';
 }
-function syncIny(id){var e=$(id),x=$(id+'Iny');if(!x)return;x.style.display=e.value==='__iny'?'block':'none';if(e.value!=='__iny')x.value=''}
+function syncIny(id){
+  var e=$(id),x=$(id+'Iny');if(!x)return;
+  var on=e.value==='__iny',b=$(id+'InyBack');
+  x.style.display=on?'block':'none';e.style.display=on?'none':'';if(b)b.style.display=on?'block':'none';
+  if(!on)x.value='';
+}
 function gv(id){var e=$(id);if(e.tagName==='SELECT'&&e.value==='__iny'){var x=$(id+'Iny');return x?x.value.trim():''}return e.value.trim()}
 function sv(id,v){
   var e=$(id);v=v==null?'':String(v);
@@ -321,14 +327,18 @@ function initIny(root){
   (root||document).querySelectorAll('select[data-iny]:not([data-done])').forEach(function(e){
     e.setAttribute('data-done','1');
     var o=document.createElement('option');o.value='__iny';o.textContent='Iné…';e.appendChild(o);
-    var x=document.createElement('input');x.type='text';x.id=e.id+'Iny';x.className='full-width-input';x.style.display='none';
+    var wrap=document.createElement('div');wrap.className='iny-wrap'+(e.classList.contains('full-width-input')?' full-width-input':'');
+    e.parentNode.insertBefore(wrap,e);wrap.appendChild(e);
+    var x=document.createElement('input');x.type='text';x.id=e.id+'Iny';x.className='inyTxt';x.style.display='none';
+    var bk=document.createElement('button');bk.type='button';bk.id=e.id+'InyBack';bk.className='iny-back';bk.textContent='▾';bk.title='Späť na zoznam';bk.style.display='none';
+    bk.onclick=function(){var f=Array.prototype.filter.call(e.options,function(o){return o.value===''})[0]||e.options[0];e.value=f.value;syncIny(e.id)};
     x.placeholder=e.getAttribute('data-iny-ph')||'Zadajte iné…';
-    e.parentNode.insertBefore(x,e.nextSibling);
+    wrap.appendChild(x);wrap.appendChild(bk);
     e.addEventListener('change',function(){syncIny(e.id);if(e.value==='__iny')x.focus()});
   });
   applyCustomOpts(root);
 }
-function inyKey(id){return String(id).replace(/\d+$/,'')}
+function inyKey(id){var k=String(id).replace(/\d+$/,'');return (k==='chTyp'||k==='dChT'||k==='jbChT')?'chlTyp':k}
 function inyDoc(){return dbData.nastavenia.filter(function(x){return x.id==='moznosti'})[0]||{}}
 function applyCustomOpts(root){
   var d=inyDoc();
@@ -1550,7 +1560,7 @@ var HELP=[
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
-['✏️ Iné…',0,'Pri výbere <b>Iné…</b> sa zobrazí políčko, kam napíšeš vlastný text. Po uložení formulára sa tento text <b>pridá do ponuky</b> a nabudúce ho nájdeš v zozname (vidia ho všetci).'],
+['✏️ Iné…',0,'Pri výbere <b>Iné…</b> sa výber zmení na písacie políčko na tom istom mieste, kam napíšeš vlastný text (tlačidlo ▾ vráti zoznam). Po uložení formulára sa tento text <b>pridá do ponuky</b> a nabudúce ho nájdeš v zozname (vidia ho všetci).'],
 ['📝 Poznámky v obhliadke',0,'Vo formulári obhliadky je dole políčko <b>Poznámky</b> (rozmery, dohody, cena…). Zobrazí sa aj v zozname a v detaile obhliadky.'],
 ['🧹 Čistenie a 🔨 Oprava krok za krokom',0,'V kroku Klient je tlačidlo <b>➕ Nový klient</b> (uloží kartu klienta). Čistenie: <b>Klient → Zariadenie a termín → Tím → Hotovo</b>. Oprava: <b>Klient → Porucha → Termín a tím → Záznam → Hotovo</b>. Na očíslované štvorčeky hore sa dá ťuknúť a skočiť na ľubovoľný krok.'],
 ['🔧 Montáž krok za krokom',0,'Práca → Montáž: <b>1 Klient</b> (tlačidlo 👤 Existujúci klient alebo ➕ Nový klient) → <b>2 Zákazka</b> (názov, dátum, čas) → <b>3 Zariadenia</b> → <b>4 Tím</b> → <b>5 Hotovo</b> (zhrnutie a uloženie). Na očíslované štvorčeky hore môžeš ťuknúť a skočiť na ľubovoľný krok, aj pri úprave montáže.'],
@@ -2007,7 +2017,7 @@ function jobCollect(m){
       var il=(d.vnutorne&&d.vnutorne.length)?d.vnutorne:[''];
       d.vnutorne=il.map(function(x,k){var e=$('jbIn'+i+'_'+k);return e?e.value.trim():x});
       d.vonkajsia=$('jbOut'+i).value.trim();
-      d.chlTyp=$('jbChT'+i).value;d.chlKg=$('jbChK'+i).value.trim();
+      d.chlTyp=gv('jbChT'+i);d.chlKg=$('jbChK'+i).value.trim();
     });
     u.zariadenia=ds;
   }
@@ -2020,6 +2030,7 @@ function jobPersist(m,u){
 }
 function jobGo(id,step){
   var m=findById('montaze',id);if(!m)return;
+  rememberIny();
   jobPersist(m,jobCollect(m));
   showJob(id,step);
 }
@@ -2054,7 +2065,7 @@ function showJob(id,step){
         '<label class="fl">Značka / model</label>'+jbIn('jbBr'+i,d.znacka,'Značka / model',false)+
         il.map(function(sn,k){return '<label class="fl">Výrobné číslo vnútornej jednotky'+(il.length>1?' '+(k+1):'')+'</label>'+jbIn('jbIn'+i+'_'+k,sn,'Výrobné číslo',true)}).join('')+
         '<label class="fl">Výrobné číslo vonkajšej jednotky</label>'+jbIn('jbOut'+i,d.vonkajsia,'Výrobné číslo',true)+
-        '<label class="fl">Chladivo</label><select id="jbChT'+i+'" class="jb'+(d.chlTyp?'':' need')+'" onchange="jbN(this)"><option value="">-- vyber --</option>'+Object.keys(GWP).concat(d.chlTyp&&!GWP[d.chlTyp]?[d.chlTyp]:[]).map(function(k){return '<option'+(d.chlTyp===k?' selected':'')+'>'+esc(k)+'</option>'}).join('')+'</select>'+
+        '<label class="fl">Chladivo</label><select id="jbChT'+i+'" data-iny data-iny-ph="Iné chladivo" class="jb'+(d.chlTyp?'':' need')+'" onchange="jbN(this)"><option value="">-- vyber --</option>'+Object.keys(GWP).concat(d.chlTyp&&!GWP[d.chlTyp]?[d.chlTyp]:[]).map(function(k){return '<option'+(d.chlTyp===k?' selected':'')+'>'+esc(k)+'</option>'}).join('')+'</select>'+
         '<label class="fl">Náplň chladiva (kg)</label>'+jbIn('jbChK'+i,d.chlKg,'napr. 1,2',true,'type="text" inputmode="decimal"')+'</div>';
     });
     h+='<div class="modal-row" style="color:#64748b">🔴 Červené polia treba doplniť.</div>';
@@ -2078,6 +2089,7 @@ function showJob(id,step){
     '<button class="btn-delete" style="background:#94a3b8" onclick="jobPersist(findById(\'montaze\',\''+esc(id)+'\'),jobCollect(findById(\'montaze\',\''+esc(id)+'\')));closeEvent()">Zavrieť</button></div>';
   $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
   try{$('eventModalBody').scrollTop=0;$('eventModalBody').parentNode.scrollTop=0}catch(e){}
+  if(key==='devs')initIny($('eventModalBody'));
   if(key==='photos')fotoLoad(id);
   if(key==='sign'){initPad('sigT',m.podpisT);initPad('sigZ',m.podpisZ)}
 }
@@ -2128,7 +2140,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.6';
+var APP_VERSION='2026-11-05.8';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
