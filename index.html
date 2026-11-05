@@ -584,7 +584,9 @@ function render(){
       }
       var mf=$('msFilter')?$('msFilter').value:'';
       if(mf){
+        var lim14=ymd(new Date(Date.now()+14*86400000));
         arr=arr.filter(function(x){
+          if(mf==='near')return x.stav!=='Hotová'&&(!x.date||x.date<=lim14);
           if(mf==='montaz')return !x.kind;
           if(mf==='cistenie')return x.kind&&x.servisType==='Čistenie';
           if(!x.kind||x.servisType!=='Oprava')return false;
@@ -1655,6 +1657,7 @@ var HELP=[
 ['📍 Poloha tímu',0,'Apka odosiela polohu technika <b>iba keď ju používa</b> (pri otvorení, ťukaní v apke a každé 3 minúty kým je otvorená). iPhone sa pri prvom použití sám opýta na povolenie polohy. Technik to môže vypnúť v Nastaveniach. Správca vidí posledné miesto v <b>Viac → Poloha tímu</b>. Nejde o živé sledovanie.'],
 ['🔍 Čas a technik pri obhliadke',0,'Pri obhliadke nastav <b>čas</b> a (nepovinne) <b>technika</b>. Technik ju uvidí v Dnes, Moje úlohy a Kalendári s časom a adresou. Ostatné obhliadky technik nevidí.'],
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
+['🧹 Naplánované len 2 týždne vopred',0,'Moje úlohy, zoznam Montáž/Servis (predvolený filter „Najbližšie 2 týždne“) a prehľad Zákazky ukazujú len to, čo je do 14 dní alebo nemá dátum. Neskôr naplánované nájdeš v Kalendári, v Zákazky → „Naplánované neskôr“ alebo v zozname po zmene filtra na „všetko“.'],
 ['🏢 Veľkí klienti',0,'Pri obhliadke aj montáži je pole <b>Veľký klient</b> (VSE alebo „Iné…“ pre ďalšieho, ktorý sa zapamätá). Potom v <b>Práca → Veľkí klienti</b> vidíš obhliadky a montáže tohto klienta a pri každej tlačidlom (ťuk na riadok) zadáš faktúru: číslo, dátum a stav <b>Čaká na platbu / Zaplatené</b>. Červené = hotové bez faktúry alebo po splatnosti (30 dní). Hore sú počty a dole export CSV. Staré záznamy zaradíš cez Upraviť → Veľký klient.'],
 ['🆕 Nové a kto prečítal',0,'Nové obhliadky, zákazky (montáž/servis/čistenie/oprava), klienti a ponuky sa ostatným ukážu na úvodnej stránke v bloku <b>🆕 Nové</b> (správcom všetko, technikovi jeho zákazky). Po otvorení sa označia ako prečítané a zo začiatku zmiznú, v zoznamoch ostanú. Zadávateľ ich ako nové nevidí. Správca v zozname vidí <b>👁 kto prečítal</b> a kto ešte nie. Staré záznamy sa ako nové neukazujú (okrem jednej starej obhliadky). Obhliadky sa v Dnes/Zajtra nezobrazujú.'],
 ['💬 Správy',0,'Správa sa odosiela automaticky <b>od teba</b> (podľa mena, ktoré máš zvolené na úvodnej stránke). Vyberieš len príjemcov a napíšeš text.'],
@@ -2213,16 +2216,18 @@ function saveJob(id,done){
 function zkAll(){return dbData.montaze.filter(function(m){return m.date||m.kind})}
 function zkMatch(m,f){
   var td=ymd(new Date()),done=m.stav==='Hotová';
-  if(f==='open')return !done;
+  var l14=ymd(new Date(Date.now()+14*86400000));
+  if(f==='open')return !done&&(!m.date||m.date<=l14);
+  if(f==='later')return !done&&m.date>l14;
   if(f==='today')return m.date===td;
-  if(f==='missing')return !done&&jobMissing(m).length>0;
+  if(f==='missing')return !done&&(!m.date||m.date<=l14)&&jobMissing(m).length>0;
   if(f==='run')return m.stav==='Prebieha';
   if(f==='done')return done;
   return true;
 }
 function renderZakazky(){
   var el=$('zkList');if(!el)return;
-  var fs=$('zkF'),fv=fs.value||'open',L=[['open','Aktívne'],['today','Dnes'],['missing','Chýbajú údaje'],['run','Prebieha'],['done','Hotové'],['all','Všetky']],a=zkAll();
+  var fs=$('zkF'),fv=fs.value||'open',L=[['open','Aktívne (do 2 týždňov)'],['later','Naplánované neskôr'],['today','Dnes'],['missing','Chýbajú údaje'],['run','Prebieha'],['done','Hotové'],['all','Všetky']],a=zkAll();
   fs.innerHTML=L.map(function(x){return '<option value="'+x[0]+'">'+x[1]+' ('+a.filter(function(m){return zkMatch(m,x[0])}).length+')</option>'}).join('');
   fs.value=fv;
   var q=norm($('zkQ').value||'');
@@ -2458,7 +2463,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.28';
+var APP_VERSION='2026-11-05.29';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2715,18 +2720,18 @@ function renderMyTasks(){
   var el=$('myTasksList');if(!el)return;
   var mm=findById('members',me);
   if(!mm){el.innerHTML='<div class="td-none">Vyberte svoje meno, aby ste videli svoje úlohy a správy.</div>';return}
-  var today=ymd(new Date()),cl14=ymd(new Date(Date.now()+14*86400000)),late=[],soon=[],nodate=[];
+  var today=ymd(new Date()),cl14=ymd(new Date(Date.now()+14*86400000)),late=[],soon=[],nodate=[],later=0;
   dbData.montaze.forEach(function(m){
     if(!isMine(m))return;
     var open=m.stav!=='Hotová';
     var e={type:'montaze',id:m.id,time:m.time||'',color:srvColor(m),text:srvIcon(m)+(m.title||'Montáž'),
       sub:[m.date?fmtD(m.date):'bez dátumu',m.address?'📍 '+m.address:'',m.clientName&&!m.kind?'👤 '+m.clientName:''].filter(Boolean).join(' · '),d:m.date||''};
     if(!m.date){if(m.kind&&open)nodate.push(e)}
-    else if(m.date>=today){if(m.kind&&m.servisType==='Čistenie'&&m.date>cl14)return;soon.push(e)}
+    else if(m.date>=today){if(m.date>cl14){later++;return}soon.push(e)}
     else if(m.servisType==='Oprava'&&open)late.push(e);
   });
   dbData.obhliadky.forEach(function(o){
-    if((o.memberIds||[]).indexOf(me)<0||!o.date||o.date<today)return;
+    if((o.memberIds||[]).indexOf(me)<0||!o.date||o.date<today||o.date>cl14)return;
     soon.push({type:'obhliadky',id:o.id,time:o.time||'',color:'#7c3aed',text:'🔍 Obhliadka: '+onm(o),sub:[fmtD(o.date),o.adresa?'📍 '+o.adresa:(o.obec?'📍 '+o.obec:'')].filter(Boolean).join(' · '),d:o.date});
   });
   var lim=ymd(new Date(Date.now()-90*86400000)),todo=dbData.montaze.filter(function(m){return !m.kind&&isMine(m)&&m.date&&m.date<=today&&m.date>=lim&&missingOf(m).length}).sort(function(a,b){return b.date.localeCompare(a.date)});
@@ -2734,7 +2739,7 @@ function renderMyTasks(){
   late.sort(by);soon.sort(by);
   var sec=function(t,a){return a.length?'<div class="td-h">'+t+'</div>'+a.map(dayRow).join(''):''};
   var msgs=dbData.spravy.filter(msgForMe).sort(function(a,b){return (b.ts||0)-(a.ts||0)}).slice(0,10);
-  el.innerHTML=(todo.length?'<div class="td-h" style="color:#dc2626">📝 Treba doplniť ('+todo.length+')</div>'+todo.map(function(m){return todoRow(m,missingOf(m))}).join(''):'')+(sec('⏰ Meškajúce opravy',late)+sec('📅 Nadchádzajúce',soon)+sec('📌 Bez dátumu',nodate)||(todo.length?'':'<div class="td-none">Nemáte priradené žiadne úlohy.</div>'))+
+  el.innerHTML=(todo.length?'<div class="td-h" style="color:#dc2626">📝 Treba doplniť ('+todo.length+')</div>'+todo.map(function(m){return todoRow(m,missingOf(m))}).join(''):'')+(sec('⏰ Meškajúce opravy',late)+sec('📅 Nadchádzajúce (do 2 týždňov)',soon)+(later?'<div class="td-none">＋ '+later+' ďalších naplánovaných neskôr (v Kalendári)</div>':'')+sec('📌 Bez dátumu',nodate)||(todo.length?'':'<div class="td-none">Nemáte priradené žiadne úlohy.</div>'))+
     '<div class="td-h">💬 Správy pre mňa</div>'+(msgs.length?msgs.map(function(x){
       return '<div class="day-row" style="border-left-color:#7c3aed" onclick="showMsg(\''+esc(x.id)+'\')"><b>'+(msgUnread(x)?'🆕 ':'✓ ')+'Od: '+esc(x.author||'Anonym')+'</b><span>'+esc(x.text||'')+(x.timestamp?' · '+esc(x.timestamp):'')+'</span></div>';
     }).join(''):'<div class="td-none">Žiadne správy.</div>');
@@ -3398,7 +3403,7 @@ window.onload=function(){
   </div>
     <h3>Zoznam montáží a servisov</h3>
     <input type="search" id="msSearch" placeholder="🔍 Hľadať podľa mena klienta, názvu alebo technika" oninput="render()" autocomplete="off">
-    <select id="msFilter" onchange="render()"><option value="">Zobraziť: všetko</option><option value="montaz">Len montáže</option><option value="cistenie">Len čistenia</option><option value="oprava">Všetky opravy</option><option value="oprava_open">Opravy – otvorené</option><option value="oprava_done">Opravy – hotové</option></select><div id="montazList">Načítavam...</div>
+    <select id="msFilter" onchange="render()"><option value="near">Najbližšie 2 týždne (nedokončené)</option><option value="">Zobraziť: všetko</option><option value="montaz">Len montáže</option><option value="cistenie">Len čistenia</option><option value="oprava">Všetky opravy</option><option value="oprava_open">Opravy – otvorené</option><option value="oprava_done">Opravy – hotové</option></select><div id="montazList">Načítavam...</div>
   </div>
 
   <div id="obhliadkaSection" class="section-content">
