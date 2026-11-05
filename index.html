@@ -543,7 +543,7 @@ var V={
   members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
     return card('members',t,'🛡️ '+esc(t.name||''),'Tel: '+esc(t.telefon||'-')+'\nRola: '+(t.rola==='Správca'?'🛡 Správca'+(t.pwHash?' · 🔑 heslo nastavené':' · ⚠️ bez hesla'):'🔧 Technik'),'editMember')}],
   obhliadky:['obhliadkaList','Žiadne obhliadky.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')},function(o){
-    return card('obhliadky',o,'🔍 '+esc(onm(o))+(o.obec?' – '+esc(o.obec):'')+(o.date?' ('+esc(o.date)+')':'')+(o.klientId?' ✅':''),
+    return card('obhliadky',o,(obhUnread(o)?'🆕 ':'')+'🔍 '+esc(onm(o))+(o.obec?' – '+esc(o.obec):'')+(o.date?' ('+esc(o.date)+')':'')+(o.klientId?' ✅':''),
       obhliadkaBody(o),'editObhliadka',true,
       o.klientId?'':'<button class="btn-edit" style="background:#16a34a" onclick="convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>')}],
   ponuky:['ponukyList','Žiadne cenové ponuky.',function(a,b){return (b.ts||0)-(a.ts||0)},function(p){
@@ -937,11 +937,27 @@ function saveObhliadka(){
   rememberIny();
   var eid=$('editingObhliadkaId').value||null;
   if(eid){var old=findById('obhliadky',eid);if(old&&old.klientId)o.klientId=old.klientId}
+  if(!eid){o.createdBy=me||'';o.readBy=me?[me]:[]}
   put('obhliadky',o,eid);
   clearObhliadka();toast(eid?'Obhliadka aktualizovaná!':'Obhliadka uložená!');
 }
+function obhUnread(o){return isAdmin()&&!!me&&(o.readBy||[]).indexOf(me)<0}
+function obhRead(id){
+  var o=findById('obhliadky',id);if(!o||!obhUnread(o))return;
+  o.readBy=(o.readBy||[]).concat(me);
+  col('obhliadky').doc(id).update({readBy:firebase.firestore.FieldValue.arrayUnion(me)}).catch(function(){});
+  setTimeout(renderToday,50);
+}
+function renderHomeObh(){
+  if(!isAdmin()||!me)return '';
+  var un=dbData.obhliadky.filter(obhUnread);if(!un.length)return '';
+  return '<div class="td-h">🔍 Nové obhliadky ('+un.length+')</div>'+un.map(function(o){
+    var by=o.createdBy?findById('members',o.createdBy):null;
+    return '<div class="day-row" style="border-left-color:#7c3aed" onclick="showEvent(\'obhliadky\',\''+esc(o.id)+'\')"><b>🆕 '+esc(onm(o))+(o.obec?' – '+esc(o.obec):'')+'</b><span>'+(by?'zadal '+esc(by.name||'')+' · ':'')+(o.date?esc(fmtD(o.date)):'')+'</span></div>';
+  }).join('');
+}
 function editObhliadka(id){
-  var o=findById('obhliadky',id);if(!o)return;
+  var o=findById('obhliadky',id);if(!o)return;obhRead(id);
   openSection('obhliadkaSection','Obhliadky');
   OF.forEach(function(n){sv('o'+n,o[lf(n)]||'')});
   if(!o.meno&&!o.priezvisko)$('oMeno').value=o.name||'';
@@ -1577,6 +1593,7 @@ var HELP=[
 ['💬 WhatsApp',0,'Po odoslaní správy (aj v jej detaile v histórii) sú tlačidlá <b>💬 WhatsApp: Meno</b> pre príjemcov, ktorí majú v tíme zadaný telefón. Otvorí sa WhatsApp s hotovým textom, stačí dať Odoslať. Pri viacerých príjemcoch je navyše <b>👥 Všetkým naraz</b>: otvorí WhatsApp s textom a v zozname vyberieš skupinu alebo viac kontaktov (WhatsApp nedovolí poslať na viac čísel automaticky). To isté je v detaile zákazky aj hneď po uložení montáže, čistenia alebo opravy pre členov tímu zákazky. Telefónne čísla členov dopĺňa správca v Tíme.'],
 ['🗺 Mapa klientov',0,'Správca: <b>Viac → Mapa klientov</b> (alebo tlačidlo v Klientoch), technik: dlaždica <b>Mapa klientov</b> na úvodnej stránke (vidí len klientov svojich zákaziek). Adresy sa pri prvom otvorení automaticky vyhľadajú v OpenStreetMap (zadarmo, trvá ~1 s na klienta) a uložia, takže ďalej je mapa hneď. Ťukni na bod → meno, telefón, navigácia. Zelený bod = posledná poloha technika z posledných 12 hodín (vidí len správca), oranžový = len približne podľa obce. Potrebuje internet.'],
 ['📍 Poloha tímu',0,'Apka odosiela polohu technika <b>iba keď ju používa</b> (pri otvorení, ťukaní v apke a každé 3 minúty kým je otvorená). iPhone sa pri prvom použití sám opýta na povolenie polohy. Technik to môže vypnúť v Nastaveniach. Správca vidí posledné miesto v <b>Viac → Poloha tímu</b>. Nejde o živé sledovanie.'],
+['🔍 Nové obhliadky',0,'Keď niekto zadá obhliadku, ostatným správcom sa na úvodnej stránke ukáže „🆕 Nové obhliadky“. Po ťuknutí a otvorení sa označí ako prečítaná a z úvodnej stránky zmizne (ostane v Práca → Obhliadky). Zadávateľ ju na úvodnej stránke nevidí. Úprava obhliadky pás znova neukáže.'],
 ['💬 Správy',0,'Správa sa odosiela automaticky <b>od teba</b> (podľa mena, ktoré máš zvolené na úvodnej stránke). Vyberieš len príjemcov a napíšeš text.'],
 ['✏️ Iné…',0,'Pri výbere <b>Iné…</b> sa výber zmení na písacie políčko na tom istom mieste, kam napíšeš vlastný text (tlačidlo ▾ vráti zoznam). Po uložení formulára sa tento text <b>pridá do ponuky</b> a nabudúce ho nájdeš v zozname (vidia ho všetci).'],
 ['📝 Poznámky v obhliadke',0,'Vo formulári obhliadky je dole políčko <b>Poznámky</b> (rozmery, dohody, cena…). Zobrazí sa aj v zozname a v detaile obhliadky.'],
@@ -1822,6 +1839,7 @@ function clientDetail(c){
 function showEvent(type,id){
   if(type==='volno'){showLeave(id);return}
   var o=findById(type,id);if(!o)return;
+  if(type==='obhliadky')obhRead(id);
   var c=null,info='';
   if(type==='clients'){c=o}
   else{
@@ -2282,7 +2300,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.16';
+var APP_VERSION='2026-11-05.17';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2492,7 +2510,7 @@ function leaveBlock(d0){
 function renderToday(){
   var el=$('todayBox');if(!el)return;
   var t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1));
-  el.innerHTML=renderHomeMsgs()+leaveBlock(d0)+[['Dnes',d0],['Zajtra',d1]].map(function(x){
+  el.innerHTML=renderHomeMsgs()+renderHomeObh()+leaveBlock(d0)+[['Dnes',d0],['Zajtra',d1]].map(function(x){
     var ev=dayEvents(x[1]).filter(function(e){
       if(e.type==='volno')return false;
       if(e.type==='montaze'){var q=findById('montaze',e.id);if(q&&q.stav==='Hotová')return false}
