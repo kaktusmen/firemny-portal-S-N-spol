@@ -422,9 +422,9 @@ function put(c,o,id){
   var isNew=!id;
   id=id||col(c).doc().id;
   delete o.id;
-  if(isNew&&me&&NEWC.indexOf(c)>-1&&!o.createdBy){o.createdBy=me;o.readBy=[me];o.createdAt=Date.now();if(c==='montaze')o.ackBy=[me]}
-  if(!isNew&&c==='montaze'&&me){
-    var old0=findById('montaze',id);
+  if(isNew&&me&&NEWC.indexOf(c)>-1&&!o.createdBy){o.createdBy=me;o.readBy=[me];o.createdAt=Date.now();if(c==='montaze'||c==='obhliadky')o.ackBy=[me]}
+  if(!isNew&&(c==='montaze'||c==='obhliadky')&&me){
+    var old0=findById(c,id);
     if(old0){
       var tm=function(x){return JSON.stringify((x||[]).slice().sort())};
       if((o.date||'')!==(old0.date||'')||(o.time||'')!==(old0.time||'')||tm(o.memberIds)!==tm(old0.memberIds)){
@@ -578,8 +578,13 @@ var V={
       (function(){var j=v.stav==='Žiadosť'&&isAdmin()?jobsInLeave(v.memberId,v):[];return j.length?'<div style="color:#b45309;font-weight:600;margin-bottom:6px">⚠️ V tomto čase má naplánované:<br>'+j.map(function(m){return esc(fmtD(m.date)+(m.time?' '+m.time:'')+' – '+(m.title||m.clientName||'zákazka'))}).join('<br>')+'</div>':''})()+
       '<strong>Dôvod:</strong> '+esc(v.dovod||'-')+(v.rozhodol?'\n<small style="color:#64748b">Rozhodol: '+esc(v.rozhodol)+'</small>':''),false,false,ex)}],
   spravy:['spravyList','Žiadne správy.',function(a,b){return (b.ts||0)-(a.ts||0)},function(s){
-    return card('spravy',s,(msgUnread(s)?'🆕 ':(msgForMe(s)?'✓ ':''))+'💬 Od: '+esc(s.author||'Anonym')+(s.toNames&&s.toNames.length?' → Pre: '+s.toNames.map(esc).join(', '):''),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':'')+(s.readBy&&s.readBy.length?'\n<small style="color:#15803d">✓ Prečítali: '+s.readBy.map(function(i){var m=findById('members',i);return esc(m?m.name:'?')}).join(', ')+'</small>':''),false,true)}]
+    return card('spravy',s,(msgUnread(s)?'🆕 ':(msgForMe(s)?'✓ ':''))+'💬 Od: '+esc(s.author||'Anonym')+(s.toNames&&s.toNames.length?' → Pre: '+s.toNames.map(esc).join(', '):''),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':'')+(s.readBy&&s.readBy.length?'\n<small style="color:#15803d">✓ Prečítali: '+s.readBy.map(function(i){var m=findById('members',i);return esc(m?m.name:'?')}).join(', ')+'</small>':'')+msgNoRead(s),false,true)}]
 };
+function msgNoRead(x){
+  var ids=(x.toIds||[]).indexOf('__all')>-1?dbData.members.map(function(m){return m.id}):(x.toIds||[]);
+  var nr=dbData.members.filter(function(m){return ids.indexOf(m.id)>-1&&m.id!==x.fromId&&(x.readBy||[]).indexOf(m.id)<0}).map(function(m){return esc(m.name||'')});
+  return nr.length?'\n<small style="color:#dc2626">⏳ Ešte nečítali: '+nr.join(', ')+'</small>':'';
+}
 function norm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()}
 function render(){
   COLS.forEach(function(c){
@@ -986,9 +991,9 @@ function saveObhliadka(){
 }
 function isNewFor(c,o){
   if(!me||!o||NEWC.indexOf(c)<0)return false;
+  if((c==='montaze'||c==='obhliadky')&&(o.createdBy||o.chg)&&(o.memberIds||[]).indexOf(me)>-1)return o.stav!=='Hotová'&&(o.ackBy||[]).indexOf(me)<0;
   if(c==='obhliadky')return isAdmin()&&(o.readBy||[]).indexOf(me)<0;
   if(!o.createdBy&&!o.chg)return false;
-  if(c==='montaze'&&(o.memberIds||[]).indexOf(me)>-1)return o.stav!=='Hotová'&&(o.ackBy||[]).indexOf(me)<0;
   if(isAdmin())return (o.readBy||[]).indexOf(me)<0;
   return false;
 }
@@ -1000,12 +1005,13 @@ function markRead(c,id){
   setTimeout(renderToday,50);
 }
 function obhRead(id){markRead('obhliadky',id)}
-function needsAck(m){return !!m&&(m.createdBy||m.chg)&&m.stav!=='Hotová'&&(m.memberIds||[]).indexOf(me)>-1&&(m.ackBy||[]).indexOf(me)<0}
-function ackJob(id){
-  var m=findById('montaze',id);if(!m||!me)return;
+function needsAck(m,c){return !!m&&(m.createdBy||m.chg)&&m.stav!=='Hotová'&&(m.memberIds||[]).indexOf(me)>-1&&(m.ackBy||[]).indexOf(me)<0}
+function ackJob(id){ackItem('montaze',id)}
+function ackItem(c,id){
+  var m=findById(c,id);if(!m||!me)return;
   m.ackBy=(m.ackBy||[]).concat(me);m.readBy=(m.readBy||[]).indexOf(me)<0?(m.readBy||[]).concat(me):m.readBy;
-  col('montaze').doc(id).update({ackBy:firebase.firestore.FieldValue.arrayUnion(me),readBy:firebase.firestore.FieldValue.arrayUnion(me)}).catch(function(){});
-  toast('👍 Vzaté na vedomie');render();renderToday();if($('eventModal').style.display==='flex'&&typeof jobStep!=='undefined')showJob(id,jobStep);
+  col(c).doc(id).update({ackBy:firebase.firestore.FieldValue.arrayUnion(me),readBy:firebase.firestore.FieldValue.arrayUnion(me)}).catch(function(){});
+  toast('👍 Vzaté na vedomie');render();renderToday();if($('eventModal').style.display==='flex'){if(c==='montaze'&&$('jbSteps')===null&&typeof jobStep!=='undefined'&&document.querySelector('#eventModalBody .jb-steps'))showJob(id,jobStep);else closeEvent()}
 }
 function renderHomeObh(){
   if(!me)return '';
@@ -1020,10 +1026,11 @@ function renderHomeObh(){
   if(!items.length)return '';
   return '<div class="td-h">🆕 Nové ('+items.length+')</div>'+items.map(function(x){
     var by=x.o.createdBy?findById('members',x.o.createdBy):null;
-    var asg=x.c==='montaze'&&(x.o.memberIds||[]).indexOf(me)>-1;
+    var asg2=(x.c==='montaze'||x.c==='obhliadky')&&(x.o.memberIds||[]).indexOf(me)>-1&&(x.o.createdBy||x.o.chg);
+    var asg=asg2&&x.c==='montaze';
     var act=asg?'showJob(\''+esc(x.o.id)+'\')':x.c==='ponuky'?'editPonuka(\''+esc(x.o.id)+'\')':'showEvent(\''+esc(x.c)+'\',\''+esc(x.o.id)+'\')';
     if(x.c==='ponuky')act="markRead('ponuky','"+esc(x.o.id)+"');"+act;
-    return '<div class="day-row" style="border-left-color:#7c3aed" onclick="'+act+'"><b>'+(x.o.chg?'🔄 Zmenené ':'🆕 ')+x.ic+' '+esc(x.tx)+'</b><span>'+(by&&!x.o.chg?'zadal '+esc(by.name||''):'')+(asg?(by&&!x.o.chg?' · ':'')+'čaká na tvoje potvrdenie'+(x.o.date?' · '+esc(fmtD(x.o.date))+(x.o.time?' '+esc(x.o.time):''):''):'')+'</span></div>';
+    return '<div class="day-row" style="border-left-color:#7c3aed" onclick="'+act+'"><b>'+(x.o.chg?'🔄 Zmenené ':'🆕 ')+x.ic+' '+esc(x.tx)+'</b><span>'+(by&&!x.o.chg?'zadal '+esc(by.name||''):'')+(asg2?(by&&!x.o.chg?' · ':'')+'čaká na tvoje potvrdenie'+(x.o.date?' · '+esc(fmtD(x.o.date))+(x.o.time?' '+esc(x.o.time):''):''):'')+'</span></div>';
   }).join('');
 }
 function readInfo(c,o){
@@ -1033,7 +1040,7 @@ function readInfo(c,o){
   var rd=ids.filter(function(m){return (o.readBy||[]).indexOf(m.id)>-1}).map(function(m){return esc(m.name||'')}),
       nr=ids.filter(function(m){return (o.readBy||[]).indexOf(m.id)<0}).map(function(m){return esc(m.name||'')});
   var ak='';
-  if(c==='montaze'&&(o.memberIds||[]).length){
+  if((c==='montaze'||c==='obhliadky')&&(o.memberIds||[]).length){
     var as=dbData.members.filter(function(m){return (o.memberIds||[]).indexOf(m.id)>-1});
     var ok=as.filter(function(m){return (o.ackBy||[]).indexOf(m.id)>-1}).map(function(m){return esc(m.name||'')}),no=as.filter(function(m){return (o.ackBy||[]).indexOf(m.id)<0}).map(function(m){return esc(m.name||'')});
     ak='<br><strong>👍 Potvrdili:</strong> '+(ok.join(', ')||'nikto')+(no.length&&o.stav!=='Hotová'?'<br><strong>⏳ Nepotvrdili:</strong> <span style="color:#dc2626">'+no.join(', ')+'</span>':'');
@@ -1687,6 +1694,7 @@ var HELP=[
 ['🔍 Čas a technik pri obhliadke',0,'Pri obhliadke nastav <b>čas</b> a (nepovinne) <b>technika</b>. Technik ju uvidí v Dnes, Moje úlohy a Kalendári s časom a adresou. Ostatné obhliadky technik nevidí.'],
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
+['👀 Kto čo videl',0,'Platí pre montáže, servisy, opravy, čistenia aj obhliadky: priradený člen tímu musí stlačiť 👍 Beriem na vedomie, zmena termínu/tímu ho vráti do 🔄 Zmenené. Pri obhliadke aj zákazke vidíš Prečítali/Potvrdili/Nepotvrdili. V Správach vidíš pri každej, kto ju prečítal a kto ešte nie (⏳ Ešte nečítali).'],
 ['🗺 Trasa dňa s obhliadkami',0,'Do Trasy dňa sa počítajú aj obhliadky priradené technikovi (🔍) – s časom, navigáciou a telefónom, aj v celej trase v Google mapách.'],
 ['🧹 Naplánované len 2 týždne vopred',0,'Moje úlohy, zoznam Montáž/Servis (predvolený filter „Najbližšie 2 týždne“) a prehľad Zákazky ukazujú len to, čo je do 14 dní alebo nemá dátum. Neskôr naplánované nájdeš v Kalendári, v Zákazky → „Naplánované neskôr“ alebo v zozname po zmene filtra na „všetko“.'],
 ['🏢 Veľkí klienti',0,'Pri obhliadke aj montáži je pole <b>Veľký klient</b> (VSE alebo „Iné…“ pre ďalšieho, ktorý sa zapamätá). Potom v <b>Práca → Veľkí klienti</b> vidíš obhliadky a montáže tohto klienta a pri každej tlačidlom (ťuk na riadok) zadáš faktúru: číslo, dátum a stav <b>Čaká na platbu / Zaplatené</b>. Červené = hotové bez faktúry alebo po splatnosti (30 dní). Hore sú počty a dole export CSV. Staré záznamy zaradíš cez Upraviť → Veľký klient.'],
@@ -1969,7 +1977,7 @@ function showEvent(type,id){
     var nmx=(o.clientName||o.name||'').trim().toLowerCase();
     if(!c&&nmx)c=dbData.clients.filter(function(x){return nm(x).toLowerCase()===nmx})[0]||null;
   }
-  var h=info+((type==='montaze')?waJobBtns(o):'')+(typeof stB!=='undefined'?stB:'')+(type==='montaze'?fotoSection(o):'')+(info?'<div class="modal-sep"></div>':'')+
+  var h=((type==='montaze'||type==='obhliadky')&&needsAck(o)?'<button class="action-btn" style="background:#16a34a" onclick="ackItem(\''+type+'\',\''+esc(o.id)+'\')">👍 Beriem na vedomie'+(o.chg?' (zmenený termín/tím)':'')+'</button>':'')+info+((type==='montaze')?waJobBtns(o):'')+(typeof stB!=='undefined'?stB:'')+(type==='montaze'?fotoSection(o):'')+(info?'<div class="modal-sep"></div>':'')+
     (c?clientDetail(c):(type==='obhliadky'?'':'<div class="modal-row">Karta klienta sa nenašla.</div>'))+
     '<div class="modal-actions">'+(lastDay?'<button class="btn-delete" style="background:#0d9488" onclick="openDay(\''+lastDay+'\')">⬅ Späť na deň</button>':'')+(typeof edO!=='undefined'?edO:'')+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
     '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
@@ -2499,7 +2507,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-05.34';
+var APP_VERSION='2026-11-05.35';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
