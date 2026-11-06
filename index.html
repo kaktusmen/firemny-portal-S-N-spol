@@ -2830,7 +2830,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-06.52';
+var APP_VERSION='2026-11-06.53';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2961,7 +2961,7 @@ function renderHomeMsgs(){
       dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('')+'</select>';
   }
   var un=dbData.spravy.filter(msgUnread).sort(function(a,b){return (b.ts||0)-(a.ts||0)});
-  return '<div class="td-h">💬 Nové správy pre '+esc(mm.name||'')+(un.length?' ('+un.length+')':'')+' <a onclick="changeMe()" style="font-weight:normal;font-size:.8rem;color:#2563eb;cursor:pointer">zmeniť</a>'+(needsLogin()?' <a onclick="askPassword(\''+esc(me)+'\')" style="font-weight:normal;font-size:.8rem;color:#b91c1c;cursor:pointer">🔒 zadať heslo správcu</a>':'')+'</div>'+
+  return '<div class="td-h" style="margin-bottom:2px">💬 Nové správy'+(un.length?' ('+un.length+')':'')+'</div><div style="font-size:.8rem;color:#64748b;margin:0 0 6px 2px">👤 Prihlásený: <b>'+esc(mm.name||'')+'</b> · <a onclick="changeMe()" style="color:#2563eb;cursor:pointer">zmeniť</a>'+(needsLogin()?' · <a onclick="askPassword(\''+esc(me)+'\')" style="color:#b91c1c;cursor:pointer">🔒 zadať heslo správcu</a>':'')+'</div>'+
     (un.length?un.map(function(x){
       var t=String(x.text||'');
       return '<div class="day-row" style="border-left-color:#7c3aed" onclick="showMsg(\''+esc(x.id)+'\')"><b>🆕 Od: '+esc(x.author||'Anonym')+'</b><span>'+esc(t.length>90?t.slice(0,90)+'…':t)+'</span></div>';
