@@ -2844,7 +2844,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-06.59';
+var APP_VERSION='2026-11-06.60';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2946,7 +2946,7 @@ function dayRow(e){
       var ph=jobPhone(m),mi=m.stav==='Hotová'?[]:jobMissing(m);
       var st0=!m.stav||m.stav==='Nová',stel=smsTel(m);
       q='<div class="dr-q" onclick="event.stopPropagation()">'+(needsAck(m)?'<a href="#" style="background:#16a34a;color:#fff" onclick="ackJob(\''+esc(e.id)+'\');return false">👍 Beriem na vedomie</a>':'')+(ph?'<a href="tel:'+esc(ph)+'">📞 Zavolať</a>':'')+
-        (stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(smsText(m))+'" onclick="markRem(\''+smsKey(m)+'\')">💬 Odoslať SMS</a>':'')+
+        (stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(smsText(m))+'" onclick="markRem(\''+smsKey(m)+'\')">💬 Odoslať SMS</a>':'')+(stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(SMS_TPL[1][1])+'">⏰ Meškáme</a>':'')+
         '<a href="#" onclick="showJob(\''+esc(e.id)+'\');return false">📋 '+(st0?'Vytvoriť zákazku':'Zákazka')+(mi.length?' · <span style="color:#dc2626">chýba '+mi.length+'</span>':'')+'</a></div>';
     }
   }
