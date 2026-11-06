@@ -2830,7 +2830,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-06.53';
+var APP_VERSION='2026-11-06.54';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2961,7 +2961,7 @@ function renderHomeMsgs(){
       dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('')+'</select>';
   }
   var un=dbData.spravy.filter(msgUnread).sort(function(a,b){return (b.ts||0)-(a.ts||0)});
-  return '<div class="td-h" style="margin-bottom:2px">💬 Nové správy'+(un.length?' ('+un.length+')':'')+'</div><div style="font-size:.8rem;color:#64748b;margin:0 0 6px 2px">👤 Prihlásený: <b>'+esc(mm.name||'')+'</b> · <a onclick="changeMe()" style="color:#2563eb;cursor:pointer">zmeniť</a>'+(needsLogin()?' · <a onclick="askPassword(\''+esc(me)+'\')" style="color:#b91c1c;cursor:pointer">🔒 zadať heslo správcu</a>':'')+'</div>'+
+  return '<div class="td-h">💬 Nové správy'+(un.length?' ('+un.length+')':'')+'</div>'+
     (un.length?un.map(function(x){
       var t=String(x.text||'');
       return '<div class="day-row" style="border-left-color:#7c3aed" onclick="showMsg(\''+esc(x.id)+'\')"><b>🆕 Od: '+esc(x.author||'Anonym')+'</b><span>'+esc(t.length>90?t.slice(0,90)+'…':t)+'</span></div>';
@@ -3039,8 +3039,13 @@ function leaveBlock(d0){
       sub:volnoWhen(v)+(now?' · práve ide':' · plánované')+(ok?'':' · čaká na schválenie'),time:''});
   }).join('');
 }
+function renderWho(){
+  var el=$('whoInfo');if(!el)return;
+  var mm=me?findById('members',me):null;
+  el.innerHTML=mm?'👤 Prihlásený: <b>'+esc(mm.name||'')+'</b> · <a onclick="changeMe()" style="color:#2563eb;cursor:pointer">zmeniť</a>'+(needsLogin()?' · <a onclick="askPassword(\''+esc(me)+'\')" style="color:#b91c1c;cursor:pointer">🔒 zadať heslo správcu</a>':''):'👤 Nikto nie je prihlásený';
+}
 function renderToday(){
-  var el=$('todayBox');if(!el)return;
+  var el=$('todayBox');if(!el)return;renderWho();
   var t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1));
   el.innerHTML=burnHome()+renderHomeObh()+[['Dnes',d0],['Zajtra',d1]].map(function(x){
     var ev=dayEvents(x[1]).filter(function(e){
@@ -3393,6 +3398,7 @@ window.onload=function(){
   <div id="app">
   <div class="status-bar" id="statusBar">
     <span id="st">🟡 Pripájam sa k databáze…</span><div id="bkInfo" class="admin-only" style="font-size:.75rem;margin-top:2px"></div>
+    <div id="whoInfo" style="flex-basis:100%;font-size:.8rem;font-weight:600"></div>
   </div>
 
   <h1 id="pageTitle">Dnes</h1>
