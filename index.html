@@ -2005,6 +2005,7 @@ var HELP=[
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
 ['🔥 Prehľad správcu',1,'<b>Viac → Prehľad</b> (a červený riadok na úvodnej stránke): <b>Čo horí</b> – zákazky/obhliadky bez technika, nepotvrdené, prekrývanie termínov technika, obhliadky bez ponuky, ponuky bez odpovede 7+ dní, faktúry veľkých klientov, neprečítané správy, stará záloha. <b>SMS na zajtra</b> – tlačidlo Ďalšia SMS otvorí SMS ďalšiemu klientovi. <b>Týždeň</b> – kto kedy pracuje, voľno. <b>Súhrn dňa</b> – čo technik stihol. <b>Čistenie</b> – klimatizácie 11+ mesiacov po montáži bez čistenia. Pri ukladaní termínu ťa appka upozorní, ak má technik v ±30 minútach inú úlohu.'],
+['📷 Fotky pri obhliadke',0,'V detaile obhliadky je sekcia <b>📷 Fotky</b> – ➕ Pridať fotku (až 8, appka ich sama zmenší). Vidia ich správcovia a technici priradení k obhliadke.'],
 ['🔎 Hľadanie, šablóny, mesiac',1,'<b>Hľadať</b> (Dnes alebo Viac): jedno pole prehľadá klientov, zákazky, obhliadky aj ponuky. <b>Nová zákazka</b> na Dnes má predvyplnený dnešný deň a naposledy zadaných technikov. Z obhliadky ide <b>Vytvoriť ponuku</b>, z ponuky <b>Vytvoriť zákazku</b> (predvyplní klienta). V zákazke je krok <b>Poznámka technika</b> a <b>💬 Šablóny SMS</b> (Meškáme, Sme na ceste…); šablóny sú aj v Správach. <b>Prehľad → Mesiac</b>: hotové zákazky, obhliadky a voľno na technika. <b>Záloha</b> je tlačidlo na Dnes aj vo Viac. Trasa dňa ukazuje správcovi predvolene všetkých technikov.'],
 ['🤝 Stretneme sa',0,'Správy → tlačidlo 🤝 Stretneme sa: vyberieš dátum, čas a miesto (U teba / V sklade / Iné…), text sa vloží do správy (bez príjemcu sa nastaví Všetci). Skontroluj a stlač Odoslať správu. Členovia ju uvidia ako Nové a vidíš, kto ju prečítal.'],
 ['👀 Kto čo videl',0,'Platí pre montáže, servisy, opravy, čistenia aj obhliadky: priradený člen tímu musí stlačiť 👍 Beriem na vedomie, zmena termínu/tímu ho vráti do 🔄 Zmenené. Pri obhliadke aj zákazke vidíš Prečítali/Potvrdili/Nepotvrdili. V Správach vidíš pri každej, kto ju prečítal a kto ešte nie (⏳ Ešte nečítali).'],
@@ -2298,10 +2299,10 @@ function showEvent(type,id){
   }
   var h=((type==='montaze'||type==='obhliadky')&&needsAck(o)?'<button class="action-btn" style="background:#16a34a" onclick="ackItem(\''+type+'\',\''+esc(o.id)+'\')">👍 Beriem na vedomie'+(o.chg?' (zmenený termín/tím)':'')+'</button>':'')+info+readInfo(type,o)+((type==='montaze')?waJobBtns(o):'')+(typeof stB!=='undefined'?stB:'')+(type==='montaze'?fotoSection(o):'')+(info?'<div class="modal-sep"></div>':'')+
     (c?clientDetail(c):(type==='obhliadky'?'':'<div class="modal-row">Karta klienta sa nenašla.</div>'))+
-    '<div class="modal-actions">'+(lastDay?'<button class="btn-delete" style="background:#0d9488" onclick="openDay(\''+lastDay+'\')">⬅ Späť na deň</button>':'')+(typeof edO!=='undefined'?edO:'')+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
+    (type==='obhliadky'?fotoSection(o):'')+'<div class="modal-actions">'+(lastDay?'<button class="btn-delete" style="background:#0d9488" onclick="openDay(\''+lastDay+'\')">⬅ Späť na deň</button>':'')+(typeof edO!=='undefined'?edO:'')+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
     '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
-  if(type==='montaze')fotoLoad(o.id);
+  if(type==='montaze'||type==='obhliadky')fotoLoad(o.id);
 }
 function closeEvent(){lastDay=null;$('eventModal').style.display='none'}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEvent()});
@@ -2830,7 +2831,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-06.54';
+var APP_VERSION='2026-11-06.55';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3197,8 +3198,8 @@ function fotoLoad(mid){
   });
 }
 function fotoCount(mid){
-  var n=(fotoCache[mid]||[]).length,m=findById('montaze',mid);if(m)m.fotoCount=n;
-  col('montaze').doc(mid).update({fotoCount:n}).catch(function(){});
+  var n=(fotoCache[mid]||[]).length,cn=findById('montaze',mid)?'montaze':'obhliadky',m=findById(cn,mid);if(m)m.fotoCount=n;
+  col(cn).doc(mid).update({fotoCount:n}).catch(function(){});
 }
 function fotoAdd(mid,inp){
   var files=Array.prototype.slice.call(inp.files||[]);inp.value='';
@@ -3215,7 +3216,7 @@ function fotoAdd(mid,inp){
         ref.set(o).catch(function(){toast('Fotku sa nepodarilo uložiť')});
         o.id=ref.id;arr.push(o);fotoRender(mid);
       }).catch(function(){toast('Fotku sa nepodarilo spracovať')});
-    },Promise.resolve()).then(function(){fotoCount(mid);logAct('pridal fotky','montaze',(findById('montaze',mid)||{}).title||'');toast('Fotky pridané')});
+    },Promise.resolve()).then(function(){fotoCount(mid);logAct('pridal fotky',findById('montaze',mid)?'montaze':'obhliadky',(findById('montaze',mid)||{}).title||onm(findById('obhliadky',mid)||{}));toast('Fotky pridané')});
   }).catch(function(){toast('Fotky sa nepodarilo načítať')});
 }
 function fotoDel(mid,id){
