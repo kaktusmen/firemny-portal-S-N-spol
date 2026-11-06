@@ -540,7 +540,7 @@ function setTab(t){
 function tabFor(id){
   if(navBack==='more')return 'more';
   if(navBack==='work')return 'work';
-  var m={spravySection:'msg',volnoSection:isAdmin()?'more':'leave',calendarSection:'cal',clientsSection:'clients',montazSection:'work',obhliadkaSection:'work',chladivoSection:'work',myTasksSection:'home',routeSection:'home'};
+  var m={spravySection:'msg',volnoSection:isAdmin()?'more':'leave',calendarSection:'cal',searchSection:'home',clientsSection:'more',montazSection:'work',obhliadkaSection:'work',chladivoSection:'work',myTasksSection:'home',routeSection:'home'};
   return m[id]||'more';
 }
 function openSection(id,title,from){
@@ -564,6 +564,7 @@ function goTab(t){
   else if(t==='work')showWork();
   else if(t==='more')showMore();
   else if(t==='cal')openSection('calendarSection','Kalendár udalostí','');
+  else if(t==='search')openSearch();
   else if(t==='clients')openSection('clientsSection','Klienti','');
   else if(t==='leave')openSection('volnoSection','Voľno','');
   else if(t==='msg')openSection('spravySection','Správy','');
@@ -2843,7 +2844,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-06.57';
+var APP_VERSION='2026-11-06.59';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3395,7 +3396,6 @@ window.onload=function(){
   <button data-t="cal" onclick="goTab('cal')"><span>📅</span>Kalendár</button>
   <button data-t="work" class="admin-only" onclick="goTab('work')"><span>🔧</span>Práca</button>
   <button data-t="leave" class="tech-only" onclick="goTab('leave')"><span>🏖</span>Voľno</button>
-  <button data-t="clients" class="admin-only" onclick="goTab('clients')"><span>👥</span>Klienti</button>
   <button data-t="msg" onclick="goTab('msg')" style="position:relative"><span>💬</span>Správy<i id="tabMsgBadge" style="display:none"></i></button>
   <button data-t="more" class="admin-only" onclick="goTab('more')" style="position:relative"><span>⋯</span>Viac<i id="tabBadge" style="display:none"></i></button>
 </nav>
@@ -3440,6 +3440,7 @@ window.onload=function(){
     <div class="menu-card admin-only" onclick="openSection('zakazkySection','Zákazky','more')">📋 Zákazky</div>
     <div class="menu-card admin-only" onclick="openSection('ponukySection','Cenové ponuky','more')">💶 Ponuky</div>
     <div class="menu-card admin-only" id="dueTile" onclick="openSection('dueSection','Servisné termíny','more')">🛠 Servisné termíny</div>
+    <div class="menu-card admin-only" onclick="openSection('clientsSection','Klienti','more')">👥 Klienti</div>
     <div class="menu-card admin-only" onclick="openSearch()">🔎 Hľadať</div>
     <div class="menu-card" onclick="openMapa()">🗺 Mapa klientov</div>
     <div class="menu-h">Tím</div>
