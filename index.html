@@ -868,7 +868,7 @@ function clearServis(p){
   showWarranty(p,null);
   if(p==='cl')$('clDevice').value='';else{$('rpDesc').value='';$('rpStav').value='Nová';$('rpPriorita').value='';$('rpWork').value='';$('rpParts').value='';$('rpPrice').value='';$('rpHours').value=''}
   $(p+'Sug').style.display='none';
-  $(p+'SaveBtn').innerText=p==='cl'?'Uložiť čistenie':'Uložiť opravu';$(p+'CancelBtn').style.display='none';
+  $(p+'SaveBtn').innerText='Vytvoriť zákazku';$(p+'CancelBtn').style.display='none';
   if($(p+'Steps')){svNew(p,false);svGo(p,1)}
 }
 function saveServis(p){
@@ -912,7 +912,7 @@ function editServis(id){
   showWarranty(p,m.clientId?findById('clients',m.clientId):null);
   if(p==='cl')$('clDevice').value=m.zariadenie||'';else{$('rpDesc').value=m.popis||'';$('rpStav').value=m.stav||'Nová';$('rpPriorita').value=m.urgent?'urgent':'';$('rpWork').value=m.praca||'';$('rpParts').value=m.diely||'';$('rpPrice').value=m.cena||'';$('rpHours').value=m.hodiny||''}
   sTeam[p]=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});renderServisChips(p);
-  $(p+'EditId').value=m.id;$(p+'SaveBtn').innerText='Aktualizovať';$(p+'CancelBtn').style.display='block';svGo(p,1);
+  $(p+'EditId').value=m.id;$(p+'SaveBtn').innerText='Aktualizovať zákazku';$(p+'CancelBtn').style.display='block';svGo(p,1);
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function toggleNewClient(on){
@@ -928,7 +928,7 @@ function clearMontaz(){
   ['mTitle','mClient','mDate','mTime','mMember'].forEach(function(i){$(i).value=''});
   renderDevices([emptyDev()]);sv('mBig','');
   mTeam=[];renderMontazChips();
-  $('editingMontazId').value='';$('montazSaveBtn').innerText='Uložiť montáž';$('montazCancelBtn').style.display='none';
+  $('editingMontazId').value='';$('montazSaveBtn').innerText='Vytvoriť zákazku';$('montazCancelBtn').style.display='none';
 }
 function editMontaz(id){
   markRead('montaze',id);
@@ -943,7 +943,7 @@ function editMontaz(id){
   mTeam=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});
   $('mMember').value='';renderMontazChips();
   showMS('montaz');mGo(1);
-  $('editingMontazId').value=m.id;$('montazSaveBtn').innerText='Aktualizovať montáž';$('montazCancelBtn').style.display='block';
+  $('editingMontazId').value=m.id;$('montazSaveBtn').innerText='Aktualizovať zákazku';$('montazCancelBtn').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function saveMontaz(){
@@ -2854,7 +2854,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-07.65';
+var APP_VERSION='2026-11-07.66';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3662,7 +3662,7 @@ window.onload=function(){
 <li><span class="b">Práca → Montáž / Servis → Montáž</span>.</li>
 <li><b>Krok 1 – Klient:</b> vyber existujúceho alebo ťukni <b>➕ Nový klient</b>. Ak je zákazka pre veľkého klienta (VSE…), vyber ho v poli <b>🏢 Veľký klient</b>.</li>
 <li>Ďalšie kroky: názov, zariadenia, tím (technik sa pridá hneď po výbere, ďalšieho tlačidlom <b>➕ Pridaj člena</b>), dátum a čas, a súhrn.</li>
-<li><b>Uložiť montáž</b> – technik ju dostane ako novú. Môžeš mu poslať WhatsApp.</li>
+<li><b>Vytvoriť zákazku</b> – technik ju dostane ako novú. Môžeš mu poslať WhatsApp.</li>
 </ol>
 </details>
 <details><summary>Čistenie a oprava</summary>
@@ -3901,7 +3901,7 @@ window.onload=function(){
       </div>
       <div class="mStep" data-s="5" style="grid-column:1/-1;display:none;gap:10px">
       <div id="mSummary"></div>
-      <button class="action-btn" id="montazSaveBtn" onclick="saveMontaz()">Uložiť montáž</button>
+      <button class="action-btn" id="montazSaveBtn" onclick="saveMontaz()">Vytvoriť zákazku</button>
       </div>
     </div>
     <div class="modal-actions" id="mNav" style="flex-wrap:wrap;margin:12px 0"><button class="btn-edit" id="mBack" style="background:#64748b" onclick="mGo(mStep-1)">‹ Späť</button><button class="btn-edit" id="mNext" style="background:#0d9488;flex:1" onclick="mGo(mStep+1)">Ďalej ›</button></div>
@@ -3947,7 +3947,7 @@ window.onload=function(){
     </div>
     <div class="svStep" data-p="cl" data-s="4" style="display:none">
     <div id="clSummary"></div>
-    <button class="action-btn" id="clSaveBtn" onclick="saveServis('cl')">Uložiť čistenie</button>
+    <button class="action-btn" id="clSaveBtn" onclick="saveServis('cl')">Vytvoriť zákazku</button>
     </div>
     <div class="modal-actions" style="flex-wrap:wrap;margin:12px 0"><button class="btn-edit" id="clBack" style="background:#64748b" onclick="svGo('cl',svS.cl-1)">‹ Späť</button><button class="btn-edit" id="clNext" style="background:#0d9488;flex:1" onclick="svGo('cl',svS.cl+1)">Ďalej ›</button></div>
     <button class="back-btn" id="clCancelBtn" style="display:none" onclick="clearServis('cl');showMS('choice')">✖ Zrušiť úpravu</button>
@@ -3998,7 +3998,7 @@ window.onload=function(){
     </div>
     <div class="svStep" data-p="rp" data-s="5" style="display:none">
     <div id="rpSummary"></div>
-    <button class="action-btn" id="rpSaveBtn" onclick="saveServis('rp')">Uložiť opravu</button>
+    <button class="action-btn" id="rpSaveBtn" onclick="saveServis('rp')">Vytvoriť zákazku</button>
     </div>
     <div class="modal-actions" style="flex-wrap:wrap;margin:12px 0"><button class="btn-edit" id="rpBack" style="background:#64748b" onclick="svGo('rp',svS.rp-1)">‹ Späť</button><button class="btn-edit" id="rpNext" style="background:#0d9488;flex:1" onclick="svGo('rp',svS.rp+1)">Ďalej ›</button></div>
     <button class="back-btn" id="rpCancelBtn" style="display:none" onclick="clearServis('rp');showMS('choice')">✖ Zrušiť úpravu</button>
