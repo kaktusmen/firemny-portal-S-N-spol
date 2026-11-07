@@ -289,6 +289,66 @@ html[data-theme=dark] .ph-tbl th,html[data-theme=dark] .ph-tbl td{border-color:#
 html[data-theme=dark] .ph-tbl th{background:#2c2c2e;color:#f2f2f7}
 html[data-theme=dark] .ph-j{background:#2c2c2e;color:#f2f2f7}
 html[data-theme=dark] .ph-lv{background:#164e63;color:#cffafe}
+
+/* ===== v.69 dizajn ===== */
+:root{--c-nova:#64748b;--c-plan:#2563eb;--c-run:#d97706;--c-done:#16a34a;--c-late:#dc2626;--brand:#f5a300;--gap:10px}
+#pageTitle{position:relative;padding-right:54px;min-height:44px;display:flex;align-items:center}
+#pageTitle::after{content:'';position:absolute;right:2px;top:50%;margin-top:-22px;width:44px;height:44px;border-radius:50%;background:#fff url(icon-180.png) center/cover;box-shadow:0 1px 6px rgba(0,0,0,.15)}
+/* stavy */
+.pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.74rem;font-weight:700;color:#fff;vertical-align:middle;line-height:1.5;margin-right:4px;white-space:nowrap}
+.pill.nova{background:var(--c-nova)}.pill.plan{background:var(--c-plan)}.pill.run{background:var(--c-run)}.pill.done{background:var(--c-done)}.pill.late{background:var(--c-late)}
+.item-card[data-st]{box-shadow:inset 5px 0 0 var(--c-nova),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
+.item-card[data-st=Naplánovaná]{box-shadow:inset 5px 0 0 var(--c-plan),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
+.item-card[data-st=Prebieha]{box-shadow:inset 5px 0 0 var(--c-run),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
+.item-card[data-st=Hotová]{box-shadow:inset 5px 0 0 var(--c-done),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
+.item-card[data-st=late]{box-shadow:inset 5px 0 0 var(--c-late),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
+.item-card[data-st] .item-card-title{padding-left:6px}
+.item-card-title .sub{display:block;font-weight:400;font-size:.85rem;color:#8e8e93;margin-top:2px}
+/* veľké tlačidlá akcií */
+.item-card-header{gap:10px}
+.item-card-header .btn-group{flex:1 1 100%;flex-wrap:wrap;gap:8px}
+.item-card-header .btn-group .btn-edit,.item-card-header .btn-group .btn-delete{flex:1 1 28%;min-height:44px;font-size:.92rem;display:inline-flex;align-items:center;justify-content:center;text-align:center}
+.item-card-header .btn-group .btn-delete{flex:0 0 auto;min-width:84px}
+.dr-q{display:flex;flex-wrap:wrap;gap:8px}
+.dr-q a{min-height:44px;display:inline-flex;align-items:center;justify-content:center;flex:1 1 40%;font-size:.95rem;border-radius:12px}
+/* časová os Dnes */
+.tl{border-left:3px solid rgba(245,163,0,.45);margin:6px 0 4px 8px;padding-left:14px}
+.tl .day-row{position:relative}
+.tl .day-row::before{content:'';position:absolute;left:-23px;top:16px;width:11px;height:11px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px var(--bg)}
+.today-box .tl .day-row::before{box-shadow:0 0 0 3px #fff}
+.tm{display:inline-block;background:var(--fill);border-radius:8px;padding:1px 8px;margin-right:6px;font-weight:700;font-size:.9rem;font-variant-numeric:tabular-nums}
+.day-row b{display:block}
+/* prázdne obrazovky */
+.empty-st{text-align:center;padding:26px 12px;color:#8e8e93}
+.empty-st .e-ic{font-size:2.6rem}
+.empty-st p{margin:6px 0 14px;font-size:1rem}
+.empty-st button{background:var(--primary);color:#fff;border:0;border-radius:14px;padding:14px 22px;font-size:1.05rem;font-weight:700;min-height:48px}
+/* jednotné medzery */
+.item-card,.day-row{margin-top:var(--gap)}
+.td-h{margin:16px 2px 6px}
+/* animácie */
+.modal-bg{transition:opacity .2s}
+.modal-box{animation:mbIn .22s ease}
+@keyframes mbIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.item-card,.day-row{animation:cdIn .25s ease both}
+@keyframes cdIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.menu-card,.btn-edit,.btn-delete,.action-btn,.dr-q a,#tabBar button{transition:transform .12s ease,background .15s}
+.btn-edit:active,.dr-q a:active,.action-btn:active{transform:scale(.96)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.day-row span.pill,.item-card span.pill{display:inline-block;margin-top:0;color:#fff;font-size:.74rem}
+/* tmavý režim */
+html[data-theme=dark]{--bg:#000;--brand:#f5a300}
+html[data-theme=dark] .tm{background:rgba(255,255,255,.14);color:#f2f2f7}
+html[data-theme=dark] .empty-st{color:#98989d}
+html[data-theme=dark] .item-card-title .sub{color:#98989d}
+html[data-theme=dark] .today-box .tl .day-row::before{box-shadow:0 0 0 3px #1c1c1e}
+html[data-theme=dark] .item-card .item-note,html[data-theme=dark] .day-row b,html[data-theme=dark] .day-row span{color:#e5e5ea}
+html[data-theme=dark] #pageTitle::after{box-shadow:0 0 0 2px #2c2c2e}
+html[data-theme=dark] .item-card[data-st]{box-shadow:inset 5px 0 0 var(--c-nova)}
+html[data-theme=dark] .item-card[data-st=Naplánovaná]{box-shadow:inset 5px 0 0 var(--c-plan)}
+html[data-theme=dark] .item-card[data-st=Prebieha]{box-shadow:inset 5px 0 0 var(--c-run)}
+html[data-theme=dark] .item-card[data-st=Hotová]{box-shadow:inset 5px 0 0 var(--c-done)}
+html[data-theme=dark] .item-card[data-st=late]{box-shadow:inset 5px 0 0 var(--c-late)}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -575,12 +635,21 @@ function goHome(){
 
 // ---------- Zobrazenie ----------
 var openCards={};
+function stavPill(m){
+  var st=m.stav||'Nová',late=st!=='Hotová'&&m.date&&m.date<ymd(new Date());
+  if(late)return '<span class="pill late">po termíne</span>';
+  var cl={'Nová':'nova','Naplánovaná':'plan','Prebieha':'run','Hotová':'done'}[st]||'nova';
+  return '<span class="pill '+cl+'">'+esc(st)+'</span>';
+}
+function stavKey(m){var st=m.stav||'Nová';return (st!=='Hotová'&&m.date&&m.date<ymd(new Date()))?'late':st}
+function techSub(m){return (m.memberNames&&m.memberNames.length)?'<span class="sub">👷 '+m.memberNames.map(esc).join(', ')+'</span>':''}
+function emptyBlock(txt,btn,act){return '<div class="empty-st"><div class="e-ic">📭</div><p>'+txt+'</p>'+(btn?'<button onclick="'+act+'">'+btn+'</button>':'')+'</div>'}
 function card(c,o,title,body,edit,collapsed,extra){
   var id=esc(o.id);
   if(isNewFor(c,o))title='🆕 '+title;
   body=(body||'')+readInfo(c,o);
   var tg=collapsed?' style="cursor:pointer" title="Kliknutím zobrazíte detaily" onclick="var n=this.parentNode.nextElementSibling;if(n){n.style.display=(n.style.display===\'none\'?\'block\':\'none\');openCards[\''+c+':'+id+'\']=(n.style.display===\'block\')}'+(c==='spravy'?';markReadMsg(\''+id+'\')':'')+'"':'';
-  return '<div class="item-card"><div class="item-card-header"><span class="item-card-title"'+tg+'>'+title+'</span><div class="btn-group">'+
+  return '<div class="item-card"'+(c==='montaze'?' data-st="'+stavKey(o)+'"':'')+'><div class="item-card-header"><span class="item-card-title"'+tg+'>'+title+'</span><div class="btn-group">'+
     (edit?'<button class="btn-edit" onclick="'+(edit===true?'editClient':edit)+'(\''+id+'\')">Upraviť</button>':'')+
     (extra||'')+'<button class="btn-delete" onclick="delItem(\''+c+'\',\''+id+'\')">Zmazať</button></div></div>'+
     (body?'<div class="item-note"'+(collapsed&&!openCards[c+':'+id]?' style="display:none"':'')+'>'+body+'</div>':'')+'</div>';
@@ -590,10 +659,10 @@ var V={
     return card('clients',c,'👤 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):''),
       clientInfo(c).map(function(r){return '<div class="modal-row"><strong>'+r[0]+':</strong> '+r[1]+'</div>'}).join('')+eventRows(c),true,true)}],
   montaze:['montazList','Žiadne montáže.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')},function(m){
-    if(m.kind)return card('montaze',m,lateTag(m)+srvIcon(m)+esc(m.title||'Servis')+(m.stav?' ['+esc(m.stav)+']':'')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')',
-      '<strong>Telefón:</strong> '+telA(m.telefon)+' | <strong>E-mail:</strong> '+mailA(m.email)+'\n'+'<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):'')+(m.memberNames&&m.memberNames.length?'\n<strong>👷 Na servis idú:</strong> '+m.memberNames.map(esc).join(', '):'')+oprBody(m),'editServis',false,listBtns(m));
-    return card('montaze',m,lateTag(m)+srvIcon(m)+esc(m.title||'Montáž')+(m.clientName?' – '+esc(m.clientName):'')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')',
-      (m.memberNames&&m.memberNames.length?'<strong>👷 Na montáž idú:</strong> '+m.memberNames.map(esc).join(', '):'')+(deviceSummary(m)?'\n<strong>Zariadenie:</strong> '+esc(deviceSummary(m)):'')+((m.stav&&m.stav!=='Nová')||m.urgent?'\n<strong>Stav:</strong> '+esc(m.stav||'Nová')+(m.urgent?' · 🚨 Urgentné':''):''),'editMontaz',false,listBtns(m))}],
+    if(m.kind)return card('montaze',m,stavPill(m)+srvIcon(m)+esc(m.title||'Servis')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')'+techSub(m),
+      '<strong>Telefón:</strong> '+telA(m.telefon)+' | <strong>E-mail:</strong> '+mailA(m.email)+'\n'+'<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):'')+oprBody(m),'editServis',true,listBtns(m));
+    return card('montaze',m,stavPill(m)+srvIcon(m)+esc(m.title||'Montáž')+(m.clientName?' – '+esc(m.clientName):'')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')'+techSub(m),
+      (deviceSummary(m)?'\n<strong>Zariadenie:</strong> '+esc(deviceSummary(m)):'')+(m.urgent?'\n🚨 Urgentné':''),'editMontaz',true,listBtns(m))}],
   members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
     return card('members',t,'🛡️ '+esc(t.name||''),'Tel: '+esc(t.telefon||'-')+'\nRola: '+(t.rola==='Správca'?'🛡 Správca'+(t.pwHash?' · 🔑 heslo nastavené':' · ⚠️ bez hesla'):'🔧 Technik'),'editMember')}],
   obhliadky:['obhliadkaList','Žiadne obhliadky.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')},function(o){
@@ -690,7 +759,13 @@ function render(){
         empty='Žiadny klient nezodpovedá hľadaniu.';
       }
     }
-    el.innerHTML=arr.sort(v[2]).map(v[3]).join('')||empty;
+    var emp=empty;
+    if(emp===v[1]){
+      if(c==='montaze')emp=emptyBlock('Zatiaľ tu nie je žiadna montáž ani servis.','➕ Nová zákazka',"openSection('montazSection','Montáž / Servis','work')");
+      else if(c==='obhliadky')emp=emptyBlock('Zatiaľ tu nie je žiadna obhliadka.','➕ Nová obhliadka',"openSection('obhliadkaSection','Nová obhliadka','work')");
+      else if(c==='clients')emp=emptyBlock('Zatiaľ tu nie sú žiadni klienti.','',''); 
+    }
+    el.innerHTML=arr.sort(v[2]).map(v[3]).join('')||emp;
   });
   renderCalendar();
   fillMontazSelects();
@@ -2059,6 +2134,7 @@ var HELP=[
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
 ['🔥 Prehľad správcu',1,'<b>Viac → Prehľad</b> (a červený riadok na úvodnej stránke): <b>Čo horí</b> – zákazky/obhliadky bez technika, nepotvrdené, prekrývanie termínov technika, obhliadky bez ponuky, ponuky bez odpovede 7+ dní, faktúry veľkých klientov, neprečítané správy, stará záloha. <b>SMS na zajtra</b> – tlačidlo Ďalšia SMS otvorí SMS ďalšiemu klientovi. <b>Týždeň</b> – kto kedy pracuje, voľno. <b>Súhrn dňa</b> – čo technik stihol. <b>Čistenie</b> – klimatizácie 11+ mesiacov po montáži bez čistenia. Pri ukladaní termínu ťa appka upozorní, ak má technik v ±30 minútach inú úlohu.'],
+['🎨 Nový vzhľad',1,'<b>Dnes</b> je časová os: čas, farebný pruh a štítok stavu (Nová, Naplánovaná, Prebieha, Hotová, <span style="color:#dc2626">po termíne</span>). Akčné tlačidlá pri zákazke sú väčšie. Karty v zoznamoch ukazujú len to hlavné, <b>ťuknutím na názov</b> sa rozbalia detaily. Hore vpravo je logo firmy.'],
 ['⏰ Po termíne, filter technika, export CSV',1,'<b>Po termíne:</b> nehotové zákazky z minulosti sú červeno v Prehľade (Čo horí) a technikovi v Moje úlohy. <b>Zoznam montáží a servisov</b> má filter podľa technika. <b>Prehľad → Mesiac → ⬇ Export</b> stiahne zákazky a obhliadky mesiaca do tabuľky (CSV) pre fakturáciu. <b>Protokol</b> (🧾) je pri každej zákazke.'],
 ['📋 Samostatné zoznamy',0,'Po uložení alebo úprave sa appka vráti do príslušného zoznamu. <b>Práca → 📋 Zoznam montáží a servisov</b> a <b>Práca → 📋 Zoznam obhliadok</b> (s hľadaním a filtrom). <b>🔧 Nová montáž / servis</b> a <b>🔍 Nová obhliadka</b> sú už len na zadávanie.'],
 ['✅ Vykonaná obhliadka',0,'V detaile obhliadky ťukni <b>✅ Vykonaná</b>. Obhliadka zmizne z Moje úlohy, Dnes a Trasy dňa a ostane len v zozname Obhliadky (aj v Kalendári). Cez <b>↩ Vrátiť do úloh</b> ju vrátiš späť. <b>Správy:</b> technik vidí len správy pre seba, pre všetkých a svoje odoslané.'],
@@ -2888,7 +2964,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-07.68';
+var APP_VERSION='2026-11-07.69';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -2994,7 +3070,7 @@ function dayRow(e){
         '<a href="#" onclick="showJob(\''+esc(e.id)+'\');return false">📋 '+(st0?'Vytvoriť zákazku':'Zákazka')+(mi.length?' · <span style="color:#dc2626">chýba '+mi.length+'</span>':'')+'</a></div>';
     }
   }
-  return '<div class="day-row" style="border-left-color:'+e.color+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+(e.time?esc(e.time)+' · ':'')+esc(e.text)+'</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+q+'</div>';
+  return '<div class="day-row" style="border-left-color:'+e.color+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+(e.time?'<i class="tm" style="font-style:normal">'+esc(e.time)+'</i>':'')+(e.type==='montaze'&&findById('montaze',e.id)?stavPill(findById('montaze',e.id)):'')+esc(e.text)+'</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+q+'</div>';
 }
 function msgForMe(x){
   var mm=me?findById('members',me):null;if(!mm||x.fromId===me)return false;
@@ -3116,7 +3192,7 @@ function renderToday(){
       if(e.type==='volno')return !!o&&o.memberId===me;
       return false;
     }).sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99')});
-    return '<div class="td-h">📅 '+x[0]+' · '+esc(fmtD(x[1]))+'</div>'+(ev.length?ev.map(dayRow).join(''):'<div class="td-none">Žiadne udalosti</div>');
+    return '<div class="td-h">📅 '+x[0]+' · '+esc(fmtD(x[1]))+'</div>'+(ev.length?'<div class="tl">'+ev.map(dayRow).join('')+'</div>':'<div class="td-none">Žiadne udalosti</div>');
   }).join('')+renderHomeMsgs()+leaveBlock(d0);
 }
 var me='';try{me=localStorage.getItem('portal_me')||''}catch(e){}
