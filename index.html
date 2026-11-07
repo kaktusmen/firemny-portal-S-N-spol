@@ -330,8 +330,6 @@ html[data-theme=dark] .ph-lv{background:#164e63;color:#cffafe}
 .modal-bg{transition:opacity .2s}
 .modal-box{animation:mbIn .22s ease}
 @keyframes mbIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
-.item-card,.day-row{animation:cdIn .25s ease both}
-@keyframes cdIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .menu-card,.btn-edit,.btn-delete,.action-btn,.dr-q a,#tabBar button{transition:transform .12s ease,background .15s}
 .btn-edit:active,.dr-q a:active,.action-btn:active{transform:scale(.96)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -2964,7 +2962,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-07.69';
+var APP_VERSION='2026-11-07.70';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
