@@ -273,9 +273,9 @@ html[data-theme=dark] #tabBar{background:rgba(29,29,31,.86)}
 .sec-fade{animation:secIn .22s ease}
 @keyframes secIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 .menu-h{font-size:.78rem;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.04em;margin:14px 4px 2px}
-#homeQuick{grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-#homeQuick .menu-card{flex-direction:column;min-height:0;height:auto;padding:10px 4px;font-size:.78rem;border-radius:16px;line-height:1.2;gap:2px;text-align:center}
-#homeQuick .qi{font-size:1.5rem;line-height:1.1;display:block}
+#homeQuick,#workMenu{grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+#homeQuick .menu-card,#workMenu .menu-card{flex-direction:column;min-height:0;height:auto;padding:10px 4px;font-size:.78rem;border-radius:16px;line-height:1.2;gap:2px;text-align:center}
+#homeQuick .qi,#workMenu .qi{font-size:1.5rem;line-height:1.1;display:block}
 .ph-tabs{display:flex;gap:6px;overflow-x:auto;margin:8px 0 10px}
 .ph-tabs button{flex:0 0 auto;width:auto;border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:999px;padding:7px 12px;font-size:.88rem;font-weight:600}
 .ph-tabs button.ph-on{background:#2563eb;color:#fff;border-color:#2563eb}
@@ -557,7 +557,7 @@ function openSection(id,title,from){
   window.scrollTo(0,0);
 }
 function showHome(){scr='home';navBack='';hideAll();updLeaveUi();$('todayBox').style.display='block';$('homeQuick').style.display='grid';$('pageTitle').innerText='Dnes';$('pageSub').style.display='none';$('statusBar').style.display='';setTab('home');window.scrollTo(0,0)}
-function showWork(){scr='work';navBack='';hideAll();$('workMenu').style.display='block';$('pageTitle').innerText='Práca';$('pageSub').style.display='none';$('statusBar').style.display='none';setTab('work');window.scrollTo(0,0)}
+function showWork(){scr='work';navBack='';hideAll();$('workMenu').style.display='grid';$('pageTitle').innerText='Práca';$('pageSub').style.display='none';$('statusBar').style.display='none';setTab('work');window.scrollTo(0,0)}
 function showMore(){scr='more';navBack='';hideAll();$('mainMenu').style.display='block';$('pageTitle').innerText='Viac';$('pageSub').style.display='none';$('statusBar').style.display='none';setTab('more');window.scrollTo(0,0)}
 function goTab(t){
   if(t==='home')showHome();
@@ -2854,7 +2854,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-07.63';
+var APP_VERSION='2026-11-07.64';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3438,13 +3438,13 @@ window.onload=function(){
     <div class="menu-card" onclick="openMapa()"><span class="qi">📍</span>Mapa klientov</div>
     <div class="menu-card admin-only" onclick="exportData()"><span class="qi">💾</span>Záloha</div>
   </div>
-  <div id="workMenu" class="menu-list" style="display:none">
-    <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis','work')">🔧 Nová montáž / servis</div>
-    <div class="menu-card" onclick="openSection('montazListSection','Zoznam montáží a servisov','work')">📋 Zoznam montáží a servisov</div>
-    <div class="menu-card" onclick="openSection('obhliadkaSection','Nová obhliadka','work')">🔍 Nová obhliadka</div>
-    <div class="menu-card" onclick="openSection('obhliadkyListSection','Zoznam obhliadok','work')">📋 Zoznam obhliadok</div>
-    <div class="menu-card" onclick="openSection('chladivoSection','Chladivo','work')">❄️ Chladivo</div>
-    <div class="menu-card admin-only" onclick="openSection('bigSection','Veľkí klienti','work')">🏢 Veľkí klienti</div>
+  <div id="workMenu" class="menu-grid" style="display:none">
+    <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis','work')"><span class="qi">🔧</span>Nová montáž / servis</div>
+    <div class="menu-card" onclick="openSection('obhliadkaSection','Nová obhliadka','work')"><span class="qi">🔍</span>Nová obhliadka</div>
+    <div class="menu-card" onclick="openSection('chladivoSection','Chladivo','work')"><span class="qi">❄️</span>Chladivo</div>
+    <div class="menu-card" onclick="openSection('montazListSection','Zoznam montáží a servisov','work')"><span class="qi">📋</span>Zoznam montáží a servisov</div>
+    <div class="menu-card" onclick="openSection('obhliadkyListSection','Zoznam obhliadok','work')"><span class="qi">📋</span>Zoznam obhliadok</div>
+    <div class="menu-card admin-only" onclick="openSection('bigSection','Veľkí klienti','work')"><span class="qi">🏢</span>Veľkí klienti</div>
   </div>
   <div id="mainMenu" class="menu-list" style="display:none">
     <div class="menu-h admin-only">Práca a prehľad</div>
