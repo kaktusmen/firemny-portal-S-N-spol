@@ -540,7 +540,7 @@ function setTab(t){
 function tabFor(id){
   if(navBack==='more')return 'more';
   if(navBack==='work')return 'work';
-  var m={spravySection:'msg',volnoSection:isAdmin()?'more':'leave',calendarSection:'cal',searchSection:'home',clientsSection:'more',montazSection:'work',obhliadkaSection:'work',chladivoSection:'work',myTasksSection:'home',routeSection:'home'};
+  var m={spravySection:'msg',volnoSection:isAdmin()?'more':'leave',calendarSection:'cal',searchSection:'home',clientsSection:'more',montazSection:'work',montazListSection:'work',obhliadkaSection:'work',chladivoSection:'work',myTasksSection:'home',routeSection:'home'};
   return m[id]||'more';
 }
 function openSection(id,title,from){
@@ -2026,6 +2026,7 @@ var HELP=[
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
 ['🔥 Prehľad správcu',1,'<b>Viac → Prehľad</b> (a červený riadok na úvodnej stránke): <b>Čo horí</b> – zákazky/obhliadky bez technika, nepotvrdené, prekrývanie termínov technika, obhliadky bez ponuky, ponuky bez odpovede 7+ dní, faktúry veľkých klientov, neprečítané správy, stará záloha. <b>SMS na zajtra</b> – tlačidlo Ďalšia SMS otvorí SMS ďalšiemu klientovi. <b>Týždeň</b> – kto kedy pracuje, voľno. <b>Súhrn dňa</b> – čo technik stihol. <b>Čistenie</b> – klimatizácie 11+ mesiacov po montáži bez čistenia. Pri ukladaní termínu ťa appka upozorní, ak má technik v ±30 minútach inú úlohu.'],
+['📋 Zoznam montáží a servisov',0,'Zoznam je samostatne: <b>Práca → 📋 Zoznam montáží a servisov</b> (s hľadaním a filtrom). <b>Práca → 🔧 Nová montáž / servis</b> je už len na zadávanie.'],
 ['✅ Vykonaná obhliadka',0,'V detaile obhliadky ťukni <b>✅ Vykonaná</b>. Obhliadka zmizne z Moje úlohy, Dnes a Trasy dňa a ostane len v zozname Obhliadky (aj v Kalendári). Cez <b>↩ Vrátiť do úloh</b> ju vrátiš späť. <b>Správy:</b> technik vidí len správy pre seba, pre všetkých a svoje odoslané.'],
 ['📷 Fotky pri obhliadke',0,'Fotky pridáš priamo vo formulári obhliadky (pri zadávaní aj pri úprave) a vidíš ich aj v detaile. V sekcii <b>📷 Fotky</b> – ➕ Pridať fotku (až 8, appka ich sama zmenší). Vidia ich správcovia a technici priradení k obhliadke.'],
 ['🔎 Hľadanie, šablóny, mesiac',1,'<b>Hľadať</b> (Dnes alebo Viac): jedno pole prehľadá klientov, zákazky, obhliadky aj ponuky. <b>Nová zákazka</b> na Dnes má predvyplnený dnešný deň a naposledy zadaných technikov. Z obhliadky ide <b>Vytvoriť ponuku</b>, z ponuky <b>Vytvoriť zákazku</b> (predvyplní klienta). V zákazke je krok <b>Poznámka technika</b> a <b>💬 Šablóny SMS</b> (Meškáme, Sme na ceste…); šablóny sú aj v Správach. <b>Prehľad → Mesiac</b>: hotové zákazky, obhliadky a voľno na technika. <b>Záloha</b> je tlačidlo na Dnes aj vo Viac. Trasa dňa ukazuje správcovi predvolene všetkých technikov.'],
@@ -2853,7 +2854,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-06.61';
+var APP_VERSION='2026-11-07.62';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3438,7 +3439,8 @@ window.onload=function(){
     <div class="menu-card admin-only" onclick="exportData()"><span class="qi">💾</span>Záloha</div>
   </div>
   <div id="workMenu" class="menu-list" style="display:none">
-    <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis','work')">🔧 Montáž / Servis</div>
+    <div class="menu-card" onclick="openSection('montazSection','Montáž / Servis','work')">🔧 Nová montáž / servis</div>
+    <div class="menu-card" onclick="openSection('montazListSection','Zoznam montáží a servisov','work')">📋 Zoznam montáží a servisov</div>
     <div class="menu-card" onclick="openSection('obhliadkaSection','Obhliadky','work')">🔍 Obhliadky</div>
     <div class="menu-card" onclick="openSection('chladivoSection','Chladivo','work')">❄️ Chladivo</div>
     <div class="menu-card admin-only" onclick="openSection('bigSection','Veľkí klienti','work')">🏢 Veľkí klienti</div>
@@ -4001,7 +4003,11 @@ window.onload=function(){
     <div class="modal-actions" style="flex-wrap:wrap;margin:12px 0"><button class="btn-edit" id="rpBack" style="background:#64748b" onclick="svGo('rp',svS.rp-1)">‹ Späť</button><button class="btn-edit" id="rpNext" style="background:#0d9488;flex:1" onclick="svGo('rp',svS.rp+1)">Ďalej ›</button></div>
     <button class="back-btn" id="rpCancelBtn" style="display:none" onclick="clearServis('rp');showMS('choice')">✖ Zrušiť úpravu</button>
   </div>
-    <h3>Zoznam montáží a servisov</h3>
+  </div>
+
+  <div id="montazListSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <h2>Zoznam montáží a servisov</h2>
     <input type="search" id="msSearch" placeholder="🔍 Hľadať podľa mena klienta, názvu alebo technika" oninput="render()" autocomplete="off">
     <select id="msFilter" onchange="render()"><option value="near">Najbližšie 2 týždne (nedokončené)</option><option value="">Zobraziť: všetko</option><option value="montaz">Len montáže</option><option value="cistenie">Len čistenia</option><option value="oprava">Všetky opravy</option><option value="oprava_open">Opravy – otvorené</option><option value="oprava_done">Opravy – hotové</option></select><div id="montazList">Načítavam...</div>
   </div>
