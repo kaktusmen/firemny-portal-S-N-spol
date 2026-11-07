@@ -2029,7 +2029,7 @@ var HELP=[
 ['📋 Samostatné zoznamy',0,'<b>Práca → 📋 Zoznam montáží a servisov</b> a <b>Práca → 📋 Zoznam obhliadok</b> (s hľadaním a filtrom). <b>🔧 Nová montáž / servis</b> a <b>🔍 Nová obhliadka</b> sú už len na zadávanie.'],
 ['✅ Vykonaná obhliadka',0,'V detaile obhliadky ťukni <b>✅ Vykonaná</b>. Obhliadka zmizne z Moje úlohy, Dnes a Trasy dňa a ostane len v zozname Obhliadky (aj v Kalendári). Cez <b>↩ Vrátiť do úloh</b> ju vrátiš späť. <b>Správy:</b> technik vidí len správy pre seba, pre všetkých a svoje odoslané.'],
 ['📷 Fotky pri obhliadke',0,'Fotky pridáš priamo vo formulári obhliadky (pri zadávaní aj pri úprave) a vidíš ich aj v detaile. V sekcii <b>📷 Fotky</b> – ➕ Pridať fotku (až 8, appka ich sama zmenší). Vidia ich správcovia a technici priradení k obhliadke.'],
-['🔎 Hľadanie, šablóny, mesiac',1,'<b>Hľadať</b> (Dnes alebo Viac): jedno pole prehľadá klientov, zákazky, obhliadky aj ponuky. <b>Nová zákazka</b> na Dnes má predvyplnený dnešný deň a naposledy zadaných technikov. Z obhliadky ide <b>Vytvoriť ponuku</b>, z ponuky <b>Vytvoriť zákazku</b> (predvyplní klienta). V zákazke je krok <b>Poznámka technika</b> a <b>💬 Šablóny SMS</b> (Meškáme, Sme na ceste…); šablóny sú aj v Správach. <b>Prehľad → Mesiac</b>: hotové zákazky, obhliadky a voľno na technika. <b>Záloha</b> je tlačidlo na Dnes aj vo Viac. Trasa dňa ukazuje správcovi predvolene všetkých technikov.'],
+['🔎 Hľadanie, šablóny, mesiac',1,'<b>Hľadať</b> (Dnes alebo Viac): jedno pole prehľadá klientov, zákazky, obhliadky aj ponuky. Z obhliadky ide <b>Vytvoriť ponuku</b>, z ponuky <b>Vytvoriť zákazku</b> (predvyplní klienta). V zákazke je krok <b>Poznámka technika</b> a <b>💬 Šablóny SMS</b> (Meškáme, Sme na ceste…); šablóny sú aj v Správach. <b>Prehľad → Mesiac</b>: hotové zákazky, obhliadky a voľno na technika. <b>Záloha</b> je tlačidlo na Dnes aj vo Viac. Trasa dňa ukazuje správcovi predvolene všetkých technikov.'],
 ['🤝 Stretneme sa',0,'Správy → tlačidlo 🤝 Stretneme sa: vyberieš dátum, čas a miesto (U teba / V sklade / Iné…), text sa vloží do správy (bez príjemcu sa nastaví Všetci). Skontroluj a stlač Odoslať správu. Členovia ju uvidia ako Nové a vidíš, kto ju prečítal.'],
 ['👀 Kto čo videl',0,'Platí pre montáže, servisy, opravy, čistenia aj obhliadky: priradený člen tímu musí stlačiť 👍 Beriem na vedomie, zmena termínu/tímu ho vráti do 🔄 Zmenené. Pri obhliadke aj zákazke vidíš Prečítali/Potvrdili/Nepotvrdili. V Správach vidíš pri každej, kto ju prečítal a kto ešte nie (⏳ Ešte nečítali).'],
 ['📖 Návod v aplikácii',0,'Dlaždica <b>📖 Návod</b> na úvodnej stránke (správca aj vo Viac): technik vidí návod len pre svoju prácu, správca všetko. Obsahuje postupy krok za krokom.'],
@@ -2854,7 +2854,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-07.64';
+var APP_VERSION='2026-11-07.65';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3433,7 +3433,6 @@ window.onload=function(){
   <div id="homeQuick" class="menu-grid">
     <div class="menu-card" onclick="openSection('myTasksSection','Moje úlohy')"><span class="qi">✅</span>Moje úlohy</div>
     <div class="menu-card" onclick="openSection('routeSection','Trasa dňa')"><span class="qi">🗺</span>Trasa dňa</div>
-    <div class="menu-card admin-only" onclick="quickJob()"><span class="qi">➕</span>Nová zákazka</div>
     <div class="menu-card admin-only" onclick="openSearch()"><span class="qi">🔎</span>Hľadať</div>
     <div class="menu-card" onclick="openMapa()"><span class="qi">📍</span>Mapa klientov</div>
     <div class="menu-card admin-only" onclick="exportData()"><span class="qi">💾</span>Záloha</div>
