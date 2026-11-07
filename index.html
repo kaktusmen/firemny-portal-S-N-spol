@@ -2132,6 +2132,7 @@ var HELP=[
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
 ['🔥 Prehľad správcu',1,'<b>Viac → Prehľad</b> (a červený riadok na úvodnej stránke): <b>Čo horí</b> – zákazky/obhliadky bez technika, nepotvrdené, prekrývanie termínov technika, obhliadky bez ponuky, ponuky bez odpovede 7+ dní, faktúry veľkých klientov, neprečítané správy, stará záloha. <b>SMS na zajtra</b> – tlačidlo Ďalšia SMS otvorí SMS ďalšiemu klientovi. <b>Týždeň</b> – kto kedy pracuje, voľno. <b>Súhrn dňa</b> – čo technik stihol. <b>Čistenie</b> – klimatizácie 11+ mesiacov po montáži bez čistenia. Pri ukladaní termínu ťa appka upozorní, ak má technik v ±30 minútach inú úlohu.'],
+['👆 Posúvanie prstom',1,'Potiahni prstom <b>sprava doľava</b> a prejdeš na ďalšiu kartu dole (Dnes → Kalendár → Práca → Správy → Viac). <b>Zľava doprava</b> ideš späť. V podsekciách (napr. Zoznam montáží) ťah zľava doprava funguje ako <b>‹ Späť</b>. V kalendári ťah mení mesiac.'],
 ['🎨 Nový vzhľad',1,'<b>Dnes</b> je časová os: čas, farebný pruh a štítok stavu (Nová, Naplánovaná, Prebieha, Hotová, <span style="color:#dc2626">po termíne</span>). Akčné tlačidlá pri zákazke sú väčšie. Karty v zoznamoch ukazujú len to hlavné, <b>ťuknutím na názov</b> sa rozbalia detaily. Hore vpravo je logo firmy.'],
 ['⏰ Po termíne, filter technika, export CSV',1,'<b>Po termíne:</b> nehotové zákazky z minulosti sú červeno v Prehľade (Čo horí) a technikovi v Moje úlohy. <b>Zoznam montáží a servisov</b> má filter podľa technika. <b>Prehľad → Mesiac → ⬇ Export</b> stiahne zákazky a obhliadky mesiaca do tabuľky (CSV) pre fakturáciu. <b>Protokol</b> (🧾) je pri každej zákazke.'],
 ['📋 Samostatné zoznamy',0,'Po uložení alebo úprave sa appka vráti do príslušného zoznamu. <b>Práca → 📋 Zoznam montáží a servisov</b> a <b>Práca → 📋 Zoznam obhliadok</b> (s hľadaním a filtrom). <b>🔧 Nová montáž / servis</b> a <b>🔍 Nová obhliadka</b> sú už len na zadávanie.'],
@@ -2962,7 +2963,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+smsBtn(m);
 }
-var APP_VERSION='2026-11-07.70';
+var APP_VERSION='2026-11-07.71';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3048,6 +3049,26 @@ function initGestures(){
   var cs=$('calendarSection'),x0=0,y0=0;
   cs.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
   cs.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;if(Math.abs(dx)>70&&Math.abs(dy)<45)changeMonth(dx<0?1:-1)},{passive:true});
+  var sx=0,sy=0,sok=false,st0=0;
+  document.addEventListener('touchstart',function(e){
+    var t=e.target,bad=t.closest&&t.closest('.sig-pad,.modal-bg,input,textarea,select,#calendarSection,#mapaSection,.leaflet-container,iframe');
+    for(var n=t;n&&n!==document.body&&!bad;n=n.parentElement){if(n.scrollWidth>n.clientWidth+4&&/(auto|scroll)/.test(getComputedStyle(n).overflowX)){bad=true}}
+    var em=$('eventModal');
+    sok=!bad&&!(em&&em.style.display==='flex')&&e.touches.length===1;
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;st0=Date.now();
+  },{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(!sok)return;sok=false;
+    var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<90||Math.abs(dy)>Math.abs(dx)*0.5||Date.now()-st0>700)return;
+    var sub=(scr==='sec'&&(navBack==='work'||navBack==='more'));
+    if(sub){if(dx>0)goHome();return}
+    var tabs=Array.prototype.filter.call(document.querySelectorAll('#tabBar button'),function(b){return b.offsetParent!==null}).map(function(b){return b.getAttribute('data-t')});
+    var cur=document.querySelector('#tabBar button.on'),i=cur?tabs.indexOf(cur.getAttribute('data-t')):-1;
+    if(i<0)return;
+    var j=dx<0?i+1:i-1;
+    if(j>=0&&j<tabs.length)goTab(tabs[j]);
+  },{passive:true});
   var py=0,pok=false;
   document.addEventListener('touchstart',function(e){
     pok=(window.scrollY||0)<=0&&!(e.target.closest&&e.target.closest('.sig-pad,.modal-bg,input,textarea,select'))&&$('eventModal').style.display!=='flex';
