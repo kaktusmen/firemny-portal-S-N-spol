@@ -2219,7 +2219,7 @@ function updLeaveUi(){
   var n=isAdmin()?dbData.volno.filter(function(x){return x.stav==='Žiadosť'}).length:0;
   var mb=$('tabMsgBadge');if(mb){var un=dbData.spravy.filter(msgUnread).length;mb.textContent=un;mb.style.display=un?'':'none'}
   var un2=isAdmin()?dbData.spravy.filter(msgUnread).length:0,mmb=$('menuMsgBadge');if(mmb){mmb.textContent=un2;mmb.style.display=un2?'':'none'}
-  n+=un2+((dbData.dopyty||[]).length);var b=$('tabBadge');if(b){b.textContent=n;b.style.display=n?'':'none'}
+  var nb=n+un2+((dbData.dopyty||[]).length);var b=$('tabBadge');if(b){b.textContent=nb;b.style.display=nb?'':'none'}
   var bn=$('leaveBanner');if(!bn)return;
   bn.innerHTML=n?'🏖 <b>'+n+(n===1?' žiadosť':(n<5?' žiadosti':' žiadostí'))+' o voľno čaká na schválenie</b> ›':'';
   bn.style.display=(n&&scr==='home')?'block':'none';
@@ -3139,7 +3139,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.80';
+var APP_VERSION='2026-11-08.81';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
