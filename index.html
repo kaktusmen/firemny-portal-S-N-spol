@@ -369,6 +369,7 @@ html[data-theme=dark] .item-card[data-st=late]{box-shadow:inset 5px 0 0 var(--c-
 #tabPlus b{font-size:2.3rem;font-weight:400;line-height:1;margin-top:-3px}
 #tabPlus:active{transform:scale(.92)}
 .mbadge{display:inline-block;min-width:20px;height:20px;border-radius:10px;background:#ff3b30;color:#fff;font-style:normal;font-size:.75rem;font-weight:700;line-height:20px;text-align:center;padding:0 5px;margin-left:6px}
+#qkSheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:95;display:none;align-items:flex-end;justify-content:center;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
 #fabSheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:95;display:none;align-items:flex-end;justify-content:center;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
 .fab-menu{display:flex;flex-direction:column;gap:10px;width:min(300px,100%)}
 .fab-menu button{background:#fff;color:#111;border:0;border-radius:16px;padding:16px;font-size:1.05rem;font-weight:700;text-align:left;box-shadow:0 3px 12px rgba(0,0,0,.25);min-height:54px}
@@ -1962,7 +1963,16 @@ function onLeave(memberId,ds,time){
 
 // ---------- Hľadanie ----------
 function fabUpd(){var sh=$('fabSheet');if(sh&&sh.style.display==='flex'&&scr==='')sh.style.display='none'}
-function fabToggle(){var s=$('fabSheet');s.style.display=s.style.display==='flex'?'none':'flex';
+function qkToggle(){var s=$('qkSheet');$('fabSheet').style.display='none';s.style.display=s.style.display==='flex'?'none':'flex'}
+function qkGo(w){
+  $('qkSheet').style.display='none';
+  if(w==='my')openSection('myTasksSection','Moje úlohy','');
+  else if(w==='rt')openSection('routeSection','Trasa dňa','');
+  else if(w==='sr')openSearch();
+  else if(w==='map')openMapa();
+  else if(w==='bk')exportData();
+}
+function fabToggle(){$('qkSheet').style.display='none';var s=$('fabSheet');s.style.display=s.style.display==='flex'?'none':'flex';
   var a=$('fabNewJob');if(a)a.style.display=isAdmin()?'':'none'}
 function fabGo(w){
   $('fabSheet').style.display='none';
@@ -2313,6 +2323,7 @@ function showLeave(id){
 }
 var HELP=[
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
+['⚡ Tlačidlo Rýchle a +',0,'<b>+</b> uprostred lišty otvorí vytváranie a zoznamy (nová montáž, obhliadka, chladivo, zoznamy, správa). <b>⚡ Rýchle</b> otvorí často používané veci: Moje úlohy, Trasa dňa, Hľadať, Mapa klientov a Záloha (Hľadať a Záloha len správca).'],
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
@@ -3162,7 +3173,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.85';
+var APP_VERSION='2026-11-08.86';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3824,10 +3835,18 @@ window.onload=function(){
   <button class="admin-only" onclick="fabGo('big')">🏢 Veľkí klienti</button>
   <button onclick="fabGo('msg')">💬 Nová správa</button>
 </div></div>
+<div id="qkSheet" onclick="if(event.target===this)this.style.display='none'"><div class="fab-menu">
+  <button onclick="qkGo('my')">✅ Moje úlohy</button>
+  <button onclick="qkGo('rt')">🗺 Trasa dňa</button>
+  <button class="admin-only" onclick="qkGo('sr')">🔎 Hľadať</button>
+  <button onclick="qkGo('map')">📍 Mapa klientov</button>
+  <button class="admin-only" onclick="qkGo('bk')">💾 Záloha</button>
+</div></div>
 <nav id="tabBar">
   <button data-t="home" class="on" onclick="goTab('home')"><span>🏠</span>Dnes</button>
   <button data-t="cal" onclick="goTab('cal')"><span>📅</span>Kalendár</button>
   <button id="tabPlus" onclick="fabToggle()" aria-label="Nové"><b>+</b></button>
+  <button id="tabQk" onclick="qkToggle()"><span>⚡</span>Rýchle</button>
   <button data-t="leave" class="tech-only" onclick="goTab('leave')"><span>🏖</span>Voľno</button>
   <button data-t="msg" class="tech-only" onclick="goTab('msg')" style="position:relative"><span>💬</span>Správy<i id="tabMsgBadge" style="display:none"></i></button>
   <button data-t="more" class="admin-only" onclick="goTab('more')" style="position:relative"><span>⋯</span>Viac<i id="tabBadge" style="display:none"></i></button>
