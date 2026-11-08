@@ -404,8 +404,87 @@ var LOGO_URI='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaQAAAGkCAMAAABJkqEH
 var CORE=['clients','montaze','members','obhliadky','spravy'];
 var COLS=CORE.concat(['ponuky','volno','chladivo']);
 var ALLC=COLS.concat(['nastavenia']);
-var dbData={clients:[],montaze:[],members:[],obhliadky:[],spravy:[],ponuky:[],volno:[],chladivo:[],nastavenia:[]};
+var dbData={dopyty:[],clients:[],montaze:[],members:[],obhliadky:[],spravy:[],ponuky:[],volno:[],chladivo:[],nastavenia:[]};
 var KEY=null;
+/* Minimal QR encoder (byte mode, ECC M, v1-20). Based on the standard algorithm. */
+var QR=(function(){
+  var ECC=[-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26];
+  var NB=[-1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17];
+  function rawMods(v){var r=(16*v+128)*v+64;if(v>=2){var n=Math.floor(v/7)+2;r-=(25*n-10)*n-55;if(v>=7)r-=36}return r}
+  function dataCw(v){return Math.floor(rawMods(v)/8)-ECC[v]*NB[v]}
+  // GF(256)
+  function mul(x,y){var z=0;for(var i=7;i>=0;i--){z=(z<<1)^((z>>>7)*0x11D);z^=((y>>>i)&1)*x}return z&255}
+  function rsDiv(deg){var r=[];for(var i=0;i<deg-1;i++)r.push(0);r.push(1);var root=1;for(i=0;i<deg;i++){for(var j=0;j<r.length;j++){r[j]=mul(r[j],root);if(j+1<r.length)r[j]^=r[j+1]}root=mul(root,2)}return r}
+  function rsRem(data,div){var r=div.map(function(){return 0});data.forEach(function(b){var f=b^r.shift();r.push(0);div.forEach(function(c,i){r[i]^=mul(c,f)})});return r}
+  function alignPos(v){if(v===1)return[];var n=Math.floor(v/7)+2,step=(v===32)?26:Math.ceil((v*4+4)/(n*2-2))*2,res=[6];for(var p=v*4+10;res.length<n;p-=step)res.splice(1,0,p);return res}
+  function make(text){
+    var bytes=[];var u=unescape(encodeURIComponent(text));for(var i=0;i<u.length;i++)bytes.push(u.charCodeAt(i));
+    var v=1;for(;v<=20;v++){var cc=v<10?8:16;if(4+cc+bytes.length*8<=dataCw(v)*8)break}
+    if(v>20)throw new Error('QR: text too long');
+    var bits=[];function put(val,len){for(var i=len-1;i>=0;i--)bits.push((val>>>i)&1)}
+    put(4,4);put(bytes.length,v<10?8:16);bytes.forEach(function(b){put(b,8)});
+    var cap=dataCw(v)*8;put(0,Math.min(4,cap-bits.length));put(0,(8-bits.length%8)%8);
+    for(var pad=0xEC;bits.length<cap;pad^=0xEC^0x11)put(pad,8);
+    var data=[];for(i=0;i<bits.length;i+=8){var x=0;for(var j=0;j<8;j++)x=(x<<1)|bits[i+j];data.push(x)}
+    // blocks
+    var nb=NB[v],ecl=ECC[v],raw=Math.floor(rawMods(v)/8),shortLen=Math.floor(raw/nb),nShort=nb-raw%nb,div=rsDiv(ecl),blocks=[],k=0;
+    for(i=0;i<nb;i++){var dl=shortLen-ecl+(i<nShort?0:1),d=data.slice(k,k+dl);k+=dl;var e=rsRem(d,div);if(i<nShort)d.push(0);blocks.push(d.concat(e))}
+    var all=[];for(i=0;i<blocks[0].length;i++)blocks.forEach(function(b,j){if(i!==shortLen-ecl||j>=nShort)all.push(b[i])});
+    // matrix
+    var size=v*4+17,m=[],fn=[];for(i=0;i<size;i++){m.push(new Array(size).fill(false));fn.push(new Array(size).fill(false))}
+    function setF(x,y,d){m[y][x]=d;fn[y][x]=true}
+    for(i=0;i<size;i++){setF(6,i,i%2===0);setF(i,6,i%2===0)}
+    function finder(cx,cy){for(var dy=-4;dy<=4;dy++)for(var dx=-4;dx<=4;dx++){var dist=Math.max(Math.abs(dx),Math.abs(dy)),xx=cx+dx,yy=cy+dy;if(xx>=0&&xx<size&&yy>=0&&yy<size)setF(xx,yy,dist!==2&&dist!==4)}}
+    finder(3,3);finder(size-4,3);finder(3,size-4);
+    var ap=alignPos(v),na=ap.length;
+    for(i=0;i<na;i++)for(j=0;j<na;j++){if((i===0&&j===0)||(i===0&&j===na-1)||(i===na-1&&j===0))continue;
+      for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++)setF(ap[i]+dx,ap[j]+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1)}
+    function fmt(mask){
+      var d=(0<<3)|mask; // ECC M = 00
+      var r=d;for(var i=0;i<10;i++)r=(r<<1)^((r>>>9)*0x537);
+      var b=((d<<10)|r)^0x5412;function g(i){return((b>>>i)&1)!==0}
+      for(i=0;i<=5;i++)setF(8,i,g(i));setF(8,7,g(6));setF(8,8,g(7));setF(7,8,g(8));for(i=9;i<15;i++)setF(14-i,8,g(i));
+      for(i=0;i<8;i++)setF(size-1-i,8,g(i));for(i=8;i<15;i++)setF(8,size-15+i,g(i));setF(8,size-8,true);
+    }
+    fmt(0);
+    if(v>=7){var r2=v;for(i=0;i<12;i++)r2=(r2<<1)^((r2>>>11)*0x1F25);var vb=(v<<12)|r2;
+      for(i=0;i<18;i++){var bit=((vb>>>i)&1)!==0,a=size-11+i%3,bb=Math.floor(i/3);setF(a,bb,bit);setF(bb,a,bit)}}
+    // codewords
+    var idx=0;
+    for(var right=size-1;right>=1;right-=2){if(right===6)right=5;
+      for(var vert=0;vert<size;vert++)for(j=0;j<2;j++){var xx=right-j,upward=((right+1)&2)===0,yy=upward?size-1-vert:vert;
+        if(!fn[yy][xx]&&idx<all.length*8){m[yy][xx]=((all[idx>>>3]>>>(7-(idx&7)))&1)!==0;idx++}}}
+    function applyMask(mask){for(var y=0;y<size;y++)for(var x=0;x<size;x++){var inv;switch(mask){case 0:inv=(x+y)%2===0;break;case 1:inv=y%2===0;break;case 2:inv=x%3===0;break;case 3:inv=(x+y)%3===0;break;case 4:inv=(Math.floor(x/3)+Math.floor(y/2))%2===0;break;case 5:inv=x*y%2+x*y%3===0;break;case 6:inv=(x*y%2+x*y%3)%2===0;break;default:inv=((x+y)%2+x*y%3)%2===0}
+      if(!fn[y][x]&&inv)m[y][x]=!m[y][x]}}
+    function penalty(){
+      var res=0,x,y;
+      function runs(get,n){var s=0;for(var a=0;a<n;a++){var run=1,col=get(a,0);for(var b=1;b<n;b++){var c=get(a,b);if(c===col){run++;if(run===5)s+=3;else if(run>5)s++}else{col=c;run=1}}}return s}
+      res+=runs(function(a,b){return m[a][b]},size)+runs(function(a,b){return m[b][a]},size);
+      for(y=0;y<size-1;y++)for(x=0;x<size-1;x++){var c=m[y][x];if(c===m[y][x+1]&&c===m[y+1][x]&&c===m[y+1][x+1])res+=3}
+      var pat=[1,0,1,1,1,0,1];
+      function fp(get){var s=0;for(var a=0;a<size;a++)for(var b=0;b<=size-7;b++){var ok=true;for(var t=0;t<7;t++)if((get(a,b+t)?1:0)!==pat[t]){ok=false;break}
+        if(ok){var l=true,r=true;for(t=1;t<=4;t++){if(b-t>=0&&get(a,b-t))l=false;if(b+6+t<size&&get(a,b+6+t))r=false}if(l||r)s+=40}}return s}
+      res+=fp(function(a,b){return m[a][b]})+fp(function(a,b){return m[b][a]});
+      var dark=0;m.forEach(function(row){row.forEach(function(c){if(c)dark++})});
+      res+=Math.floor(Math.abs(dark*20-size*size*10)/(size*size))*10;
+      return res;
+    }
+    var best=0,bp=1e9;
+    for(var mask=0;mask<8;mask++){applyMask(mask);fmt(mask);var p=penalty();if(p<bp){bp=p;best=mask}applyMask(mask)}
+    applyMask(best);fmt(best);
+    return m;
+  }
+  function svg(text,px){
+    var m=make(text),n=m.length,q=4,d='';
+    for(var y=0;y<n;y++)for(var x=0;x<n;x++)if(m[y][x])d+='M'+(x+q)+','+(y+q)+'h1v1h-1z';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+(n+2*q)+' '+(n+2*q)+'" width="'+px+'" height="'+px+'" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
+  }
+  return {make:make,svg:svg};
+})();
+
+
+var INBOX='inbox-1e3c920098581d86';
+function formUrl(q){var u=new URL('objednavka.html',location.href);u.hash='';u.search='';Object.keys(q).forEach(function(k){if(q[k])u.searchParams.set(k,q[k])});return u.href}
 var MONTHS=['Január','Február','Marec','Apríl','Máj','Jún','Júl','August','September','Október','November','December'];
 var viewYear=new Date().getFullYear(),viewMonth=new Date().getMonth();
 var CF=['Meno','Priezvisko','Adresa','Telefon','Email'];
@@ -522,7 +601,9 @@ function setStatus(ok){
   $('statusBar').className='status-bar'+((ok||off)?'':' bad');
   $('st').textContent=off?'📴 Offline – zmeny sa odošlú po pripojení':(ok?'🟢 Synchronizované s databázou':'🔴 Chyba pripojenia (skontrolujte internet alebo odkaz)');
 }
+function inboxCol(){return fs.collection('portals').doc(INBOX).collection('dopyty')}
 function start(){
+  try{inboxCol().onSnapshot(function(s){dbData.dopyty=s.docs.map(function(d){var o=d.data();o.id=d.id;return o}).sort(function(a,b){return (b.ts||0)-(a.ts||0)});render()},function(){})}catch(e){}
   ALLC.forEach(function(c){
     col(c).onSnapshot(function(s){
       dbData[c]=s.docs.map(function(d){var o=d.data();o.id=d.id;return o});
@@ -714,7 +795,7 @@ var V={
   obhliadky:['obhliadkaList','Žiadne obhliadky.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')},function(o){
     return card('obhliadky',o,'🔍 '+(o.big?'<span style="background:#7c3aed;color:#fff;border-radius:8px;padding:1px 7px;font-size:.8em">🏢 '+esc(o.big)+'</span> ':'')+esc(onm(o))+(o.obec?' – '+esc(o.obec):'')+(o.date?' ('+esc(o.date)+(o.time?' '+esc(o.time):'')+')':'')+(o.memberNames&&o.memberNames.length?' · 👷 '+esc(o.memberNames.join(', ')):'')+(o.klientId?' ✅':''),
       obhliadkaBody(o),'editObhliadka',true,
-      o.klientId?'':'<button class="btn-edit" style="background:#16a34a" onclick="convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>')}],
+      (isAdmin()?'<button class="btn-edit" style="background:#2563eb" onclick="ponukaFromObhId(\''+esc(o.id)+'\')">💶 Ponuka</button>':'')+(o.klientId?'':'<button class="btn-edit" style="background:#16a34a" onclick="convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>'))}],
   ponuky:['ponukyList','Žiadne cenové ponuky.',function(a,b){return (b.ts||0)-(a.ts||0)},function(p){
     return card('ponuky',p,'💶 '+esc(p.cislo||'')+' – '+esc((p.klient&&p.klient.meno)||'')+' ('+fmtEur(ponukaTotal(p).total)+')',
       '<strong>Dátum:</strong> '+esc(p.datum?fmtD(p.datum):'')+'\n'+(p.polozky||[]).map(function(x){return esc(x.n)+' – '+esc(x.q)+' '+esc(x.u)+' × '+fmtEur(num(x.c))}).join('\n')+(p.pozn?'\n<em>'+esc(p.pozn)+'</em>':''),
@@ -817,7 +898,7 @@ function render(){
   fillMontazSelects();
   fillSpravySelects();
   fillServisMembers();
-  renderToday();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();fillMsTech();renderDue();renderPrehlad();renderZakazky();fillObhMember();renderBig();renderPoloha();locTick();applyCustomOpts();renderRoute();renderHelp();fillPonukaSelects();applyRole();
+  renderToday();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();fillMsTech();renderDopyty();renderDue();renderPrehlad();renderZakazky();fillObhMember();renderBig();renderPoloha();locTick();applyCustomOpts();renderRoute();renderHelp();fillPonukaSelects();applyRole();
 }
 
 // ---------- Klienti ----------
@@ -1129,8 +1210,8 @@ function editMember(id){
   $('editingMemberId').value=t.id;$('memberSaveBtn').innerText='Aktualizovať člena';$('memberCancelBtn').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
-var OF=['Meno','Priezvisko','Obec','Adresa','Telefon','Email','Zariadenie','Budova','Stena','Vnutorna','Vonkajsia','Elektro','Odvod','Poznamky'];
-var OL=[['zariadenie','Typ zariadenia'],['budova','Typ budovy'],['stena','Stena'],['vnutorna','Vnútorná jednotka'],['vonkajsia','Vonkajšia jednotka'],['elektro','Elektrické pripojenie'],['odvod','Odvod kondenzátu'],['poznamky','Poznámky']];
+var OF=['Meno','Priezvisko','Obec','Adresa','Telefon','Email','Zariadenie','Kw','Budova','Stena','Vnutorna','Vonkajsia','Elektro','Odvod','Poznamky'];
+var OL=[['zariadenie','Typ zariadenia'],['kw','Výkon (kW)'],['budova','Typ budovy'],['stena','Stena'],['vnutorna','Vnútorná jednotka'],['vonkajsia','Vonkajšia jednotka'],['elektro','Elektrické pripojenie'],['odvod','Odvod kondenzátu'],['poznamky','Poznámky']];
 function onm(o){return o.name||((o.meno||'')+' '+(o.priezvisko||'')).trim()||'Obhliadka'}
 var oTeam=[];
 function renderObhChips(){
@@ -1677,7 +1758,7 @@ function printPonuka(id){
     '<h1>Cenová ponuka č. '+esc(p.cislo)+'</h1><div>Dátum: '+esc(p.datum?fmtD(p.datum):'')+'</div>'+
     '<p><b>Pre:</b> '+esc(k.meno||'')+'<br>'+esc(k.adresa||'')+'<br>'+esc([k.tel,k.email].filter(Boolean).join(' · '))+'</p>'+
     '<table><tr><th>#</th><th>Položka</th><th>Množstvo</th><th>Cena/MJ</th><th>Spolu</th></tr>'+rows+tot+'</table>'+
-    (p.pozn?'<p>'+esc(p.pozn).replace(/\n/g,'<br>')+'</p>':'')+(f.pata?'<p style="font-size:12px;color:#555">'+esc(f.pata).replace(/\n/g,'<br>')+'</p>':'')+
+    (p.pozn?'<p>'+esc(p.pozn).replace(/\n/g,'<br>')+'</p>':'')+'<div style="display:flex;gap:14px;align-items:center;margin-top:18px;border:1px solid #ccc;border-radius:10px;padding:10px;page-break-inside:avoid"><div>'+QR.svg(formUrl({p:p.cislo}),110)+'</div><div><b>Súhlasíte s ponukou?</b><br>Naskenujte QR kód telefónom a odošlite nám objednávku. Ozveme sa vám a dohodneme termín.</div></div>'+(f.pata?'<p style="font-size:12px;color:#555">'+esc(f.pata).replace(/\n/g,'<br>')+'</p>':'')+
     '<p class="np" style="margin-top:24px"><button onclick="window.print()" style="padding:10px 16px;font-size:15px">🖨 Tlačiť / Uložiť ako PDF</button></p></body></html>');
 }
 function sharePonuka(id){
@@ -1910,6 +1991,7 @@ function burnItems(){
     if(m.stav==='Hotová'||!m.date||m.date<d0||m.date>dp2||!smsTel(m)||remGet(smsKey(m)))return;
     out.push({k:'rem',c:'#2563eb',tx:'📞 Pripomeň klientovi: '+(m.clientName||m.title||'zákazka'),sub:fmtD(m.date)+(m.time?' '+m.time:'')+' · SMS ešte neodišla',act:"showEvent('montaze','"+m.id+"')"});
   });
+  (dbData.dopyty||[]).forEach(function(d){out.push({k:'dop',c:'#0ea5e9',tx:'📥 Nový dopyt: '+(d.meno||'zákazník')+' – '+dopTyp(d),sub:(d.obec||'')+(d.ts?' · '+new Date(d.ts).toLocaleDateString('sk-SK'):''),act:"openSection('dopytySection','Dopyty','more')"})});
   // bez technika
   dbData.montaze.forEach(function(m){if(m.stav!=='Hotová'&&m.date>=d0&&!(m.memberIds||[]).length)out.push({k:'nt',c:'#dc2626',tx:'👷 Bez technika: '+(m.title||m.clientName||'zákazka'),sub:fmtD(m.date)+(m.time?' '+m.time:''),act:"showEvent('montaze','"+m.id+"')"})});
   dbData.obhliadky.forEach(function(o){if(o.date>=d0&&!(o.memberIds||[]).length)out.push({k:'nt',c:'#dc2626',tx:'👷 Obhliadka bez technika: '+onm(o),sub:fmtD(o.date)+(o.time?' '+o.time:''),act:"showEvent('obhliadky','"+o.id+"')"})});
@@ -2047,7 +2129,7 @@ function phCsv(){
   });
   dbData.obhliadky.forEach(function(o){
     if(String(o.date||'').indexOf(pre)!==0)return;
-    rows.push([o.date,o.time||'','Obhliadka',onm(o),onm(o),[o.adresa,o.obec].filter(Boolean).join(', '),o.telefon||'',(o.memberNames||[]).join(', '),o.vykonana?'Vykonaná':'',o.big||'',o.faktStav||'',o.faktCislo||'','','']);
+    rows.push([o.date,o.time||'','Obhliadka',onm(o),onm(o),[o.adresa,o.obec].filter(Boolean).join(', '),o.telefon||'',(o.memberNames||[]).join(', '),o.vykonana?'Vykonaná':'',o.big||'',o.faktStav||'',o.faktCislo||'',[o.zariadenie,o.kw?'výkon '+o.kw+' kW':''].filter(Boolean).join(' · '),'']);
   });
   rows.sort(function(a,b){return (a[0]+a[1]).localeCompare(b[0]+b[1])}).forEach(function(r){r[0]=fmtD(r[0]);l.push(r.map(q).join(';'))});
   if(!rows.length){toast('V tomto mesiaci nie sú žiadne záznamy');return}
@@ -2137,7 +2219,7 @@ function updLeaveUi(){
   var n=isAdmin()?dbData.volno.filter(function(x){return x.stav==='Žiadosť'}).length:0;
   var mb=$('tabMsgBadge');if(mb){var un=dbData.spravy.filter(msgUnread).length;mb.textContent=un;mb.style.display=un?'':'none'}
   var un2=isAdmin()?dbData.spravy.filter(msgUnread).length:0,mmb=$('menuMsgBadge');if(mmb){mmb.textContent=un2;mmb.style.display=un2?'':'none'}
-  n+=un2;var b=$('tabBadge');if(b){b.textContent=n;b.style.display=n?'':'none'}
+  n+=un2+((dbData.dopyty||[]).length);var b=$('tabBadge');if(b){b.textContent=n;b.style.display=n?'':'none'}
   var bn=$('leaveBanner');if(!bn)return;
   bn.innerHTML=n?'🏖 <b>'+n+(n===1?' žiadosť':(n<5?' žiadosti':' žiadostí'))+' o voľno čaká na schválenie</b> ›':'';
   bn.style.display=(n&&scr==='home')?'block':'none';
@@ -2219,7 +2301,9 @@ var HELP=[
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
 ['🔥 Prehľad správcu',1,'<b>Viac → Prehľad</b> (a červený riadok na úvodnej stránke): <b>Čo horí</b> – zákazky/obhliadky bez technika, nepotvrdené, prekrývanie termínov technika, obhliadky bez ponuky, ponuky bez odpovede 7+ dní, faktúry veľkých klientov, neprečítané správy, stará záloha. <b>SMS na zajtra</b> – tlačidlo Ďalšia SMS otvorí SMS ďalšiemu klientovi. <b>Týždeň</b> – kto kedy pracuje, voľno. <b>Súhrn dňa</b> – čo technik stihol. <b>Čistenie</b> – klimatizácie 11+ mesiacov po montáži bez čistenia. Pri ukladaní termínu ťa appka upozorní, ak má technik v ±30 minútach inú úlohu.'],
-['⚡ Výkon zariadenia (kW)',1,'Pri každom zariadení v zákazke je políčko <b>Výkon (kW)</b>. Zobrazí sa v detaile zákazky, v protokole aj v exporte do tabuľky (stĺpec Zariadenia).'],
+['📥 QR kód a dopyty',1,'Vo <b>Viac → 📥 Dopyty</b> je tlačidlo <b>🏷 QR nálepky na tlač</b> – všeobecný QR kód (rovnaký pre všetkých, môžeš si ho dať vytlačiť naraz). Zákazník ho načíta, vyplní formulár a ty ho dostaneš vo <b>Viac → 📥 Dopyty</b> (aj v Prehľade). Z dopytu urobíš zákazku alebo obhliadku jedným ťuknutím a potom ho označíš <b>✔ Vybavené</b>. QR kód je aj na cenovej ponuke v PDF.'],
+['💶 Ponuka z obhliadky',1,'V <b>Zozname obhliadok</b> je pri každej obhliadke tlačidlo <b>💶 Ponuka</b> (len správca). Otvorí novú cenovú ponuku s vyplneným klientom.'],
+['⚡ Výkon zariadenia (kW)',1,'Pri každom zariadení v zákazke aj v obhliadke je políčko <b>Výkon (kW)</b>. Zobrazí sa v detaile zákazky, v protokole aj v exporte do tabuľky (stĺpec Zariadenia).'],
 ['✨ Novinky v.73',1,'Dolná lišta má teraz <b>Dnes, Kalendár, ➕ (stred), Viac</b>. <b>Práca</b> a <b>Správy</b> sú vo <b>Viac</b> (červené číslo pri Viac ukazuje nové správy). Technik má v lište Dnes, Kalendár, ➕, Voľno, Správy. <b>➕</b>: nová zákazka, obhliadka alebo správa. <b>Zákazka v 2 krokoch</b> (zariadenia sa pridajú tlačidlom, nie sú povinné). <b>🧭 Navigovať</b> otvorí mapu s adresou klienta. Na Dnes je <b>pozdrav</b> a lišta ďalších 6 dní (ťukni na deň). V Prehľade je <b>📞 Pripomeň klientovi</b> (SMS ešte neodišla) a v Mesiaci <b>graf podľa technika</b>. Hľadanie hľadá viac slov naraz. Technici majú <b>farebné kruhy s iniciálkami</b>. Po „Hotová“ sa zobrazí oslava.'],
 ['👆 Posúvanie prstom',1,'Potiahni prstom <b>sprava doľava</b> a prejdeš na ďalšiu kartu dole (Dnes → Kalendár → Práca → Správy → Viac). <b>Zľava doprava</b> ideš späť. V podsekciách (napr. Zoznam montáží) ťah zľava doprava funguje ako <b>‹ Späť</b>. V kalendári ťah mení mesiac. <b>Pri zadávaní zákazky</b> (kroky 1–5) ťah sprava doľava = Ďalej, zľava doprava = Späť o krok.'],
 ['🎨 Nový vzhľad',1,'<b>Dnes</b> je časová os: čas, farebný pruh a štítok stavu (Nová, Naplánovaná, Prebieha, Hotová, <span style="color:#dc2626">po termíne</span>). Akčné tlačidlá pri zákazke sú väčšie. Karty v zoznamoch ukazujú len to hlavné, <b>ťuknutím na názov</b> sa rozbalia detaily. Hore vpravo je logo firmy.'],
@@ -3055,7 +3139,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.76';
+var APP_VERSION='2026-11-08.80';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3297,6 +3381,60 @@ function renderWho(){
   var el=$('whoInfo');if(!el)return;
   var mm=me?findById('members',me):null;
   el.innerHTML=mm?'👤 Prihlásený: <b>'+esc(mm.name||'')+'</b> · <a onclick="changeMe()" style="color:#2563eb;cursor:pointer">zmeniť</a>'+(needsLogin()?' · <a onclick="askPassword(\''+esc(me)+'\')" style="color:#b91c1c;cursor:pointer">🔒 zadať heslo správcu</a>':''):'👤 Nikto nie je prihlásený';
+}
+
+function dopTyp(d){return d.typ||'Dopyt'}
+function renderDopyty(){
+  var el=$('dopytyList'),n=(dbData.dopyty||[]).length;
+  var mb=$('menuDopBadge');if(mb){mb.textContent=n;mb.style.display=n?'':'none'}
+  try{updLeaveUi()}catch(e){}
+  if(!el)return;
+  if(!n){el.innerHTML=emptyBlock('Zatiaľ nemáš žiadne nové dopyty. Keď zákazník vyplní formulár cez QR kód, objaví sa tu.','','')+'';return}
+  el.innerHTML=(dbData.dopyty||[]).map(function(d){
+    var id=esc(d.id),tel=String(d.tel||'').replace(/\s+/g,'');
+    return '<div class="item-card" data-st="Prebieha"><div class="item-card-header"><div class="item-card-title">📥 '+esc(d.meno||'(bez mena)')+' <span class="pill run">'+esc(dopTyp(d))+'</span>'+
+      '<span class="sub">'+esc(d.ts?new Date(d.ts).toLocaleString('sk-SK'):'')+'</span></div>'+
+      '<div class="item-card-body">'+(d.tel?'📞 '+esc(d.tel)+'\n':'')+(d.obec?'📍 '+esc(d.obec)+'\n':'')+(d.termin?'📅 Vhodný termín: '+esc(d.termin)+'\n':'')+(d.zar?'❄️ Zariadenie: '+esc(d.zar)+'\n':'')+(d.pCislo?'💶 Ponuka č. '+esc(d.pCislo)+'\n':'')+(d.popis?'📝 '+esc(d.popis):'')+'</div>'+
+      '<div class="btn-group">'+(tel?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" href="tel:'+esc(tel)+'">📞 Zavolať</a>':'')+
+      '<button class="btn-edit" onclick="dopZakazka(\''+id+'\')">➕ Zákazka</button>'+
+      '<button class="btn-edit" style="background:#7c3aed" onclick="dopObh(\''+id+'\')">🔍 Obhliadka</button>'+
+      (d.mId&&findById('montaze',d.mId)?'<button class="btn-edit" style="background:#475569" onclick="showEvent(\'montaze\',\''+esc(d.mId)+'\')">📋 Pôvodná zákazka</button>':'')+
+      '<button class="btn-delete" onclick="dopDone(\''+id+'\')">✔ Vybavené</button></div></div></div>';
+  }).join('');
+}
+function dopZakazka(id){
+  var d=(dbData.dopyty||[]).filter(function(x){return x.id===id})[0];if(!d)return;
+  var tel=String(d.tel||'').replace(/\s+/g,'');
+  var c=dbData.clients.filter(function(x){return tel&&String(x.telefon||'').replace(/\s+/g,'')===tel})[0];
+  openSection('montazSection','Montáž / Servis','more');showMS('montaz');clearMontaz();
+  if(c){$('mClient').value=c.id}
+  else{
+    toggleNewClient(true);
+    var pa=String(d.meno||'').trim().split(/\s+/),pr=pa.length>1?pa.pop():'';
+    $('mNMeno').value=pa.join(' ');$('mNPriez').value=pr;$('mNTel').value=d.tel||'';$('mNAdr').value=d.obec||'';
+  }
+  $('mTitle').value=(dopTyp(d)+(d.zar?' – '+d.zar:'')).slice(0,80);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(d.termin||''))$('mDate').value=d.termin;
+  try{var lt=JSON.parse(localStorage.getItem('lastTeam')||'[]');mTeam=lt.filter(function(x){return findById('members',x.id)});renderMontazChips()}catch(e){}
+  toast('Zákazka predvyplnená z dopytu. Po uložení dopyt označ ako vybavený.');
+}
+function dopObh(id){
+  var d=(dbData.dopyty||[]).filter(function(x){return x.id===id})[0];if(!d)return;
+  openSection('obhliadkaSection','Obhliadky','more');clearObhliadka();
+  var pa=String(d.meno||'').trim().split(/\s+/),pr=pa.length>1?pa.pop():'';
+  $('oMeno').value=pa.join(' ');$('oPriezvisko').value=pr;$('oTelefon').value=d.tel||'';$('oObec').value=d.obec||'';
+  $('oPoznamky').value=[dopTyp(d),d.popis,d.termin&&('Termín: '+d.termin)].filter(Boolean).join('\n');
+  toast('Obhliadka predvyplnená z dopytu. Po uložení dopyt označ ako vybavený.');
+}
+function dopDone(id){
+  if(!confirm('Označiť dopyt ako vybavený? Zmaže sa z tohto zoznamu.'))return;
+  inboxCol().doc(id).delete().then(function(){toast('Dopyt vybavený')}).catch(function(){toast('Nepodarilo sa zmazať')});
+}
+function qrSticker(){
+  var f=firmaData(),url=formUrl({}),qsvg=QR.svg(url,150);
+  var one='<div class="st"><div class="q">'+qsvg+'</div><div class="tx"><img src="'+LOGO_URI+'"><b>'+esc(f.nazov||'Úsporné klímy S&N')+'</b><span>Potrebujete servis alebo čistenie?</span><span class="s">Naskenujte QR kód mobilom a objednajte sa.</span>'+(f.tel?'<span class="t">📞 '+esc(f.tel)+'</span>':'')+'</div></div>';
+  var dl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(QR.svg(url,1000));
+  openDoc('<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR nálepky</title><style>body{font-family:Arial,sans-serif;margin:12px;color:#111}.g{display:grid;grid-template-columns:repeat(2,9cm);gap:0}.st{width:9cm;height:5.4cm;border:1px dashed #999;display:flex;align-items:center;gap:8px;padding:6px 8px;box-sizing:border-box;page-break-inside:avoid}.q svg{width:4.2cm;height:4.2cm;display:block}.tx{display:flex;flex-direction:column;gap:4px;font-size:12px;line-height:1.25}.tx img{height:32px;width:32px;object-fit:contain}.tx b{font-size:14px}.tx .s{color:#444}.tx .t{font-weight:bold;font-size:13px}.np{margin-bottom:10px}@media print{.np{display:none}body{margin:6mm}}</style></head><body><p class="np"><b>QR nálepky – všeobecný objednávkový formulár</b><br><button onclick="window.print()" style="padding:10px 16px;font-size:15px">🖨 Tlačiť / Uložiť ako PDF (8 nálepiek na A4)</button><br><br><a href="'+dl+'" download="qr-objednavka.svg">⬇ Stiahnuť samotný QR kód (SVG) – pre tlačiareň</a><br><small>Odkaz v QR: '+esc(url)+'</small></p><div class="g">'+one.repeat(8)+'</div></body></html>');
 }
 var wkSel='';
 function wkPick(d){wkSel=(wkSel===d?'':d);renderToday()}
@@ -3706,6 +3844,7 @@ window.onload=function(){
     <div class="menu-h admin-only">Práca a prehľad</div>
     <div class="menu-card admin-only" onclick="goTab('work')">🔧 Práca</div>
     <div class="menu-card admin-only" onclick="goTab('msg')">💬 Správy <i id="menuMsgBadge" class="mbadge" style="display:none"></i></div>
+    <div class="menu-card admin-only" onclick="openSection('dopytySection','Dopyty','more')">📥 Dopyty <i id="menuDopBadge" class="mbadge" style="display:none"></i></div>
     <div class="menu-card admin-only" onclick="openSection('prehladSection','Prehľad','more')">🔥 Prehľad</div>
     <div class="menu-card admin-only" onclick="openSection('zakazkySection','Zákazky','more')">📋 Zákazky</div>
     <div class="menu-card admin-only" onclick="openSection('ponukySection','Cenové ponuky','more')">💶 Ponuky</div>
@@ -3769,6 +3908,14 @@ window.onload=function(){
     <h2>Moje úlohy</h2>
     <select id="meSelect" onchange="setMe()"></select>
     <div id="myTasksList"></div>
+  </div>
+
+  <div id="dopytySection" class="section-content">
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <h2>📥 Dopyty od zákazníkov</h2>
+    <p style="color:#64748b;font-size:.9rem;margin-top:0">Sem prichádzajú objednávky z QR kódov na zariadeniach a z cenových ponúk.</p>
+    <button class="action-btn" style="background:#0ea5e9;margin-bottom:12px" onclick="qrSticker()">🏷 QR nálepky na tlač (všeobecné)</button>
+    <div id="dopytyList"></div>
   </div>
 
   <div id="ponukySection" class="section-content">
@@ -4291,6 +4438,7 @@ window.onload=function(){
       <div id="oTeamChips" class="chips full-width-input"></div>
       <select id="oBig" data-iny data-iny-ph="Názov veľkého klienta" class="full-width-input"><option value="">-- Náš zákazník (nie veľký klient) --</option><option>VSE</option></select>
       <select id="oZariadenie" data-iny><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Multisplit</option><option>Tepelné čerpadlo</option></select>
+      <input type="text" inputmode="decimal" id="oKw" placeholder="⚡ Výkon zariadenia (kW), napr. 2,5">
       <select id="oBudova" data-iny><option value="">-- Typ budovy --</option><option>Dom</option><option>Byt</option></select>
       <select id="oStena" data-iny><option value="">-- Stena --</option><option>Betón</option><option>Tehla</option></select>
       <select id="oVnutorna" data-iny><option value="">-- Miesto zabudovania vnútornej jednotky --</option><option>Obývacia izba</option><option>Kuchyňa</option><option>Detská izba</option></select>
