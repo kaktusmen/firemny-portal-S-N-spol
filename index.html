@@ -2327,7 +2327,7 @@ function showLeave(id){
 var HELP=[
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
 ['🧰 Tlačidlá Nástroje a +',0,'<b>+</b> uprostred lišty otvorí vytváranie a zoznamy (nová montáž, obhliadka, chladivo, zoznamy). <b>🧰 Nástroje</b> otvoria často používané veci: Moje úlohy, Trasa dňa, Hľadať, Mapa klientov, Voľno, Nová správa a Záloha (Hľadať a Záloha len správca).'],
-['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Pri každom voľne vidíš, či ho druhá strana už <b>prečítala</b> (✅ prečítané, alebo ⏳ nečítal: meno). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
+['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Pod správami je blok <b>📤 Moje odoslané správy</b> (7 dní): pri každej vidíš ✅ prečítané alebo ⏳ nečítal: meno. Pri každom voľne vidíš, či ho druhá strana už <b>prečítala</b> (✅ prečítané, alebo ⏳ nečítal: meno). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
 ['💬 WhatsApp',0,'Po odoslaní správy (aj v jej detaile v histórii) sú tlačidlá <b>💬 WhatsApp: Meno</b> pre príjemcov, ktorí majú v tíme zadaný telefón. Otvorí sa WhatsApp s hotovým textom, stačí dať Odoslať. Pri viacerých príjemcoch je navyše <b>👥 Všetkým naraz</b>: otvorí WhatsApp s textom a v zozname vyberieš skupinu alebo viac kontaktov (WhatsApp nedovolí poslať na viac čísel automaticky). To isté je v detaile zákazky aj hneď po uložení montáže, čistenia alebo opravy pre členov tímu zákazky. Telefónne čísla členov dopĺňa správca v Tíme.'],
@@ -3176,7 +3176,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.91';
+var APP_VERSION='2026-11-08.92';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3340,7 +3340,20 @@ function renderHomeMsgs(){
     (un.length?un.map(function(x){
       var t=String(x.text||'');
       return '<div class="day-row" style="border-left-color:#7c3aed" onclick="showMsg(\''+esc(x.id)+'\')"><b>🆕 Od: '+esc(x.author||'Anonym')+'</b><span>'+esc(t.length>90?t.slice(0,90)+'…':t)+'</span></div>';
-    }).join(''):'<div class="td-none">Žiadne nové správy</div>');
+    }).join(''):'<div class="td-none">Žiadne nové správy</div>')+sentBlock();
+}
+function sentBlock(){
+  if(!me)return '';
+  var lim=Date.now()-7*864e5;
+  var arr=dbData.spravy.filter(function(x){return x.fromId===me&&(x.ts||0)>lim}).sort(function(a,b){return (b.ts||0)-(a.ts||0)}).slice(0,5);
+  if(!arr.length)return '';
+  return '<div class="td-h">📤 Moje odoslané správy</div>'+arr.map(function(x){
+    var ids=(x.toIds||[]).indexOf('__all')>-1?dbData.members.map(function(m){return m.id}):(x.toIds||[]);
+    var nr=dbData.members.filter(function(m){return ids.indexOf(m.id)>-1&&m.id!==x.fromId&&(x.readBy||[]).indexOf(m.id)<0}).map(function(m){return m.name||''});
+    var st=nr.length?'⏳ nečítal: '+nr.join(', '):'✅ prečítané';
+    var t=String(x.text||'');
+    return '<div class="day-row" style="border-left-color:'+(nr.length?'#dc2626':'#16a34a')+'" onclick="showMsg(\''+esc(x.id)+'\')"><b>'+esc(x.toNames&&x.toNames.length?'Pre: '+x.toNames.join(', '):'Správa')+' · '+st+'</b><span>'+esc(t.length>90?t.slice(0,90)+'…':t)+'</span></div>';
+  }).join('');
 }
 function waNum(t){
   var d=String(t||'').replace(/[^\d+]/g,'');if(!d)return '';
