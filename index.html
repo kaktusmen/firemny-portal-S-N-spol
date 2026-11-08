@@ -273,6 +273,7 @@ html[data-theme=dark] #tabBar{background:rgba(29,29,31,.86)}
 .sec-fade{animation:secIn .22s ease}
 @keyframes secIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 .menu-h{font-size:.78rem;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.04em;margin:14px 4px 2px}
+#homeQuick{display:none!important}
 #homeQuick,#workMenu{grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 #homeQuick .menu-card,#workMenu .menu-card{flex-direction:column;min-height:0;height:auto;padding:10px 4px;font-size:.78rem;border-radius:16px;line-height:1.2;gap:2px;text-align:center}
 #homeQuick .qi,#workMenu .qi{font-size:1.5rem;line-height:1.1;display:block}
@@ -3174,7 +3175,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.88';
+var APP_VERSION='2026-11-08.89';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
