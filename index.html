@@ -3139,7 +3139,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.81';
+var APP_VERSION='2026-11-08.82';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3394,7 +3394,7 @@ function renderDopyty(){
     var id=esc(d.id),tel=String(d.tel||'').replace(/\s+/g,'');
     return '<div class="item-card" data-st="Prebieha"><div class="item-card-header"><div class="item-card-title">📥 '+esc(d.meno||'(bez mena)')+' <span class="pill run">'+esc(dopTyp(d))+'</span>'+
       '<span class="sub">'+esc(d.ts?new Date(d.ts).toLocaleString('sk-SK'):'')+'</span></div>'+
-      '<div class="item-card-body">'+(d.tel?'📞 '+esc(d.tel)+'\n':'')+(d.obec?'📍 '+esc(d.obec)+'\n':'')+(d.termin?'📅 Vhodný termín: '+esc(d.termin)+'\n':'')+(d.zar?'❄️ Zariadenie: '+esc(d.zar)+'\n':'')+(d.pCislo?'💶 Ponuka č. '+esc(d.pCislo)+'\n':'')+(d.popis?'📝 '+esc(d.popis):'')+'</div>'+
+      '<div class="item-card-body">'+(d.tel?'📞 '+esc(d.tel)+'\n':'')+(d.obec?'📍 '+esc(d.obec)+'\n':'')+(d.termin?'📅 Vhodný termín: '+esc(dopTermin(d.termin))+'\n':'')+(d.zar?'❄️ Zariadenie: '+esc(d.zar)+'\n':'')+(d.pCislo?'💶 Ponuka č. '+esc(d.pCislo)+'\n':'')+(d.popis?'📝 '+esc(d.popis):'')+'</div>'+
       '<div class="btn-group">'+(tel?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" href="tel:'+esc(tel)+'">📞 Zavolať</a>':'')+
       '<button class="btn-edit" onclick="dopZakazka(\''+id+'\')">➕ Zákazka</button>'+
       '<button class="btn-edit" style="background:#7c3aed" onclick="dopObh(\''+id+'\')">🔍 Obhliadka</button>'+
@@ -3402,6 +3402,7 @@ function renderDopyty(){
       '<button class="btn-delete" onclick="dopDone(\''+id+'\')">✔ Vybavené</button></div></div></div>';
   }).join('');
 }
+function dopTermin(t){var m=/^(\d{4}-\d{2}-\d{2})(?: (\d{2}:\d{2}))?$/.exec(t||'');return m?fmtD(m[1])+(m[2]?' o '+m[2]:''):(t||'')}
 function dopZakazka(id){
   var d=(dbData.dopyty||[]).filter(function(x){return x.id===id})[0];if(!d)return;
   var tel=String(d.tel||'').replace(/\s+/g,'');
@@ -3414,7 +3415,7 @@ function dopZakazka(id){
     $('mNMeno').value=pa.join(' ');$('mNPriez').value=pr;$('mNTel').value=d.tel||'';$('mNAdr').value=d.obec||'';
   }
   $('mTitle').value=(dopTyp(d)+(d.zar?' – '+d.zar:'')).slice(0,80);
-  if(/^\d{4}-\d{2}-\d{2}$/.test(d.termin||''))$('mDate').value=d.termin;
+  var tm=/^(\d{4}-\d{2}-\d{2})(?: (\d{2}:\d{2}))?$/.exec(d.termin||'');if(tm){$('mDate').value=tm[1];if(tm[2])$('mTime').value=tm[2]}
   try{var lt=JSON.parse(localStorage.getItem('lastTeam')||'[]');mTeam=lt.filter(function(x){return findById('members',x.id)});renderMontazChips()}catch(e){}
   toast('Zákazka predvyplnená z dopytu. Po uložení dopyt označ ako vybavený.');
 }
@@ -3423,7 +3424,7 @@ function dopObh(id){
   openSection('obhliadkaSection','Obhliadky','more');clearObhliadka();
   var pa=String(d.meno||'').trim().split(/\s+/),pr=pa.length>1?pa.pop():'';
   $('oMeno').value=pa.join(' ');$('oPriezvisko').value=pr;$('oTelefon').value=d.tel||'';$('oObec').value=d.obec||'';
-  $('oPoznamky').value=[dopTyp(d),d.popis,d.termin&&('Termín: '+d.termin)].filter(Boolean).join('\n');
+  $('oPoznamky').value=[dopTyp(d),d.popis,d.termin&&('Termín: '+dopTermin(d.termin))].filter(Boolean).join('\n');
   toast('Obhliadka predvyplnená z dopytu. Po uložení dopyt označ ako vybavený.');
 }
 function dopDone(id){
