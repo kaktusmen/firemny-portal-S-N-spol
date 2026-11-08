@@ -677,13 +677,27 @@ function shareLink(){
 
 // ---------- Záloha ----------
 function exportData(){
-  var a=document.createElement('a');
-  a.href='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(dbData));
-  a.download='portal_zaloha.json';document.body.appendChild(a);a.click();a.remove();
-  try{localStorage.setItem('portal_last_backup',String(Date.now()))}catch(e){}
-  var mm=me?findById('members',me):null;
-  col('nastavenia').doc('zaloha').set({ts:Date.now(),by:mm?mm.name:''},{merge:true}).catch(function(){toast('Zálohu sa nepodarilo zapísať do spoločného stavu, skús znova online')});
-  updateBackupInfo();
+  var json=JSON.stringify(dbData),fn='portal_zaloha_'+ymd(new Date())+'.json';
+  function done(){
+    try{localStorage.setItem('portal_last_backup',String(Date.now()))}catch(e){}
+    var mm=me?findById('members',me):null;
+    col('nastavenia').doc('zaloha').set({ts:Date.now(),by:mm?mm.name:''},{merge:true}).catch(function(){toast('Zálohu sa nepodarilo zapísať do spoločného stavu, skús znova online')});
+    updateBackupInfo();
+  }
+  function dl(){
+    var u=URL.createObjectURL(new Blob([json],{type:'application/json'})),a=document.createElement('a');
+    a.href=u;a.download=fn;document.body.appendChild(a);a.click();
+    setTimeout(function(){a.remove();URL.revokeObjectURL(u)},4000);
+    toast('Záloha stiahnutá: '+fn);done();
+  }
+  try{
+    var file=new File([json],fn,{type:'application/json'});
+    if('ontouchstart' in window&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:'Záloha Firemný Portál'}).then(function(){toast('Záloha uložená');done()}).catch(function(e){if(e&&e.name==='AbortError')return;dl()});
+      return;
+    }
+  }catch(e){}
+  dl();
 }
 function importData(ev){
   var inp=ev.target,f=inp.files[0];if(!f)return;
@@ -2301,6 +2315,7 @@ var HELP=[
 ['📋 Zákazky (prehľad)',0,'<b>Viac → Zákazky</b>: všetky montáže, servisy, opravy a čistenia na jednom mieste s filtrom (Aktívne, Dnes, Chýbajú údaje, Prebieha, Hotové). Ťuk otvorí zákazku. Na úvodnej stránke je pri termíne aj 💬 Odoslať SMS (kedy prídeme) a 📋 Vytvoriť zákazku.'],
 ['👍 Potvrdenie zákazky technikom',0,'Nová alebo zmenená zákazka (dátum, čas, tím) sa technikovi ukáže v bloku 🆕 Nové / 🔄 Zmenené, kým nestlačí <b>👍 Beriem na vedomie</b> (na Dnes alebo v zákazke). Správca vidí kto potvrdil v zozname a v <b>Viac → Zákazky → ⏳ Čaká na potvrdenie</b>, s hodinami od zadania a tlačidlom WhatsApp pripomienky. Zvýraznené červeno, keď je termín dnes alebo zajtra.'],
 ['🔥 Prehľad správcu',1,'<b>Viac → Prehľad</b> (a červený riadok na úvodnej stránke): <b>Čo horí</b> – zákazky/obhliadky bez technika, nepotvrdené, prekrývanie termínov technika, obhliadky bez ponuky, ponuky bez odpovede 7+ dní, faktúry veľkých klientov, neprečítané správy, stará záloha. <b>SMS na zajtra</b> – tlačidlo Ďalšia SMS otvorí SMS ďalšiemu klientovi. <b>Týždeň</b> – kto kedy pracuje, voľno. <b>Súhrn dňa</b> – čo technik stihol. <b>Čistenie</b> – klimatizácie 11+ mesiacov po montáži bez čistenia. Pri ukladaní termínu ťa appka upozorní, ak má technik v ±30 minútach inú úlohu.'],
+['💾 Záloha',1,'<b>Stiahnuť zálohu</b> teraz súbor <b>uloží</b> (v telefóne sa otvorí ponuka „Uložiť do súborov“, v počítači sa stiahne do Stiahnutých) namiesto zobrazenia textu.'],
 ['📥 QR kód a dopyty',1,'Vo <b>Viac → 📥 Dopyty</b> je tlačidlo <b>🏷 QR nálepky na tlač</b> – všeobecný QR kód (rovnaký pre všetkých, môžeš si ho dať vytlačiť naraz). Zákazník ho načíta, vyplní formulár a ty ho dostaneš vo <b>Viac → 📥 Dopyty</b> (aj v Prehľade). Z dopytu urobíš zákazku alebo obhliadku jedným ťuknutím a potom ho označíš <b>✔ Vybavené</b>. QR kód je aj na cenovej ponuke v PDF.'],
 ['💶 Ponuka z obhliadky',1,'V <b>Zozname obhliadok</b> je pri každej obhliadke tlačidlo <b>💶 Ponuka</b> (len správca). Otvorí novú cenovú ponuku s vyplneným klientom.'],
 ['⚡ Výkon zariadenia (kW)',1,'Pri každom zariadení v zákazke aj v obhliadke je políčko <b>Výkon (kW)</b>. Zobrazí sa v detaile zákazky, v protokole aj v exporte do tabuľky (stĺpec Zariadenia).'],
@@ -3139,7 +3154,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.82';
+var APP_VERSION='2026-11-08.83';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
