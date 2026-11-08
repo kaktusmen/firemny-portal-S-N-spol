@@ -3055,7 +3055,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.75';
+var APP_VERSION='2026-11-08.76';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4132,7 +4132,7 @@ window.onload=function(){
       <div class="modal-actions" style="margin:0"><button type="button" class="btn-edit" id="mModeOld" onclick="toggleNewClient(false)">👤 Existujúci klient</button><button type="button" class="btn-edit" id="mModeNew" onclick="toggleNewClient(true)">➕ Nový klient</button></div>
       <select id="mClient" class="full-width-input"></select>
       <label class="fl full-width-input">🏢 Veľký klient (pre koho je zákazka)</label>
-      <select id="mBig" data-iny data-iny-ph="Názov veľkého klienta" class="full-width-input"><option value="">-- Bežný zákazník (nie veľký klient) --</option><option>VSE</option></select>
+      <select id="mBig" data-iny data-iny-ph="Názov veľkého klienta" class="full-width-input"><option value="">-- Náš zákazník (nie veľký klient) --</option><option>VSE</option></select>
       <div id="mNewBox" class="full-width-input" style="display:none;border:1.5px solid #0d9488;border-radius:14px;padding:10px">
         <b>👤 Nový klient</b>
         <input type="text" id="mNMeno" placeholder="Meno" class="full-width-input">
@@ -4289,7 +4289,7 @@ window.onload=function(){
       <select id="oMember" class="full-width-input" onchange="addObhMember(true)"></select>
       <button type="button" id="oAddBtn" class="full-width-input" style="display:none" onclick="showMemSel('o')">➕ Pridaj technika</button>
       <div id="oTeamChips" class="chips full-width-input"></div>
-      <select id="oBig" data-iny data-iny-ph="Názov veľkého klienta" class="full-width-input"><option value="">-- Bežný zákazník (nie veľký klient) --</option><option>VSE</option></select>
+      <select id="oBig" data-iny data-iny-ph="Názov veľkého klienta" class="full-width-input"><option value="">-- Náš zákazník (nie veľký klient) --</option><option>VSE</option></select>
       <select id="oZariadenie" data-iny><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Multisplit</option><option>Tepelné čerpadlo</option></select>
       <select id="oBudova" data-iny><option value="">-- Typ budovy --</option><option>Dom</option><option>Byt</option></select>
       <select id="oStena" data-iny><option value="">-- Stena --</option><option>Betón</option><option>Tehla</option></select>
