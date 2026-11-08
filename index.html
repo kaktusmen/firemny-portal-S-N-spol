@@ -2326,7 +2326,7 @@ function showLeave(id){
 var HELP=[
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
 ['⚡ Tlačidlo Rýchle a +',0,'<b>+</b> uprostred lišty otvorí vytváranie a zoznamy (nová montáž, obhliadka, chladivo, zoznamy, správa). <b>⚡ Rýchle</b> otvorí často používané veci: Moje úlohy, Trasa dňa, Hľadať, Mapa klientov, Voľno a Záloha (Hľadať a Záloha len správca).'],
-['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
+['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). Pri každom voľne vidíš, či ho druhá strana už <b>prečítala</b> (✅ prečítané, alebo ⏳ nečítal: meno). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
 ['👤 Nový klient pri montáži',0,'Vo formulári montáže ťukni na <b>➕ Nový klient</b>, vyplň meno, telefón a adresu. Klient sa uloží spolu s montážou a hneď sa k nej priradí. Ak telefón už existuje, apka ponúkne existujúceho klienta.'],
 ['💬 WhatsApp',0,'Po odoslaní správy (aj v jej detaile v histórii) sú tlačidlá <b>💬 WhatsApp: Meno</b> pre príjemcov, ktorí majú v tíme zadaný telefón. Otvorí sa WhatsApp s hotovým textom, stačí dať Odoslať. Pri viacerých príjemcoch je navyše <b>👥 Všetkým naraz</b>: otvorí WhatsApp s textom a v zozname vyberieš skupinu alebo viac kontaktov (WhatsApp nedovolí poslať na viac čísel automaticky). To isté je v detaile zákazky aj hneď po uložení montáže, čistenia alebo opravy pre členov tímu zákazky. Telefónne čísla členov dopĺňa správca v Tíme.'],
@@ -3175,7 +3175,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.89';
+var APP_VERSION='2026-11-08.90';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3401,6 +3401,13 @@ function toggleAwake(){
   awakeUi();awakeApply();toast(awakeOn?'Obrazovka nezhasne, kým je appka otvorená':'Obrazovka sa môže zhasnúť');
 }
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){awakeApply();locPing(false)}});
+function volnoRead(v){
+  if(!v.createdBy)return '';
+  var ids=dbData.members.filter(function(m){return (m.rola==='Správca'&&m.id!==v.memberId)||(v.stav!=='Žiadosť'&&m.id===v.memberId)});
+  if(!ids.length)return '';
+  var nr=ids.filter(function(m){return (v.readBy||[]).indexOf(m.id)<0}).map(function(m){return m.name||''});
+  return nr.length?' · ⏳ nečítal: '+nr.join(', '):' · ✅ prečítané';
+}
 function leaveBlock(d0){
   var arr=dbData.volno.filter(function(v){
     if(v.stav==='Zamietnuté'||(v.do||v.od)<d0)return false;
@@ -3410,7 +3417,7 @@ function leaveBlock(d0){
   return '<div class="td-h">🏖 Voľno tímu</div>'+arr.map(function(v){
     var now=v.od<=d0,ok=v.stav==='Schválené';
     return dayRow({type:'volno',id:v.id,color:ok?'#0891b2':'#67b7c9',text:(ok?'':'⏳ ')+(v.memberName||''),
-      sub:volnoWhen(v)+(now?' · práve ide':' · plánované')+(ok?'':' · čaká na schválenie'),time:''});
+      sub:volnoWhen(v)+(now?' · práve ide':' · plánované')+(ok?'':' · čaká na schválenie')+volnoRead(v),time:''});
   }).join('');
 }
 function renderWho(){
