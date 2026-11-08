@@ -755,7 +755,7 @@ function openSection(id,title,from){
   if(id==='routeSection'&&$('rtDate'))$('rtDate').value=ymd(new Date());
   window.scrollTo(0,0);
 }
-function showHome(){scr='home';navBack='';hideAll();updLeaveUi();$('todayBox').style.display='block';$('homeQuick').style.display='grid';$('pageTitle').innerText='Dnes';$('pageSub').style.display='none';$('statusBar').style.display='';setTab('home');window.scrollTo(0,0)}
+function showHome(){scr='home';navBack='';hideAll();updLeaveUi();$('todayBox').style.display='block';$('pageTitle').innerText='Dnes';$('pageSub').style.display='none';$('statusBar').style.display='';setTab('home');window.scrollTo(0,0)}
 function showWork(){scr='work';navBack='';hideAll();$('workMenu').style.display='grid';$('pageTitle').innerText='Práca';$('pageSub').style.display='none';$('statusBar').style.display='none';setTab('work');window.scrollTo(0,0)}
 function showMore(){scr='more';navBack='';hideAll();$('mainMenu').style.display='block';$('pageTitle').innerText='Viac';$('pageSub').style.display='none';$('statusBar').style.display='none';setTab('more');window.scrollTo(0,0)}
 function goTab(t){
@@ -3173,7 +3173,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.86';
+var APP_VERSION='2026-11-08.87';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
