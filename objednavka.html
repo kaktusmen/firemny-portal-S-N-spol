@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Objednávka – Úsporné klímy S&amp;N</title>
+<style>
+:root{--bg:#f2f4f7;--card:#fff;--tx:#1c1c1e;--mut:#6b7280;--ac:#0d9488;--bd:#d9dde3}
+@media (prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--tx:#f2f2f7;--mut:#9ca3af;--bd:#3a3a3c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.45 -apple-system,system-ui,Segoe UI,Roboto,sans-serif}
+.w{max-width:520px;margin:0 auto;padding:16px}
+.hd{display:flex;align-items:center;gap:12px;margin:6px 0 14px}
+.hd img{width:56px;height:56px;border-radius:14px;background:#fff}
+.hd b{display:block;font-size:1.15rem}.hd span{color:var(--mut);font-size:.9rem}
+.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+h1{font-size:1.35rem;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 14px}
+.zar{background:rgba(13,148,136,.12);border:1px solid var(--ac);border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:.95rem}
+label{display:block;font-size:.85rem;color:var(--mut);margin:12px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:13px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx)}
+textarea{min-height:100px;resize:vertical}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:.85rem;color:var(--mut)}
+.chk input{width:22px;height:22px;flex:none;margin-top:2px}
+button{width:100%;margin-top:16px;background:var(--ac);color:#fff;border:0;border-radius:14px;padding:16px;font-size:1.1rem;font-weight:700}
+button:disabled{opacity:.6}
+.hp{position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden}
+.err{color:#dc2626;font-size:.9rem;margin-top:10px;min-height:1.2em}
+.ok{text-align:center;padding:30px 10px}.ok .e{font-size:4rem}
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="hd"><img src="icon-192.png" alt=""><div><b>Úsporné klímy S&amp;N</b><span>Objednávka servisu a služieb</span></div></div>
+  <div class="card" id="box">
+    <h1 id="h">Objednajte sa</h1>
+    <p class="sub" id="sub">Vyplňte údaje a my sa vám ozveme.</p>
+    <div class="zar" id="zar" style="display:none"></div>
+    <form id="f" onsubmit="return send(event)" autocomplete="on">
+      <label for="typ">Čo potrebujete?</label>
+      <select id="typ"></select>
+      <label for="meno">Meno a priezvisko *</label>
+      <input id="meno" maxlength="80" autocomplete="name" required>
+      <label for="tel">Telefón *</label>
+      <input id="tel" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" required>
+      <label for="obec">Obec a adresa *</label>
+      <input id="obec" maxlength="140" autocomplete="street-address" required>
+      <label for="termin">Kedy vám to vyhovuje? (nepovinné)</label>
+      <input id="termin" maxlength="80" placeholder="napr. pracovné dni po 16:00">
+      <label for="popis">Poznámka / popis problému (nepovinné)</label>
+      <textarea id="popis" maxlength="1000"></textarea>
+      <div class="hp"><label>Web</label><input id="web" tabindex="-1" autocomplete="off"></div>
+      <label class="chk"><input type="checkbox" id="gdpr" required><span>Súhlasím so spracovaním uvedených údajov na účely vybavenia mojej požiadavky.</span></label>
+      <div class="err" id="err"></div>
+      <button id="btn" type="submit">Odoslať objednávku</button>
+    </form>
+  </div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+var INBOX='inbox-1e3c920098581d86';
+firebase.initializeApp({apiKey:"AIzaSyC45Ejbu35zL2OHjAMEPp62ZzQuBT3UwL0",authDomain:"sandnspol.firebaseapp.com",projectId:"sandnspol",storageBucket:"sandnspol.firebasestorage.app",messagingSenderId:"624016618780",appId:"1:624016618780:web:619e0bbb945e479b6576d9"});
+var db=firebase.firestore();
+function $(i){return document.getElementById(i)}
+var q=new URLSearchParams(location.search),M=(q.get('m')||'').slice(0,40),Z=(q.get('z')||'').slice(0,120),P=(q.get('p')||'').slice(0,30);
+var T=P?['Súhlasím s cenovou ponukou č. '+P+' – objednávam']:(Z||M?['Servis / pravidelná kontrola','Oprava – porucha','Čistenie klimatizácie','Iné']:['Nová klimatizácia – cenová ponuka','Servis / pravidelná kontrola','Oprava – porucha','Čistenie klimatizácie','Iné']);
+$('typ').innerHTML=T.map(function(t){return '<option>'+t.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</option>'}).join('');
+if(P){$('h').textContent='Objednávka podľa cenovej ponuky';$('sub').textContent='Ďakujeme za záujem. Zadajte kontakt a ozveme sa vám.'}
+if(Z){var z=$('zar');z.style.display='block';z.textContent='❄️ Vaše zariadenie: '+Z}
+function send(e){
+  e.preventDefault();
+  var err=$('err');err.textContent='';
+  if($('web').value)return false;
+  var last=0;try{last=+localStorage.getItem('ob_last')||0}catch(x){}
+  if(Date.now()-last<60000){err.textContent='Objednávku ste práve odoslali. Skúste to o minútu.';return false}
+  var d={ts:Date.now(),typ:$('typ').value.slice(0,80),meno:$('meno').value.trim().slice(0,80),tel:$('tel').value.trim().slice(0,30),obec:$('obec').value.trim().slice(0,140),termin:$('termin').value.trim().slice(0,80),popis:$('popis').value.trim().slice(0,1000),mId:M,zar:Z,pCislo:P,src:P?'ponuka':(M?'qr':'web')};
+  if(!d.meno||!d.tel||!d.obec){err.textContent='Vyplňte meno, telefón a adresu.';return false}
+  if(d.tel.replace(/\D/g,'').length<7){err.textContent='Skontrolujte telefónne číslo.';return false}
+  var b=$('btn');b.disabled=true;b.textContent='Odosielam…';
+  db.collection('portals').doc(INBOX).collection('dopyty').add(d).then(function(){
+    try{localStorage.setItem('ob_last',String(Date.now()))}catch(x){}
+    $('box').innerHTML='<div class="ok"><div class="e">✅</div><h1>Ďakujeme!</h1><p class="sub">Vašu objednávku sme prijali. Čoskoro sa vám ozveme.</p></div>';
+  }).catch(function(){b.disabled=false;b.textContent='Odoslať objednávku';err.textContent='Odoslanie sa nepodarilo. Skontrolujte internet a skúste znova.'});
+  return false;
+}
+</script>
+</body>
+</html>
