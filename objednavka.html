@@ -24,6 +24,7 @@ textarea{min-height:100px;resize:vertical}
 .chk input{width:22px;height:22px;flex:none;margin-top:2px}
 button{width:100%;margin-top:16px;background:var(--ac);color:#fff;border:0;border-radius:14px;padding:16px;font-size:1.1rem;font-weight:700}
 button:disabled{opacity:.6}
+.dt{display:flex;gap:10px}.dt input{flex:1;min-width:0;-webkit-appearance:none;appearance:none;min-height:50px}
 .hp{position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden}
 .err{color:#dc2626;font-size:.9rem;margin-top:10px;min-height:1.2em}
 .ok{text-align:center;padding:30px 10px}.ok .e{font-size:4rem}
@@ -45,8 +46,8 @@ button:disabled{opacity:.6}
       <input id="tel" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" required>
       <label for="obec">Obec a adresa *</label>
       <input id="obec" maxlength="140" autocomplete="street-address" required>
-      <label for="termin">Kedy vám to vyhovuje? (nepovinné)</label>
-      <input id="termin" maxlength="80" placeholder="napr. pracovné dni po 16:00">
+      <label>Kedy vám to vyhovuje? (nepovinné)</label>
+      <div class="dt"><input id="tdate" type="date" aria-label="Dátum"><input id="ttime" type="time" aria-label="Čas"></div>
       <label for="popis">Poznámka / popis problému (nepovinné)</label>
       <textarea id="popis" maxlength="1000"></textarea>
       <div class="hp"><label>Web</label><input id="web" tabindex="-1" autocomplete="off"></div>
@@ -74,7 +75,7 @@ function send(e){
   if($('web').value)return false;
   var last=0;try{last=+localStorage.getItem('ob_last')||0}catch(x){}
   if(Date.now()-last<60000){err.textContent='Objednávku ste práve odoslali. Skúste to o minútu.';return false}
-  var d={ts:Date.now(),typ:$('typ').value.slice(0,80),meno:$('meno').value.trim().slice(0,80),tel:$('tel').value.trim().slice(0,30),obec:$('obec').value.trim().slice(0,140),termin:$('termin').value.trim().slice(0,80),popis:$('popis').value.trim().slice(0,1000),mId:M,zar:Z,pCislo:P,src:P?'ponuka':(M?'qr':'web')};
+  var d={ts:Date.now(),typ:$('typ').value.slice(0,80),meno:$('meno').value.trim().slice(0,80),tel:$('tel').value.trim().slice(0,30),obec:$('obec').value.trim().slice(0,140),termin:[$('tdate').value,$('ttime').value].filter(Boolean).join(' '),popis:$('popis').value.trim().slice(0,1000),mId:M,zar:Z,pCislo:P,src:P?'ponuka':(M?'qr':'web')};
   if(!d.meno||!d.tel||!d.obec){err.textContent='Vyplňte meno, telefón a adresu.';return false}
   if(d.tel.replace(/\D/g,'').length<7){err.textContent='Skontrolujte telefónne číslo.';return false}
   var b=$('btn');b.disabled=true;b.textContent='Odosielam…';
