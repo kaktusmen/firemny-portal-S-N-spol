@@ -381,6 +381,12 @@ html[data-theme=dark] .fab-menu button{background:#2c2c2e;color:#f2f2f7}
 .celeb em{position:absolute;top:30%;font-style:normal;font-size:1.8rem;animation:conf 1.2s ease-out both}
 @keyframes cel{0%{transform:scale(.4);opacity:0}25%{transform:scale(1.1);opacity:1}40%{transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:scale(1)}}
 @keyframes conf{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-140px) rotate(40deg);opacity:0}}
+#nfyBox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
+.nfy-c{background:#fff;color:#111;border-radius:20px;width:min(440px,100%);max-height:90vh;overflow:auto;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+html[data-theme=dark] .nfy-c{background:#1c1c1e;color:#f2f2f7}
+.nfy-h{font-size:.8rem;font-weight:700;color:#8e8e93;margin-bottom:6px}.nfy-t{font-size:1.2rem;font-weight:800;margin-bottom:8px}
+.nfy-r{margin:4px 0;font-size:.95rem}.nfy-b{display:block;width:100%;margin:10px 0 0;padding:14px;border:0;border-radius:14px;font-size:1.05rem;font-weight:700;color:#fff;background:#16a34a}
+.nfy-l{background:none;color:#8e8e93;font-weight:600;font-size:.95rem}
 #splash{position:fixed;inset:0;background:#fff;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;animation:spl .5s ease 1s forwards;pointer-events:none}
 #splash img{width:110px;height:110px;border-radius:26px;box-shadow:0 4px 18px rgba(0,0,0,.15)}
 #splash b{font-size:1.4rem;color:#1c1c1e;margin-top:8px}#splash small{color:#8e8e93}
@@ -611,7 +617,8 @@ function start(){
       dbData[c]=s.docs.map(function(d){var o=d.data();o.id=d.id;return o});
       if(c==='members')membersReady=true;
       if(CORE.indexOf(c)>-1)setStatus(true);
-      render();
+      if(!(s.metadata&&s.metadata.fromCache))nfyLoaded[c]=true;
+      render();nfyTry();
     },function(){if(CORE.indexOf(c)>-1)setStatus(false)});
   });
 }
@@ -2330,6 +2337,7 @@ function showLeave(id){
 }
 var HELP=[
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
+['🆕 Nové pre teba po otvorení',0,'Keď otvoríš apku, ukážu sa ti <b>jedna po jednej</b> nové veci: nové alebo zmenené zákazky a obhliadky (tlačidlo <b>👍 Beriem na vedomie</b>, alebo <b>Neskôr</b>), nové správy a rozhodnutia o voľne (tlačidlo <b>OK, prečítané</b>). Čo odložíš cez Neskôr, ostane červené na Dnes a ukáže sa znova pri ďalšom otvorení. Ak je apka offline, obrazovka sa nezobrazí a môžeš pracovať ďalej.'],
 ['🧰 Tlačidlá Nástroje a +',0,'<b>+</b> uprostred lišty otvorí vytváranie a zoznamy (nová montáž, obhliadka, chladivo, zoznamy). <b>🧰 Nástroje</b> otvoria často používané veci: Moje úlohy, Trasa dňa, Hľadať, Mapa klientov, Voľno, Nová správa a Záloha (Hľadať a Záloha len správca).'],
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). V <b>Správach</b> (história) vidíš pri každej správe ✅ prečítané alebo ⏳ nečítal: meno. Pri každom voľne vidíš, či ho druhá strana už <b>prečítala</b> (✅ prečítané, alebo ⏳ nečítal: meno). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
@@ -3180,7 +3188,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.94';
+var APP_VERSION='2026-11-08.97';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3220,7 +3228,7 @@ function askPassword(id){
 function submitPw(id){
   var mm=findById('members',id);if(!mm)return;
   pwHashOf(id,$('pwInput').value).then(function(h){
-    if(h===mm.pwHash){setAuth(h);closeEvent();render();toast('✅ Prihlásený ako správca')}
+    if(h===mm.pwHash){setAuth(h);closeEvent();render();toast('✅ Prihlásený ako správca');nfyTry()}
     else $('pwErr').textContent='Nesprávne heslo';
   });
 }
@@ -3327,10 +3335,71 @@ function markReadMsg(id){
   x.readBy=(x.readBy||[]).concat(me);
   col('spravy').doc(id).update({readBy:firebase.firestore.FieldValue.arrayUnion(me)}).catch(function(){});
 }
+var nfyLoaded={},nfyShown=false,nfyList=[],nfyI=0,nfyHid=0;
+function nfyItems(){
+  var a=[];
+  if(!me)return a;
+  dbData.montaze.forEach(function(m){if(needsAck(m))a.push({k:'montaze',id:m.id,req:1,ts:m.chgAt||m.createdAt||0})});
+  dbData.obhliadky.forEach(function(m){if(needsAck(m))a.push({k:'obhliadky',id:m.id,req:1,ts:m.chgAt||m.createdAt||0})});
+  a.sort(function(x,y){return y.ts-x.ts});
+  dbData.spravy.filter(msgUnread).sort(function(x,y){return (x.ts||0)-(y.ts||0)}).forEach(function(m){a.push({k:'msg',id:m.id})});
+  dbData.volno.forEach(function(v){
+    if(!v.createdBy||(v.readBy||[]).indexOf(me)>-1)return;
+    if((isAdmin()&&v.memberId!==me)||(v.stav!=='Žiadosť'&&v.memberId===me))a.push({k:'volno',id:v.id});
+  });
+  return a;
+}
+function nfyTry(){
+  if(nfyShown||!me||!nfyLoaded.montaze||!nfyLoaded.spravy||!nfyLoaded.obhliadky||!nfyLoaded.volno||!nfyLoaded.members)return;
+  if(needsLogin())return;
+  nfyShown=true;
+  nfyList=nfyItems();nfyI=0;
+  if(nfyList.length)nfyRender();
+}
+function nfyRender(){
+  var box=$('nfyBox'),it=nfyList[nfyI];
+  if(!it){box.style.display='none';return}
+  var x=findById(it.k==='msg'?'spravy':it.k,it.id);
+  if(!x){nfyI++;nfyRender();return}
+  var n=nfyList.length,h='<div class="nfy-c"><div class="nfy-h">🆕 NOVÉ PRE TEBA · '+(nfyI+1)+' z '+n+'</div>',btn='',later='';
+  if(it.k==='montaze'||it.k==='obhliadky'){
+    var ob=it.k==='obhliadky',ad=ob?[x.ulica,x.obec].filter(Boolean).join(', '):jobAddr(x);
+    h+='<div class="nfy-t">'+(ob?'🔍 ':'🔧 ')+(x.chg?'Zmenená ':'Nová ')+(ob?'obhliadka':'zákazka')+'</div>'+
+      '<div class="nfy-r"><b>'+esc(ob?onm(x):(x.title||x.clientName||'-'))+'</b></div>'+
+      '<div class="nfy-r">📅 '+(x.date?esc(fmtD(x.date))+(x.time?' o '+esc(x.time):''):'bez dátumu')+'</div>'+
+      (ad?'<div class="nfy-r">📍 '+esc(ad)+'</div>':'')+
+      ((x.memberNames&&x.memberNames.length)?'<div class="nfy-r">👥 '+esc([].concat(x.memberNames).join(', '))+'</div>':'')+
+      (x.chg?'<div class="nfy-r" style="color:#b45309">Zmenil sa termín alebo tím.</div>':'');
+    btn='<button class="nfy-b" onclick="nfyAck()">👍 Beriem na vedomie</button>';
+    later='<button class="nfy-b nfy-l" onclick="nfyNext()">Neskôr</button>';
+  }else if(it.k==='msg'){
+    h+='<div class="nfy-t">💬 Správa od '+esc(x.author||'Anonym')+'</div><div class="nfy-r" style="white-space:pre-wrap">'+esc(x.text||'')+'</div>'+(x.timestamp?'<div class="nfy-r" style="color:#94a3b8;font-size:.8rem">'+esc(x.timestamp)+'</div>':'');
+    btn='<button class="nfy-b" style="background:#2563eb" onclick="nfyOk()">OK, prečítané</button>';
+  }else{
+    h+='<div class="nfy-t">🏖 Voľno – '+esc(x.memberName||'')+'</div><div class="nfy-r">'+esc(volnoWhen(x))+'</div><div class="nfy-r"><b>'+esc(x.stav||'')+'</b>'+(x.rozhodol?' · rozhodol '+esc(x.rozhodol):'')+'</div>'+(x.dovod?'<div class="nfy-r">'+esc(x.dovod)+'</div>':'');
+    btn='<button class="nfy-b" style="background:#2563eb" onclick="nfyOk()">OK, prečítané</button>';
+  }
+  box.innerHTML=h+btn+later+'</div>';box.style.display='flex';
+}
+function nfyNext(){nfyI++;nfyRender()}
+function nfyAck(){var it=nfyList[nfyI];if(it)ackItem(it.k,it.id);nfyNext()}
+function nfyOk(){
+  var it=nfyList[nfyI];
+  if(it){
+    if(it.k==='msg')markReadMsg(it.id);
+    else{var v=findById('volno',it.id);if(v){v.readBy=(v.readBy||[]).concat(me);col('volno').doc(v.id).update({readBy:firebase.firestore.FieldValue.arrayUnion(me)}).catch(function(){})}}
+  }
+  nfyNext();
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='hidden')nfyHid=Date.now();
+  else if(nfyHid&&Date.now()-nfyHid>20*60000){nfyHid=0;nfyShown=false;nfyTry()}
+});
 function setMeHome(v){
   me=v;try{localStorage.setItem('portal_me',me)}catch(e){}
   render();
   if(me&&needsLogin())askPassword(me);
+  else{nfyShown=false;nfyTry()}
 }
 function changeMe(){setMeHome('')}
 function renderHomeMsgs(){
@@ -3840,6 +3909,7 @@ window.onload=function(){
 </head>
 <body>
 <div id="splash"><img src="icon-192.png" alt=""><b>Firemný Portál</b><small>Úsporné klímy S&amp;N</small></div>
+<div id="nfyBox"></div>
 <div id="fabSheet" onclick="if(event.target===this)this.style.display='none'"><div class="fab-menu">
   <button id="fabNewJob" onclick="fabGo('job')">🔧 Nová montáž / servis</button>
   <button onclick="fabGo('obh')">🔍 Nová obhliadka</button>
