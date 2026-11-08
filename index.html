@@ -835,15 +835,17 @@ var V={
       (function(){var j=v.stav==='Žiadosť'&&isAdmin()?jobsInLeave(v.memberId,v):[];return j.length?'<div style="color:#b45309;font-weight:600;margin-bottom:6px">⚠️ V tomto čase má naplánované:<br>'+j.map(function(m){return esc(fmtD(m.date)+(m.time?' '+m.time:'')+' – '+(m.title||m.clientName||'zákazka'))}).join('<br>')+'</div>':''})()+
       '<strong>Dôvod:</strong> '+esc(v.dovod||'-')+(v.rozhodol?'\n<small style="color:#64748b">Rozhodol: '+esc(v.rozhodol)+'</small>':''),false,false,ex)}],
   spravy:['spravyList','Žiadne správy.',function(a,b){return (b.ts||0)-(a.ts||0)},function(s){
-    return card('spravy',s,(msgUnread(s)?'🆕 ':(msgForMe(s)?'✓ ':''))+'💬 Od: '+esc(s.author||'Anonym')+(s.toNames&&s.toNames.length?' → Pre: '+s.toNames.map(esc).join(', '):''),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':'')+(s.readBy&&s.readBy.length?'\n<small style="color:#15803d">✓ Prečítali: '+s.readBy.map(function(i){var m=findById('members',i);return esc(m?m.name:'?')}).join(', ')+'</small>':'')+msgNoRead(s),false,true)}]
+    return card('spravy',s,(msgUnread(s)?'🆕 ':(msgForMe(s)?'✓ ':''))+'💬 Od: '+esc(s.author||'Anonym')+(s.toNames&&s.toNames.length?' → Pre: '+s.toNames.map(esc).join(', '):'')+msgStat(s),esc(s.text||'')+(s.timestamp?'\n<small style="color:#94a3b8">'+esc(s.timestamp)+'</small>':'')+(s.readBy&&s.readBy.length?'\n<small style="color:#15803d">✓ Prečítali: '+s.readBy.map(function(i){var m=findById('members',i);return esc(m?m.name:'?')}).join(', ')+'</small>':'')+msgNoRead(s),false,true)}]
 };
-function msgNoRead(x){
+function msgStat(x){
+  if(!(isAdmin()||x.fromId===me))return '';
   var ids=(x.toIds||[]).indexOf('__all')>-1?dbData.members.map(function(m){return m.id}):(x.toIds||[]);
   var rc=dbData.members.filter(function(m){return ids.indexOf(m.id)>-1&&m.id!==x.fromId});
   if(!rc.length)return '';
   var nr=rc.filter(function(m){return (x.readBy||[]).indexOf(m.id)<0}).map(function(m){return esc(m.name||'')});
-  return nr.length?'\n<small style="color:#dc2626;font-weight:700">⏳ nečítal: '+nr.join(', ')+'</small>':'\n<small style="color:#15803d;font-weight:700">✅ prečítané</small>';
+  return nr.length?'<br><small style="color:#dc2626;font-weight:700">⏳ nečítal: '+nr.join(', ')+'</small>':'<br><small style="color:#15803d;font-weight:700">✅ prečítané</small>';
 }
+function msgNoRead(x){return ''}
 function norm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()}
 function render(){
   COLS.forEach(function(c){
@@ -3178,7 +3180,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.93';
+var APP_VERSION='2026-11-08.94';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
