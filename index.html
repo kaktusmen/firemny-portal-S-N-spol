@@ -1968,6 +1968,10 @@ function fabGo(w){
   $('fabSheet').style.display='none';
   if(w==='job')openSection('montazSection','Montáž / Servis','work');
   else if(w==='obh')openSection('obhliadkaSection','Nová obhliadka','work');
+  else if(w==='chl')openSection('chladivoSection','Chladivo','work');
+  else if(w==='lm')openSection('montazListSection','Zoznam montáží a servisov','work');
+  else if(w==='lo')openSection('obhliadkyListSection','Zoznam obhliadok','work');
+  else if(w==='big')openSection('bigSection','Veľkí klienti','work');
   else goTab('msg');
 }
 function openSearch(){openSection('searchSection','Hľadať','');setTimeout(function(){var e=$('srQ');if(e){e.value='';e.focus();renderSearch()}},80)}
@@ -3158,7 +3162,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-08.84';
+var APP_VERSION='2026-11-08.85';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3812,8 +3816,12 @@ window.onload=function(){
 <body>
 <div id="splash"><img src="icon-192.png" alt=""><b>Firemný Portál</b><small>Úsporné klímy S&amp;N</small></div>
 <div id="fabSheet" onclick="if(event.target===this)this.style.display='none'"><div class="fab-menu">
-  <button id="fabNewJob" onclick="fabGo('job')">🔧 Nová zákazka</button>
+  <button id="fabNewJob" onclick="fabGo('job')">🔧 Nová montáž / servis</button>
   <button onclick="fabGo('obh')">🔍 Nová obhliadka</button>
+  <button onclick="fabGo('chl')">❄️ Chladivo</button>
+  <button onclick="fabGo('lm')">📋 Zoznam montáží a servisov</button>
+  <button onclick="fabGo('lo')">📋 Zoznam obhliadok</button>
+  <button class="admin-only" onclick="fabGo('big')">🏢 Veľkí klienti</button>
   <button onclick="fabGo('msg')">💬 Nová správa</button>
 </div></div>
 <nav id="tabBar">
