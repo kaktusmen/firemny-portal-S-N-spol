@@ -298,7 +298,7 @@ html[data-theme=dark] .ph-lv{background:#164e63;color:#cffafe}
 /* stavy */
 .pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.74rem;font-weight:700;color:#fff;vertical-align:middle;line-height:1.5;margin-right:4px;white-space:nowrap}
 .pill.nova{background:var(--c-nova)}.pill.plan{background:var(--c-plan)}.pill.run{background:var(--c-run)}.pill.done{background:var(--c-done)}.pill.late{background:var(--c-late)}.pill.wait{background:#7c3aed}
-.wkg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.wkc{background:rgba(120,120,128,.1);border-radius:10px;padding:3px;min-height:110px}.wkc.we{opacity:.75}.wkc.today{outline:2px solid #f59e0b}.wkh{text-align:center;padding:2px 0 4px}.wkh small{display:block;font-size:.62rem;color:#8e8e93;font-weight:700}.wkh b{font-size:.95rem}.wkb{background:#fff;border-left:3px solid #2563eb;border-radius:6px;padding:2px 3px;margin-top:3px;overflow:hidden}html[data-theme=dark] .wkb{background:#2c2c2e}.wkb span{display:block;font-size:.6rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wkb i{display:block;font-size:.56rem;font-style:normal;color:#8e8e93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.near{background:rgba(124,58,237,.1);border-radius:12px;padding:8px 10px;font-size:.88rem}.near b{display:block;margin-bottom:2px}.near a{color:#7c3aed;font-weight:700;cursor:pointer}
+.wkg{display:flex;flex-direction:column;gap:6px}.wkr{display:flex;gap:10px;background:rgba(120,120,128,.1);border-radius:14px;padding:8px;align-items:stretch}.wkr.today{outline:2px solid #f59e0b}.wkr.empty{opacity:.6;padding:6px 8px}.wkh{flex:none;width:46px;text-align:center;display:flex;flex-direction:column;justify-content:center}.wkh small{font-size:.7rem;color:#8e8e93;font-weight:700}.wkh b{font-size:1.25rem;line-height:1.1}.wkl{flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}.wkl em{color:#8e8e93;font-size:.85rem}.wkb{background:#fff;border-left:4px solid #2563eb;border-radius:10px;padding:6px 10px;min-width:0}html[data-theme=dark] .wkb{background:#2c2c2e}.wkb span{display:block;font-size:1rem;font-weight:700}.wkb i{display:block;font-size:.8rem;font-style:normal;color:#8e8e93}
 .item-card[data-st]{box-shadow:inset 5px 0 0 var(--c-nova),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
 .item-card[data-st=Naplánovaná]{box-shadow:inset 5px 0 0 var(--c-plan),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
 .item-card[data-st=Prebieha]{box-shadow:inset 5px 0 0 var(--c-run),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
@@ -1896,11 +1896,12 @@ function renderRouteWeek(el,tv){
   for(var i=0;i<7;i++){
     var d=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i),ds=ymd(d),arr=rtItems(ds,tv);
     tot+=arr.length;
-    h+='<div class="wkc'+(ds===t0?' today':'')+(i>=5?' we':'')+'"><div class="wkh" onclick="rtDayGo(\''+ds+'\')"><small>'+nm7[i]+'</small><b>'+d.getDate()+'</b></div>'+
-      arr.map(function(m){
-        var who=(m.memberNames||[]).map(initials).join(' ');
-        return '<div class="wkb" style="border-left-color:'+(m._obh?'#7c3aed':srvColor(m))+'" onclick="showEvent(\''+(m._obh?'obhliadky':'montaze')+'\',\''+esc(m.id)+'\')"><span>'+(m._obh?'🔍':'')+esc(obecLabel(m))+'</span><i>'+esc(who||'–')+'</i></div>';
-      }).join('')+'</div>';
+    if(!arr.length&&i>=5)continue;
+    h+='<div class="wkr'+(ds===t0?' today':'')+(arr.length?'':' empty')+'"><div class="wkh" onclick="rtDayGo(\''+ds+'\')"><small>'+nm7[i]+'</small><b>'+d.getDate()+'</b><small>'+(d.getMonth()+1)+'.</small></div><div class="wkl">'+
+      (arr.length?arr.map(function(m){
+        var who=(m.memberNames||[]).map(initials).join(' · ');
+        return '<div class="wkb" style="border-left-color:'+(m._obh?'#7c3aed':srvColor(m))+'" onclick="showEvent(\''+(m._obh?'obhliadky':'montaze')+'\',\''+esc(m.id)+'\')"><span>'+(m._obh?'🔍 ':'')+esc(obecLabel(m))+'</span><i>'+esc(who||'bez technika')+'</i></div>';
+      }).join(''):'<em>voľný deň</em>')+'</div></div>';
   }
   el.innerHTML='<p style="color:#64748b;font-size:.9rem;margin:4px 0">'+d0.getDate()+'.'+(d0.getMonth()+1)+'. – '+d6.getDate()+'.'+(d6.getMonth()+1)+'.'+d6.getFullYear()+' · <b>'+tot+'</b> spolu. Ťuknutím na zastávku otvoríš detail, na dátum celý deň.</p><div class="wkg">'+h+'</div>';
 }
@@ -3243,7 +3244,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-09.102';
+var APP_VERSION='2026-11-09.103';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
