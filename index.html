@@ -819,7 +819,7 @@ var V={
     return card('montaze',m,stavPill(m)+srvIcon(m)+esc(m.title||'Montáž')+(m.clientName?' – '+esc(m.clientName):'')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')'+techSub(m),
       (deviceSummary(m)?'\n<strong>Zariadenie:</strong> '+esc(deviceSummary(m)):'')+(m.urgent?'\n🚨 Urgentné':''),'editMontaz',true,listBtns(m))}],
   members:['teamList','Žiadni členovia.',function(a,b){return (a.name||'').localeCompare(b.name||'')},function(t){
-    return card('members',t,'🛡️ '+esc(t.name||''),'Tel: '+esc(t.telefon||'-')+'\nRola: '+(t.rola==='Správca'?'🛡 Správca'+(t.pwHash?' · 🔑 heslo nastavené':' · ⚠️ bez hesla'):'🔧 Technik'),'editMember')}],
+    return card('members',t,'🛡️ '+esc(t.name||''),'Tel: '+esc(t.telefon||'-')+'\nRola: '+(t.rola==='Správca'?'🛡 Správca'+(t.pwHash?' · 🔑 heslo nastavené':' · ⚠️ bez hesla'):'🔧 Technik'+(t.pinHash?' · 🔢 PIN nastavený':' · ⚠️ bez PIN')),'editMember')}],
   obhliadky:['obhliadkaList','Žiadne obhliadky.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')},function(o){
     return card('obhliadky',o,'🔍 '+(o.big?'<span style="background:#7c3aed;color:#fff;border-radius:8px;padding:1px 7px;font-size:.8em">🏢 '+esc(o.big)+'</span> ':'')+esc(onm(o))+(o.obec?' – '+esc(o.obec):'')+(o.date?' ('+esc(o.date)+(o.time?' '+esc(o.time):'')+')':'')+(o.memberNames&&o.memberNames.length?' · 👷 '+esc(o.memberNames.join(', ')):'')+(o.klientId?' ✅':''),
       obhliadkaBody(o),'editObhliadka',true,
@@ -1268,7 +1268,7 @@ function saveMontaz(){
   waAfterSave(waO,!!eid);
 }
 function clearMember(){
-  $('tName').value='';$('tTel').value='';$('tRola').value='Technik';$('tHeslo').value='';$('editingMemberId').value='';
+  $('tName').value='';$('tTel').value='';$('tRola').value='Technik';$('tHeslo').value='';$('tPin').value='';$('tPinClear').checked=false;$('editingMemberId').value='';
   $('memberSaveBtn').innerText='Uložiť člena';$('memberCancelBtn').style.display='none';
 }
 function saveTeam(){
@@ -1279,15 +1279,23 @@ function saveTeam(){
   var o={name:n,telefon:$('tTel').value.trim(),rola:rola};
   if(rola==='Správca'&&!pw&&!(old&&old.pwHash)){toast('Zadajte heslo pre správcu');return}
   if(pw&&pw.length<4){toast('Heslo musí mať aspoň 4 znaky');return}
-  var finish=function(hash){
+  var pin=($('tPin').value||'').trim(),pinClr=$('tPinClear').checked;
+  if(pin&&!/^\d{4}$/.test(pin)){toast('PIN musí mať presne 4 čísla');return}
+  var finish=function(hash,pinH){
     if(hash)o.pwHash=hash;
+    if(pinH)o.pinHash=pinH;
+    else if(pinClr&&rola!=='Správca')o.pinHash='';
     put('members',o,id);
     var h=hash||(old&&old.pwHash)||'';
     if(!hadAdmin&&rola==='Správca'){me=id;try{localStorage.setItem('portal_me',me)}catch(e){}setAuth(h)}
     else if(id===me&&hash)setAuth(hash);
     clearMember();toast(eid?'Člen aktualizovaný!':'Člen uložený!');render();
   };
-  if(pw)pwHashOf(id,pw).then(finish);else finish('');
+  if(rola==='Správca'&&pin){toast('Správca používa heslo, PIN sa nepoužije');pin=''}
+  Promise.all([pw?pwHashOf(id,pw):Promise.resolve(''),pin?pinHashOf(id,pin):Promise.resolve('')]).then(function(r){
+    if(r[1]&&id===me)setPinOk(r[1]);
+    finish(r[0],r[1]);
+  });
 }
 function editMember(id){
   var t=dbData.members.filter(function(x){return x.id===id})[0];if(!t)return;
@@ -2423,6 +2431,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['🔢 PIN technika',0,'Správca nastaví každému technikovi <b>4-miestny PIN</b> v Viac → Tím → upraviť člena (pole PIN technika; prázdne = bez zmeny, začiarknutie <b>Zrušiť PIN</b> ho odstráni). Technik pri prvom výbere svojho mena zadá PIN a zariadenie si ho zapamätá. Cudzie meno bez jeho PIN-u nevyberieš. Keď je meno na zariadení zamknuté, zmena mena si vypýta PIN pôvodného technika. Správca sa prihlasuje heslom ako doteraz. PIN chráni pred omylom alebo zvedavosťou kolegu.'],
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
 ['🆕 Nové pre teba po otvorení',0,'Keď otvoríš apku, ukážu sa ti <b>jedna po jednej</b> nové veci: nové alebo zmenené zákazky a obhliadky (tlačidlo <b>👍 Beriem na vedomie</b>, alebo <b>Neskôr</b>), nové správy a rozhodnutia o voľne (tlačidlo <b>OK, prečítané</b>). Čo odložíš cez Neskôr, ostane červené na Dnes a ukáže sa znova pri ďalšom otvorení. Ak je apka offline, obrazovka sa nezobrazí a môžeš pracovať ďalej.'],
 ['📦 Čaká na jednotku',0,'Pri zákazke zaškrtni <b>Čaká na jednotku</b> a zadaj <b>očakávanú dodávku</b>. Termín môže ostať len orientačný. Zákazka sa fialovo označí a správcovi sa na Dnes ukáže <b>najstaršia</b> čakajúca a pod ňou <b>Zobraziť všetky</b>. Keď jednotka príde, zákazku otvor, odškrtni políčko a potvrď termín. Pri výbere klienta apka ukáže <b>💡 dni, keď technik v tej obci už ide</b>, a ťuknutím na dátum ho dosadíš.'],
@@ -3290,7 +3299,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-09.111';
+var APP_VERSION='2026-11-09.112';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3310,6 +3319,44 @@ function isAdmin(){
   var mm=me?findById('members',me):null;
   if(!mm||mm.rola!=='Správca')return false;
   return !mm.pwHash||authStored()===mm.pwHash;
+}
+function pinHashOf(id,p){return sha256('pin:'+id+':'+p)}
+function pinStored(){try{return localStorage.getItem('portal_pin')||''}catch(e){return ''}}
+function setPinOk(h){try{localStorage.setItem('portal_pin',h||'')}catch(e){}}
+function needsPin(){
+  var mm=me?findById('members',me):null;
+  return !!(mm&&mm.rola!=='Správca'&&mm.pinHash&&pinStored()!==mm.pinHash);
+}
+function lockedMe(){
+  var mm=me?findById('members',me):null;
+  return !!(mm&&mm.rola!=='Správca'&&mm.pinHash&&pinStored()===mm.pinHash&&!isAdmin());
+}
+var pinTarget='';
+function askPin(id,target){
+  var mm=findById('members',id);if(!mm)return;
+  pinTarget=target||'';lastDay=null;
+  $('eventModalBody').innerHTML='<h3>🔢 '+(target?'Zmena mena – zadaj svoj PIN':'Zadaj svoj PIN')+'</h3><div class="modal-row"><strong>'+esc(mm.name||'')+'</strong></div>'+
+    '<input type="password" id="pinInput" inputmode="numeric" maxlength="4" placeholder="PIN (4 čísla)" autocomplete="off" style="font-size:1.4rem;text-align:center;letter-spacing:.4em">'+
+    '<div id="pinErr" style="color:#b91c1c;font-size:.85rem;min-height:1.2em"></div>'+
+    '<div class="modal-actions"><button class="btn-edit" style="background:#16a34a" onclick="submitPin(\''+esc(id)+'\')">Potvrdiť</button>'+
+    '<button class="btn-delete" style="background:#64748b" onclick="cancelPin()">Zrušiť</button></div>';
+  $('eventModal').style.display='flex';
+  var inp=$('pinInput');inp.addEventListener('keydown',function(e){if(e.key==='Enter')submitPin(id)});
+  setTimeout(function(){inp.focus()},60);
+}
+function submitPin(id){
+  var mm=findById('members',id);if(!mm)return;
+  pinHashOf(id,$('pinInput').value.trim()).then(function(h){
+    if(h===mm.pinHash){
+      setPinOk(h);var t=pinTarget;pinTarget='';closeEvent();
+      if(t&&t!==id){setMeHome(t,true)}
+      else{render();toast('✅ PIN v poriadku');nfyTry()}
+    }else $('pinErr').textContent='Nesprávny PIN';
+  });
+}
+function cancelPin(){
+  var wasSwitch=!!pinTarget;pinTarget='';closeEvent();
+  if(wasSwitch){render();fillMe()}else setMeHome('',true);
 }
 function needsLogin(){
   var mm=me?findById('members',me):null;
@@ -3454,6 +3501,7 @@ function nfyItems(){
 function nfyTry(){
   if(nfyShown||!me||!nfyLoaded.montaze||!nfyLoaded.spravy||!nfyLoaded.obhliadky||!nfyLoaded.volno||!nfyLoaded.members)return;
   if(needsLogin())return;
+  if(needsPin()){if($('eventModal').style.display!=='flex')askPin(me);return}
   nfyShown=true;
   nfyList=nfyItems();nfyI=0;
   if(nfyList.length)nfyRender();
@@ -3497,10 +3545,13 @@ document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='hidden')nfyHid=Date.now();
   else if(nfyHid&&Date.now()-nfyHid>20*60000){nfyHid=0;nfyShown=false;nfyTry()}
 });
-function setMeHome(v){
+function setMeHome(v,force){
+  if(!force&&me&&v!==me&&lockedMe()){askPin(me,v||'__none');var s=$('meSelect');if(s)s.value=me;render();return}
+  if(v==='__none')v='';
   me=v;try{localStorage.setItem('portal_me',me)}catch(e){}
   render();
   if(me&&needsLogin())askPassword(me);
+  else if(me&&needsPin())askPin(me);
   else{nfyShown=false;nfyTry()}
 }
 function changeMe(){setMeHome('')}
@@ -3599,7 +3650,7 @@ function leaveBlock(d0){
 function renderWho(){
   var el=$('whoInfo');if(!el)return;
   var mm=me?findById('members',me):null;
-  el.innerHTML=mm?'👤 Prihlásený: <b>'+esc(mm.name||'')+'</b> · <a onclick="changeMe()" style="color:#2563eb;cursor:pointer">zmeniť</a>'+(needsLogin()?' · <a onclick="askPassword(\''+esc(me)+'\')" style="color:#b91c1c;cursor:pointer">🔒 zadať heslo správcu</a>':''):'👤 Nikto nie je prihlásený';
+  el.innerHTML=mm?'👤 Prihlásený: <b>'+esc(mm.name||'')+'</b> · <a onclick="changeMe()" style="color:#2563eb;cursor:pointer">zmeniť</a>'+(needsLogin()?' · <a onclick="askPassword(\''+esc(me)+'\')" style="color:#b91c1c;cursor:pointer">🔒 zadať heslo správcu</a>':(needsPin()?' · <a onclick="askPin(\''+esc(me)+'\')" style="color:#b91c1c;cursor:pointer">🔢 zadať PIN</a>':'')):'👤 Nikto nie je prihlásený';
 }
 
 function dopTyp(d){return d.typ||'Dopyt'}
@@ -4515,7 +4566,7 @@ window.onload=function(){
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Správa tímu</h2>
     <input type="hidden" id="editingMemberId" value="">
-    <div class="form-grid admin-only"><input type="text" id="tName" placeholder="Meno a priezvisko člena"><input type="text" id="tTel" placeholder="Telefón"><select id="tRola" class="full-width-input"><option value="Technik">Rola: Technik</option><option value="Správca">Rola: Správca</option></select><input type="password" id="tHeslo" class="full-width-input" placeholder="Heslo správcu (pri úprave nechajte prázdne = bez zmeny)" autocomplete="new-password"></div>
+    <div class="form-grid admin-only"><input type="text" id="tName" placeholder="Meno a priezvisko člena"><input type="text" id="tTel" placeholder="Telefón"><select id="tRola" class="full-width-input"><option value="Technik">Rola: Technik</option><option value="Správca">Rola: Správca</option></select><input type="text" id="tPin" class="full-width-input" inputmode="numeric" maxlength="4" placeholder="PIN technika – 4 čísla (pri úprave prázdne = bez zmeny)" autocomplete="off"><label class="full-width-input" style="display:flex;gap:8px;align-items:center;font-size:.85rem"><input type="checkbox" id="tPinClear" style="width:18px;height:18px;flex:none"> Zrušiť PIN tohto technika</label><input type="password" id="tHeslo" class="full-width-input" placeholder="Heslo správcu (pri úprave nechajte prázdne = bez zmeny)" autocomplete="new-password"></div>
     <button class="action-btn admin-only" id="memberSaveBtn" onclick="saveTeam()">Uložiť člena</button>
     <button class="back-btn admin-only" id="memberCancelBtn" style="display:none" onclick="clearMember()">✖ Zrušiť úpravu</button>
     <h3>Zoznam členov</h3><div id="teamList">Načítavam...</div>
