@@ -297,7 +297,7 @@ html[data-theme=dark] .ph-lv{background:#164e63;color:#cffafe}
 #pageTitle::after{content:'';position:absolute;right:2px;top:50%;margin-top:-22px;width:44px;height:44px;border-radius:50%;background:#fff url(icon-180.png) center/cover;box-shadow:0 1px 6px rgba(0,0,0,.15)}
 /* stavy */
 .pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.74rem;font-weight:700;color:#fff;vertical-align:middle;line-height:1.5;margin-right:4px;white-space:nowrap}
-.pill.nova{background:var(--c-nova)}.pill.plan{background:var(--c-plan)}.pill.run{background:var(--c-run)}.pill.done{background:var(--c-done)}.pill.late{background:var(--c-late)}.pill.wait{background:#7c3aed}.cp-hide{display:none!important}.cp-sel{align-items:center;justify-content:space-between;gap:8px;background:rgba(37,99,235,.12);border-radius:12px;padding:10px 12px}.cp-sel button{border:0;background:#2563eb;color:#fff;border-radius:10px;padding:8px 12px;font-weight:700}.cp-res{max-height:260px;overflow:auto}.cp-r{padding:10px 12px;border-bottom:1px solid rgba(120,120,128,.25);cursor:pointer}.cp-r small{display:block;color:#8e8e93}
+.pill.nova{background:var(--c-nova)}.pill.plan{background:var(--c-plan)}.pill.run{background:var(--c-run)}.pill.done{background:var(--c-done)}.pill.late{background:var(--c-late)}.pill.wait{background:#7c3aed}.cp-hide{display:none!important}.jbrow{display:flex;gap:6px;align-items:stretch}.jbrow input{flex:1;min-width:0}.jbrow .dev-scan{height:auto;min-height:44px}.cp-sel{align-items:center;justify-content:space-between;gap:8px;background:rgba(37,99,235,.12);border-radius:12px;padding:10px 12px}.cp-sel button{border:0;background:#2563eb;color:#fff;border-radius:10px;padding:8px 12px;font-weight:700}.cp-res{max-height:260px;overflow:auto}.cp-r{padding:10px 12px;border-bottom:1px solid rgba(120,120,128,.25);cursor:pointer}.cp-r small{display:block;color:#8e8e93}
 .wkg{display:flex;flex-direction:column;gap:6px}.wkr{display:flex;gap:10px;background:rgba(120,120,128,.1);border-radius:14px;padding:8px;align-items:stretch}.wkr.today{outline:2px solid #f59e0b}.wkr.empty{opacity:.6;padding:6px 8px}.wkh{flex:none;width:46px;text-align:center;display:flex;flex-direction:column;justify-content:center}.wkh small{font-size:.7rem;color:#8e8e93;font-weight:700}.wkh b{font-size:1.25rem;line-height:1.1}.wkl{flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}.wkl em{color:#8e8e93;font-size:.85rem}.wkb{background:#fff;border-left:4px solid #2563eb;border-radius:10px;padding:6px 10px;min-width:0}html[data-theme=dark] .wkb{background:#2c2c2e}.wkb span{display:block;font-size:1rem;font-weight:700}.wkb i{display:block;font-size:.8rem;font-style:normal;color:#8e8e93}
 .item-card[data-st]{box-shadow:inset 5px 0 0 var(--c-nova),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
 .item-card[data-st=Naplánovaná]{box-shadow:inset 5px 0 0 var(--c-plan),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
@@ -2966,6 +2966,9 @@ function jbN(el){el.classList.toggle('need',!String(el.value).trim())}
 function jbIn(id,val,ph,need,extra){
   return '<input id="'+id+'" class="jb'+(need&&!val?' need':'')+'" value="'+esc(val||'')+'" placeholder="'+esc(ph)+'" oninput="jbN(this)" '+(extra||'')+'>';
 }
+function jbInS(id,val,ph,need,mode){
+  return '<div class="jbrow">'+jbIn(id,val,ph,need)+'<button type="button" class="dev-scan" onclick="scanSn(this.previousElementSibling'+(mode?',\''+mode+'\'':'')+')">📷</button></div>';
+}
 var jobStep=1;
 function jobSteps(m){return m.kind?['arrive','photos','sign','done']:['arrive','devs','check','photos','sign','done']}
 var JSN={arrive:'Príchod',devs:'Zariadenia',check:'Kontrola',photos:'Fotky',sign:'Podpisy',done:'Hotovo'};
@@ -2994,6 +2997,19 @@ function jobPersist(m,u){
   Object.keys(u).forEach(function(k){m[k]=u[k]});
   return col('montaze').doc(m.id).update(u).catch(function(){toast('Nepodarilo sa uložiť')});
 }
+function jobDevEdit(id,fn){
+  var m=findById('montaze',id);if(!m)return;
+  rememberIny();
+  var u=jobCollect(m),ds=u.zariadenia||JSON.parse(JSON.stringify(devicesOf(m)));
+  if(!ds.length)ds=[emptyDev()];
+  fn(ds);
+  if(!ds.length)ds=[emptyDev()];
+  jobPersist(m,Object.assign({},u,{zariadenia:ds})).then(function(){showJob(id,jobStep)});
+}
+function jobDevAdd(id){jobDevEdit(id,function(ds){ds.push(emptyDev())})}
+function jobDevDel(id,i){jobDevEdit(id,function(ds){ds.splice(i,1)});toast('Zariadenie odstránené')}
+function jobIndAdd(id,i){jobDevEdit(id,function(ds){var d=ds[i];if(!d)return;d.vnutorne=(d.vnutorne&&d.vnutorne.length?d.vnutorne:['']).concat(['']);d.vnutorneTyp=(d.vnutorneTyp||[]).concat(['']);})}
+function jobIndDel(id,i,k){jobDevEdit(id,function(ds){var d=ds[i];if(!d||!d.vnutorne||d.vnutorne.length<2)return;d.vnutorne.splice(k,1);if(d.vnutorneTyp)d.vnutorneTyp.splice(k,1)});toast('Vnútorná jednotka odstránená')}
 function jobGo(id,step){
   var m=findById('montaze',id);if(!m)return;
   rememberIny();
@@ -3030,14 +3046,14 @@ function showJob(id,step){
     var ds=devicesOf(m);if(!ds.length)ds=[emptyDev()];
     ds.forEach(function(d,i){
       var il=(d.vnutorne&&d.vnutorne.length)?d.vnutorne:[''];
-      h+='<div class="jb-dev"><b>'+esc(d.typ||'Zariadenie')+(d.znacka?' · '+esc(d.znacka):'')+'</b>'+
-        '<label class="fl">Značka / model</label>'+jbIn('jbBr'+i,d.znacka,'Značka / model',false)+
-        il.map(function(sn,k){return '<label class="fl">Výrobné číslo vnútornej jednotky'+(il.length>1?' '+(k+1):'')+'</label>'+jbIn('jbIn'+i+'_'+k,sn,'Výrobné číslo',true)}).join('')+
-        '<label class="fl">Výrobné číslo vonkajšej jednotky</label>'+jbIn('jbOut'+i,d.vonkajsia,'Výrobné číslo',true)+
+      h+='<div class="jb-dev"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>'+esc(d.typ||'Zariadenie')+(d.znacka?' · '+esc(d.znacka):'')+'</b><button type="button" class="dev-x" style="color:#dc2626;font-weight:700" onclick="jobDevDel(\''+esc(id)+'\','+i+')">× '+(ds.length>1?'Odstrániť zariadenie':'Vymazať')+'</button></div>'+
+        '<label class="fl">Značka / model</label>'+jbInS('jbBr'+i,d.znacka,'Značka / model',false,'model')+
+        il.map(function(sn,k){return '<label class="fl" style="display:flex;justify-content:space-between;align-items:center">Výrobné číslo vnútornej jednotky'+(il.length>1?' '+(k+1)+'<button type="button" class="dev-x" style="color:#dc2626" onclick="jobIndDel(\''+esc(id)+'\','+i+','+k+')">× Odstrániť</button>':'')+'</label>'+jbInS('jbIn'+i+'_'+k,sn,'Výrobné číslo',true)}).join('')+(norm(d.system||'').indexOf('multi')>-1?'<button type="button" class="btn-edit" style="background:#64748b;margin:6px 0" onclick="jobIndAdd(\''+esc(id)+'\','+i+')">➕ Pridať vnútornú jednotku</button>':'')+
+        '<label class="fl">Výrobné číslo vonkajšej jednotky</label>'+jbInS('jbOut'+i,d.vonkajsia,'Výrobné číslo',true)+
         '<label class="fl">Chladivo</label><select id="jbChT'+i+'" data-iny data-iny-ph="Iné chladivo" class="jb'+(d.chlTyp?'':' need')+'" onchange="jbN(this)"><option value="">-- vyber --</option>'+Object.keys(GWP).concat(d.chlTyp&&!GWP[d.chlTyp]?[d.chlTyp]:[]).map(function(k){return '<option'+(d.chlTyp===k?' selected':'')+'>'+esc(k)+'</option>'}).join('')+'</select>'+
         '<label class="fl">Náplň chladiva (kg)</label>'+jbIn('jbChK'+i,d.chlKg,'napr. 1,2',true,'type="text" inputmode="decimal"')+'</div>';
     });
-    h+='<div class="modal-row" style="color:#64748b">🔴 Červené polia treba doplniť.</div>';
+    h+='<button type="button" class="action-btn" style="background:#64748b" onclick="jobDevAdd(\''+esc(id)+'\')">➕ Pridať ďalšie zariadenie</button><div class="modal-row" style="color:#64748b">🔴 Červené polia treba doplniť.</div>';
   }else if(key==='check'){
     h+=CHECK.map(function(l,i){return '<label style="display:flex;align-items:center;padding:10px 0"><input type="checkbox" class="chk" value="'+i+'"'+((m.checklist||[]).indexOf(l)>-1?' checked':'')+'>'+esc(l)+'</label>'}).join('');
   }else if(key==='photos'){
@@ -3337,7 +3353,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-09.107';
+var APP_VERSION='2026-11-09.109';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
