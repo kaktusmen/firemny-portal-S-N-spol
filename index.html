@@ -760,6 +760,7 @@ function openSection(id,title,from){
   setTab(tabFor(id));render();
   if(id==='montazSection')showMS('choice');
   if(id==='volnoSection')volnoSeen();
+  if(id==='statSection')statRender();
   if(id==='obhliadkaSection'&&!$('editingObhliadkaId').value)obhFotoInit();
   if(id==='routeSection'&&$('rtDate'))$('rtDate').value=ymd(new Date());
   window.scrollTo(0,0);
@@ -2431,6 +2432,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['📊 Štatistika používania',0,'<b>Viac → Štatistika používania</b> (len správca) ukáže pri každom členovi, kedy naposledy otvoril apku, v koľkých dňoch z posledných 7 a 30 ju použil a koľko noviniek (zákazky, obhliadky, správy) potvrdil alebo ešte nepotvrdil. Technik, ktorý apku 3 a viac dní neotvoril, je označený ⚠️. Počíta sa od nainštalovania tejto verzie.'],
 ['🔢 PIN technika',0,'Správca nastaví každému technikovi <b>4-miestny PIN</b> v Viac → Tím → upraviť člena (pole PIN technika; prázdne = bez zmeny, začiarknutie <b>Zrušiť PIN</b> ho odstráni). Technik pri prvom výbere svojho mena zadá PIN a zariadenie si ho zapamätá. Cudzie meno bez jeho PIN-u nevyberieš. Keď je meno na zariadení zamknuté, zmena mena si vypýta PIN pôvodného technika. Správca sa prihlasuje heslom ako doteraz. PIN chráni pred omylom alebo zvedavosťou kolegu.'],
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
 ['🆕 Nové pre teba po otvorení',0,'Keď otvoríš apku, ukážu sa ti <b>jedna po jednej</b> nové veci: nové alebo zmenené zákazky a obhliadky (tlačidlo <b>👍 Beriem na vedomie</b>, alebo <b>Neskôr</b>), nové správy a rozhodnutia o voľne (tlačidlo <b>OK, prečítané</b>). Čo odložíš cez Neskôr, ostane červené na Dnes a ukáže sa znova pri ďalšom otvorení. Ak je apka offline, obrazovka sa nezobrazí a môžeš pracovať ďalej.'],
@@ -3299,7 +3301,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-09.112';
+var APP_VERSION='2026-11-09.113';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3319,6 +3321,50 @@ function isAdmin(){
   var mm=me?findById('members',me):null;
   if(!mm||mm.rola!=='Správca')return false;
   return !mm.pwHash||authStored()===mm.pwHash;
+}
+var lastTrack=0;
+function trackOpen(){
+  if(!me||!membersReady||Date.now()-lastTrack<10*60000)return;
+  var mm=findById('members',me);if(!mm)return;
+  lastTrack=Date.now();var d=ymd(new Date());
+  col('members').doc(me).update({lastOpen:Date.now(),openDays:firebase.firestore.FieldValue.arrayUnion(d)}).catch(function(){});
+  mm.lastOpen=Date.now();mm.openDays=(mm.openDays||[]).indexOf(d)<0?(mm.openDays||[]).concat(d):mm.openDays;
+}
+function statAgo(ts){
+  if(!ts)return 'ešte nikdy';
+  var dd=Math.floor((Date.now()-ts)/86400000),mn=Math.floor((Date.now()-ts)/60000);
+  if(mn<60)return 'pred '+Math.max(mn,1)+' min';
+  if(dd<1)return 'dnes o '+new Date(ts).toTimeString().slice(0,5);
+  if(dd===1)return 'včera';
+  return 'pred '+dd+' dňami';
+}
+function statOpen(mm){
+  var n7=0,n30=0,t=new Date();
+  (mm.openDays||[]).forEach(function(x){var a=Math.floor((t-new Date(x+'T12:00:00'))/86400000);if(a<7)n7++;if(a<30)n30++});
+  return [n7,n30];
+}
+function statPending(mm){
+  var a=0,b=0,lim=Date.now()-30*86400000;
+  ['montaze','obhliadky'].forEach(function(c){dbData[c].forEach(function(m){
+    if((m.createdBy||m.chg)&&m.stav!=='Hotová'&&(m.memberIds||[]).indexOf(mm.id)>-1){if((m.ackBy||[]).indexOf(mm.id)>-1)a++;else b++}})});
+  dbData.spravy.forEach(function(x){
+    if(x.fromId===mm.id||(x.ts||0)<lim)return;
+    if((x.toIds||[]).indexOf(mm.id)>-1||(x.toIds||[]).indexOf('__all')>-1||(x.toNames||[]).some(function(n){return norm(n)===norm(mm.name)})){if((x.readBy||[]).indexOf(mm.id)>-1)a++;else b++}});
+  return [a,b];
+}
+function statRender(){
+  var el=$('statBody');if(!el)return;
+  var ms=dbData.members.slice().sort(function(a,b){return (a.lastOpen||0)-(b.lastOpen||0)});
+  if(!ms.length){el.innerHTML='<div class="td-none">Žiadni členovia</div>';return}
+  el.innerHTML='<p style="font-size:.82rem;color:#64748b">Zoradené od tých, čo apku otvorili najdávnejšie. Údaje sa počítajú od chvíle, keď sa nainštalovala táto verzia.</p>'+ms.map(function(m){
+    var o=statOpen(m),pd=statPending(m),days=m.lastOpen?Math.floor((Date.now()-m.lastOpen)/86400000):999;
+    var warn=m.rola!=='Správca'&&days>=3;
+    var col2=warn?'#b91c1c':(days<1?'#16a34a':'#64748b');
+    return '<div class="day-row" style="border-left-color:'+col2+';cursor:default"><b>'+(warn?'⚠️ ':'')+esc(m.name||'')+' <small>('+(m.rola==='Správca'?'správca':'technik')+')</small></b>'+
+      '<span>Naposledy otvoril: <b>'+statAgo(m.lastOpen)+'</b></span>'+
+      '<span>Dni používania: '+o[0]+' z posledných 7, '+o[1]+' z posledných 30</span>'+
+      '<span>Potvrdil: '+pd[0]+' · <b style="color:'+(pd[1]?'#b91c1c':'inherit')+'">Nepotvrdené: '+pd[1]+'</b></span></div>';
+  }).join('')+'<p style="font-size:.78rem;color:#64748b;margin-top:10px">⚠️ = technik apku neotvoril 3 a viac dní. „Potvrdil/Nepotvrdené“ zahŕňa nové či zmenené zákazky a obhliadky a správy za posledných 30 dní.</p>';
 }
 function pinHashOf(id,p){return sha256('pin:'+id+':'+p)}
 function pinStored(){try{return localStorage.getItem('portal_pin')||''}catch(e){return ''}}
@@ -3502,6 +3548,7 @@ function nfyTry(){
   if(nfyShown||!me||!nfyLoaded.montaze||!nfyLoaded.spravy||!nfyLoaded.obhliadky||!nfyLoaded.volno||!nfyLoaded.members)return;
   if(needsLogin())return;
   if(needsPin()){if($('eventModal').style.display!=='flex')askPin(me);return}
+  trackOpen();
   nfyShown=true;
   nfyList=nfyItems();nfyI=0;
   if(nfyList.length)nfyRender();
@@ -3542,6 +3589,7 @@ function nfyOk(){
   nfyNext();
 }
 document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible')trackOpen();
   if(document.visibilityState==='hidden')nfyHid=Date.now();
   else if(nfyHid&&Date.now()-nfyHid>20*60000){nfyHid=0;nfyShown=false;nfyTry()}
 });
@@ -4163,6 +4211,7 @@ window.onload=function(){
     <div class="menu-h">Tím</div>
     <div class="menu-card" id="volnoTile" onclick="openSection('volnoSection','Voľno','more')">🏖 Voľno</div>
     <div class="menu-card" onclick="openSection('teamSection','Správa tímu','more')">🛡️ Tím</div>
+    <div class="menu-card" onclick="openSection('statSection','Štatistika používania','more')">📊 Štatistika používania</div>
     <div class="menu-card admin-only" onclick="openSection('polohaSection','Poloha tímu','more')">📍 Poloha tímu</div>
     <div class="menu-h">Aplikácia</div>
     <div class="menu-card" onclick="openSection('tutSection','Návod','more')">📖 Návod</div>
@@ -4562,6 +4611,11 @@ window.onload=function(){
     <div class="cal-legend"><span><i style="background:#0d9488"></i>Montáž</span><span><i style="background:#7c3aed"></i>Obhliadka</span><span><i style="background:#d97706"></i>Montáž klienta</span><span><i style="background:#dc2626"></i>Záručný servis</span><span><i style="background:#2563eb"></i>Čistenie / Oprava</span><span><i style="background:#b91c1c"></i>🚨 Urgentná</span><span><i style="background:#ca8a04"></i>Prebieha</span><span><i style="background:#94a3b8"></i>Hotová</span><span><i style="background:#0891b2"></i>Voľno</span></div>
   </div>
 
+  <div id="statSection" class="section-content">
+    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <h2>Štatistika používania</h2>
+    <div id="statBody"></div>
+  </div>
   <div id="teamSection" class="section-content">
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Správa tímu</h2>
