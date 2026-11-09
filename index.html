@@ -297,7 +297,7 @@ html[data-theme=dark] .ph-lv{background:#164e63;color:#cffafe}
 #pageTitle::after{content:'';position:absolute;right:2px;top:50%;margin-top:-22px;width:44px;height:44px;border-radius:50%;background:#fff url(icon-180.png) center/cover;box-shadow:0 1px 6px rgba(0,0,0,.15)}
 /* stavy */
 .pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.74rem;font-weight:700;color:#fff;vertical-align:middle;line-height:1.5;margin-right:4px;white-space:nowrap}
-.pill.nova{background:var(--c-nova)}.pill.plan{background:var(--c-plan)}.pill.run{background:var(--c-run)}.pill.done{background:var(--c-done)}.pill.late{background:var(--c-late)}.pill.wait{background:#7c3aed}
+.pill.nova{background:var(--c-nova)}.pill.plan{background:var(--c-plan)}.pill.run{background:var(--c-run)}.pill.done{background:var(--c-done)}.pill.late{background:var(--c-late)}.pill.wait{background:#7c3aed}.cp-hide{display:none!important}.cp-sel{align-items:center;justify-content:space-between;gap:8px;background:rgba(37,99,235,.12);border-radius:12px;padding:10px 12px}.cp-sel button{border:0;background:#2563eb;color:#fff;border-radius:10px;padding:8px 12px;font-weight:700}.cp-res{max-height:260px;overflow:auto}.cp-r{padding:10px 12px;border-bottom:1px solid rgba(120,120,128,.25);cursor:pointer}.cp-r small{display:block;color:#8e8e93}
 .wkg{display:flex;flex-direction:column;gap:6px}.wkr{display:flex;gap:10px;background:rgba(120,120,128,.1);border-radius:14px;padding:8px;align-items:stretch}.wkr.today{outline:2px solid #f59e0b}.wkr.empty{opacity:.6;padding:6px 8px}.wkh{flex:none;width:46px;text-align:center;display:flex;flex-direction:column;justify-content:center}.wkh small{font-size:.7rem;color:#8e8e93;font-weight:700}.wkh b{font-size:1.25rem;line-height:1.1}.wkl{flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}.wkl em{color:#8e8e93;font-size:.85rem}.wkb{background:#fff;border-left:4px solid #2563eb;border-radius:10px;padding:6px 10px;min-width:0}html[data-theme=dark] .wkb{background:#2c2c2e}.wkb span{display:block;font-size:1rem;font-weight:700}.wkb i{display:block;font-size:.8rem;font-style:normal;color:#8e8e93}
 .item-card[data-st]{box-shadow:inset 5px 0 0 var(--c-nova),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
 .item-card[data-st=Naplánovaná]{box-shadow:inset 5px 0 0 var(--c-plan),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
@@ -975,6 +975,39 @@ function editClient(id){
 
 // ---------- Ostatné formuláre ----------
 var mTeam=[];
+function cpInit(id){
+  var sel=$(id);if(!sel||sel._cp)return;sel._cp=1;sel.classList.add('cp-hide');
+  var w=document.createElement('div');w.id=id+'_cp';w.className='cp';
+  w.innerHTML='<div class="cp-sel" style="display:none"></div><div class="cp-in"><input type="search" class="full-width-input" placeholder="🔍 Hľadať klienta (meno, obec, telefón)" autocomplete="off" autocapitalize="off"><div class="cp-res"></div></div>';
+  sel.parentNode.insertBefore(w,sel.nextSibling);
+  var inp=w.querySelector('input');
+  inp.addEventListener('input',function(){cpFind(id)});
+  inp.addEventListener('focus',function(){cpFind(id)});
+  var d=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');
+  Object.defineProperty(sel,'value',{get:function(){return d.get.call(this)},set:function(v){d.set.call(this,v);cpSync(id)},configurable:true});
+  cpSync(id);
+}
+function cpSync(id){
+  var sel=$(id),w=$(id+'_cp');if(!w)return;
+  var v=sel.options.length?Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').get.call(sel):'';
+  var box=w.querySelector('.cp-sel'),inn=w.querySelector('.cp-in');
+  if(v){
+    var o=sel.options[sel.selectedIndex];
+    box.innerHTML='<span>👤 <b>'+esc(o?o.text:v)+'</b></span><button type="button" onclick="cpClear(\''+id+'\')">✕ Zmeniť</button>';
+    box.style.display='flex';inn.style.display='none';
+  }else{box.style.display='none';inn.style.display='';}
+}
+function cpClear(id){var sel=$(id);sel.value='';sel.dispatchEvent(new Event('change'));var i=$(id+'_cp').querySelector('input');i.value='';i.focus()}
+function cpFind(id){
+  var w=$(id+'_cp'),q=norm(w.querySelector('input').value).split(/\s+/).filter(Boolean),res=w.querySelector('.cp-res');
+  if(!q.length){res.innerHTML='';return}
+  var arr=dbData.clients.filter(function(c){
+    var t=norm(nm(c)+' '+(c.obec||'')+' '+(c.adresa||'')+' '+(c.telefon||c.tel||''));
+    return q.every(function(x){return t.indexOf(x)>-1});
+  }).sort(function(a,b){return nm(a).localeCompare(nm(b))}).slice(0,30);
+  res.innerHTML=arr.length?arr.map(function(c){return '<div class="cp-r" onclick="cpPick(\''+id+'\',\''+esc(c.id)+'\')"><b>'+esc(nm(c))+'</b><small>'+esc([c.obec,c.adresa].filter(Boolean).join(', '))+'</small></div>'}).join(''):'<div class="cp-r"><small>Nenašiel sa. Skús iné meno alebo obec.</small></div>';
+}
+function cpPick(id,cid){var sel=$(id);sel.value=cid;$(id+'_cp').querySelector('.cp-res').innerHTML='';sel.dispatchEvent(new Event('change'))}
 function fillMontazSelects(){
   var c=$('mClient'),m=$('mMember');if(!c||!m)return;
   var cv=c.value,mv=m.value;
@@ -982,7 +1015,7 @@ function fillMontazSelects(){
     return '<option value="'+esc(x.id)+'">'+esc(nm(x))+(x.obec?' – '+esc(x.obec):'')+'</option>'}).join('');
   m.innerHTML='<option value="">-- Vyberte člena tímu --</option>'+dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){
     return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');
-  c.value=cv;m.value=mv;
+  c.value=cv;m.value=mv;cpInit('mClient');
 }
 function renderMontazChips(){
   teamSel('m',mTeam.length);
@@ -1160,7 +1193,7 @@ function toggleNewClient(on){
   var b=$('mNewBox'),open=(on===undefined)?b.style.display==='none':on;
   b.style.display=open?'block':'none';
   $('mModeNew').style.background=open?'#0d9488':'#94a3b8';$('mModeOld').style.background=open?'#94a3b8':'#0d9488';
-  $('mClient').style.display=open?'none':'';
+  $('mClient').style.display=open?'none':'';if($('mClient_cp'))$('mClient_cp').style.display=open?'none':'';
   if(!open)['mNMeno','mNPriez','mNTel','mNAdr','mNMail'].forEach(function(i){$(i).value=''});
   else $('mClient').value='';
 }
@@ -1661,7 +1694,7 @@ function deviceBlock(d,i,total){
   var multi=norm(d.system||'').indexOf('multi')>-1;
   var ind=(d.vnutorne&&d.vnutorne.length)?d.vnutorne:[''];
   if(!multi)ind=ind.slice(0,1);
-  return '<div class="dev-box"><div class="dev-h"><b>Zariadenie '+(i+1)+'</b>'+(total>1?'<button type="button" class="dev-x" onclick="removeDevice('+i+')">× Odstrániť</button>':'')+'</div>'+
+  return '<div class="dev-box"><div class="dev-h"><b>Zariadenie '+(i+1)+'</b>'+'<button type="button" class="dev-x" style="color:#dc2626;font-weight:700" onclick="removeDevice('+i+')">× '+(total>1?'Odstrániť':'Vymazať')+'</button>'+'</div>'+
     '<select id="dTyp'+i+'" data-iny><option value="">-- Zariadenie --</option><option>Klimatizácia</option><option>Tepelné čerpadlo</option></select>'+
     '<select id="dSys'+i+'" data-iny onchange="devRefresh()"><option value="">-- Split / Multisplit --</option><option>Split</option><option>Multisplit</option></select>'+
     '<div class="dev-row" style="margin-bottom:8px"><input type="text" id="dZn'+i+'" value="'+esc(d.znacka||'')+'" placeholder="Značka a model (napr. Daikin Perfera)"><button type="button" class="dev-scan" onclick="scanSn(this.previousElementSibling,\'model\')">📷</button></div>'+
@@ -1998,7 +2031,7 @@ function fillChladivo(){
   var c=$('chClient');if(!c)return;
   var adm=isAdmin(),cv=c.value;
   c.innerHTML='<option value="">-- Klient (komu) --</option>'+dbData.clients.slice().sort(function(a,b){return nm(a).localeCompare(nm(b))}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(nm(x))+(x.obec?' – '+esc(x.obec):'')+'</option>'}).join('');
-  c.value=cv;fillChPick();
+  c.value=cv;cpInit('chClient');fillChPick();
   var t=$('chTech'),tv=t.value;
   if(adm){t.innerHTML='<option value="">-- Kto doplnil --</option>'+dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');t.value=tv;t.style.display=''}
   else{t.style.display='none';t.innerHTML=''}
@@ -3304,7 +3337,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-09.106';
+var APP_VERSION='2026-11-09.107';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
