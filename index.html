@@ -2360,7 +2360,7 @@ function showLeave(id){
 var HELP=[
 ['🚀 Začiatok – prvé kroky',0,'<ol><li>Na úvodnej stránke klikni pri „Nové správy pre…“ na <b>zmeniť</b> a vyber svoje meno. Bez toho neuvidíš svoje úlohy a správy.</li><li>Správca sa prihlási heslom, ktoré mu nastavil správca v Tíme.</li><li>Dole je lišta: <b>Dnes, Kalendár, Práca, Klienti</b> (len správca) a <b>Viac</b>. Šípka <b>‹ Späť</b> ťa vráti o krok späť.</li><li><b>Práca</b> obsahuje Montáž / Servis, Obhliadky a Chladivo. <b>Viac</b> obsahuje Ponuky, Servisné termíny, Voľno, Správy, Tím, Nápovedu, Správu a Nastavenia.</li></ol>'],
 ['🆕 Nové pre teba po otvorení',0,'Keď otvoríš apku, ukážu sa ti <b>jedna po jednej</b> nové veci: nové alebo zmenené zákazky a obhliadky (tlačidlo <b>👍 Beriem na vedomie</b>, alebo <b>Neskôr</b>), nové správy a rozhodnutia o voľne (tlačidlo <b>OK, prečítané</b>). Čo odložíš cez Neskôr, ostane červené na Dnes a ukáže sa znova pri ďalšom otvorení. Ak je apka offline, obrazovka sa nezobrazí a môžeš pracovať ďalej.'],
-['📦 Čaká na jednotku',0,'Pri zákazke zaškrtni <b>Čaká na jednotku</b> a zadaj <b>očakávanú dodávku</b>. Termín môže ostať len orientačný. Zákazka sa fialovo označí a správcovi sa ukáže v bloku <b>Čakajú na jednotku</b> na Dnes. Keď jednotka príde, zákazku otvor, odškrtni políčko a potvrď termín. Pri výbere klienta apka ukáže <b>💡 dni, keď technik v tej obci už ide</b>, a ťuknutím na dátum ho dosadíš.'],
+['📦 Čaká na jednotku',0,'Pri zákazke zaškrtni <b>Čaká na jednotku</b> a zadaj <b>očakávanú dodávku</b>. Termín môže ostať len orientačný. Zákazka sa fialovo označí a správcovi sa na Dnes ukáže <b>najstaršia</b> čakajúca a pod ňou <b>Zobraziť všetky</b>. Keď jednotka príde, zákazku otvor, odškrtni políčko a potvrď termín. Pri výbere klienta apka ukáže <b>💡 dni, keď technik v tej obci už ide</b>, a ťuknutím na dátum ho dosadíš.'],
 ['🧰 Tlačidlá Nástroje a +',0,'<b>+</b> uprostred lišty otvorí vytváranie a zoznamy (nová montáž, obhliadka, chladivo, zoznamy, 📦 Čaká na jednotku). <b>🧰 Nástroje</b> otvoria často používané veci: Moje úlohy, Trasa dňa, Hľadať, Mapa klientov, Voľno, Nová správa a Záloha (Hľadať a Záloha len správca).'],
 ['✅ Moje úlohy a Dnes / Zajtra',0,'Na úvodnej stránke vidíš, čo máš dnes a zajtra. V dlaždici <b>Moje úlohy</b> sú všetky tvoje zákazky: oneskorené, nadchádzajúce a bez dátumu. Hotové zákazky z úvodnej stránky miznú. Nad nimi je blok <b>🏖 Voľno tímu</b>: voľno od chvíle, keď sa pridá, až kým neskončí (technik vidí len svoje). V <b>Správach</b> (história) vidíš pri každej správe ✅ prečítané alebo ⏳ nečítal: meno. Pri každom voľne vidíš, či ho druhá strana už <b>prečítala</b> (✅ prečítané, alebo ⏳ nečítal: meno). Správca hore vidí oranžový pruh, keď čaká žiadosť o voľno, a odznak pri tlačidle Viac.'],
 ['🔧 Práca na zákazke (stav, protokol)',0,'<ol><li>Pri zákazke daj <b>▶ Prebieha</b>, keď si na mieste, a <b>✔ Hotová</b>, keď skončíš.</li><li>Farby: <b>modrá</b> nová/naplánovaná, <b>žltá</b> prebieha, <b>tmavočervená 🚨</b> urgentná, <b>sivá ✅</b> hotová.</li><li><b>🧾 Protokol:</b> zaškrtni kontrolný zoznam (ťuknutím na kruh vľavo), nechaj podpísať seba aj zákazníka priamo prstom a daj <b>Uložiť podpisy</b>.</li><li><b>🖨 Tlačiť / PDF</b> vytvorí dokument s hlavičkou firmy, <b>📤 Poslať</b> ho pošle e-mailom alebo cez zdieľanie.</li><li><b>💬 SMS klientovi</b> otvorí pripravenú pripomienku.</li><li><b>📷 Fotky:</b> v detaile zákazky ťukni na Pridať fotku (aj viac naraz, max. 8). Ťuknutím na fotku ju zväčšíš, × ju zmaže. Fotky sú aj v PDF protokole.</li></ol>'],
@@ -3211,7 +3211,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-09.99';
+var APP_VERSION='2026-11-09.100';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3596,8 +3596,9 @@ function greetHtml(n){
   var nm1=mm?String(mm.name||'').split(' ')[0]:'';
   return '<div class="greet"><b>'+g+(nm1?', '+esc(nm1):'')+'</b><span>'+(n?('Dnes máš '+n+(n===1?' zákazku':(n<5?' zákazky':' zákaziek'))):'Dnes nemáš žiadnu zákazku 🎉')+'</span></div>';
 }
+function waitCmp(a,b){return (a.createdAt||0)-(b.createdAt||0)}
 function showWaitList(){
-  var arr=dbData.montaze.filter(function(m){return m.stav==='Čaká na jednotku'}).sort(function(a,b){return (a.dodavka||'9999').localeCompare(b.dodavka||'9999')});
+  var arr=dbData.montaze.filter(function(m){return m.stav==='Čaká na jednotku'}).sort(waitCmp);
   lastDay=null;
   $('eventModalBody').innerHTML='<h3>📦 Čaká na jednotku ('+arr.length+')</h3>'+(arr.length?'<div class="tl">'+arr.map(function(m){
     var nr=nearJobs(obecOfJob(m),m.id),c=clientOfMontaz(m);
@@ -3608,12 +3609,13 @@ function showWaitList(){
 }
 function waitBlock(){
   if(!isAdmin())return '';
-  var arr=dbData.montaze.filter(function(m){return m.stav==='Čaká na jednotku'}).sort(function(a,b){return (a.dodavka||'9999').localeCompare(b.dodavka||'9999')});
+  var arr=dbData.montaze.filter(function(m){return m.stav==='Čaká na jednotku'}).sort(waitCmp);
   if(!arr.length)return '';
-  return '<div class="td-h">📦 Čakajú na jednotku ('+arr.length+')</div><div class="tl">'+arr.map(function(m){
+  var tot=arr.length;arr=arr.slice(0,1);
+  return '<div class="td-h">📦 Čakajú na jednotku ('+tot+') · najstaršia</div><div class="tl">'+arr.map(function(m){
     var ob=obecOfJob(m),nr=nearJobs(ob,m.id),c=clientOfMontaz(m);
     return '<div class="day-row" style="border-left-color:#7c3aed" onclick="showEvent(\'montaze\',\''+esc(m.id)+'\')"><b>'+esc(m.title||m.clientName||'-')+'</b><span>'+esc(m.clientName||'')+(c&&c.obec?' · '+esc(c.obec):'')+' · dodávka '+(m.dodavka?esc(fmtD(m.dodavka)):'neznáma')+(nr.length?'<br>💡 v obci už '+nr.map(function(x){return esc(fmtD(x.date))}).join(', '):'')+'</span></div>';
-  }).join('')+'</div>';
+  }).join('')+(tot>1?'<div class="day-row" style="border-left-color:#7c3aed;text-align:center" onclick="showWaitList()"><b>Zobraziť všetky ('+tot+')</b></div>':'')+'</div>';
 }
 function weekStrip(){
   var t=new Date(),dn=['Ne','Po','Ut','St','Št','Pi','So'],h='<div class="td-h">📆 Ďalšie dni</div><div class="wk">';
