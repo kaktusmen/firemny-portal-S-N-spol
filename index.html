@@ -297,7 +297,8 @@ html[data-theme=dark] .ph-lv{background:#164e63;color:#cffafe}
 #pageTitle::after{content:'';position:absolute;right:2px;top:50%;margin-top:-22px;width:44px;height:44px;border-radius:50%;background:#fff url(icon-180.png) center/cover;box-shadow:0 1px 6px rgba(0,0,0,.15)}
 /* stavy */
 .pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.74rem;font-weight:700;color:#fff;vertical-align:middle;line-height:1.5;margin-right:4px;white-space:nowrap}
-.pill.nova{background:var(--c-nova)}.pill.plan{background:var(--c-plan)}.pill.run{background:var(--c-run)}.pill.done{background:var(--c-done)}.pill.late{background:var(--c-late)}.pill.wait{background:#7c3aed}.near{background:rgba(124,58,237,.1);border-radius:12px;padding:8px 10px;font-size:.88rem}.near b{display:block;margin-bottom:2px}.near a{color:#7c3aed;font-weight:700;cursor:pointer}
+.pill.nova{background:var(--c-nova)}.pill.plan{background:var(--c-plan)}.pill.run{background:var(--c-run)}.pill.done{background:var(--c-done)}.pill.late{background:var(--c-late)}.pill.wait{background:#7c3aed}
+.wkg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.wkc{background:rgba(120,120,128,.1);border-radius:10px;padding:3px;min-height:110px}.wkc.we{opacity:.75}.wkc.today{outline:2px solid #f59e0b}.wkh{text-align:center;padding:2px 0 4px}.wkh small{display:block;font-size:.62rem;color:#8e8e93;font-weight:700}.wkh b{font-size:.95rem}.wkb{background:#fff;border-left:3px solid #2563eb;border-radius:6px;padding:2px 3px;margin-top:3px;overflow:hidden}html[data-theme=dark] .wkb{background:#2c2c2e}.wkb span{display:block;font-size:.6rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wkb i{display:block;font-size:.56rem;font-style:normal;color:#8e8e93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.near{background:rgba(124,58,237,.1);border-radius:12px;padding:8px 10px;font-size:.88rem}.near b{display:block;margin-bottom:2px}.near a{color:#7c3aed;font-weight:700;cursor:pointer}
 .item-card[data-st]{box-shadow:inset 5px 0 0 var(--c-nova),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
 .item-card[data-st=Naplánovaná]{box-shadow:inset 5px 0 0 var(--c-plan),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
 .item-card[data-st=Prebieha]{box-shadow:inset 5px 0 0 var(--c-run),0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
@@ -1882,23 +1883,26 @@ function rtItems(ds,tv){
   if(ord)arr.sort(function(a,b){var x=ord.indexOf(a.id),y=ord.indexOf(b.id);return (x<0?999:x)-(y<0?999:y)});
   return arr;
 }
+function obecLabel(m){
+  var c=clientOfMontaz(m),o=(c&&c.obec)||'';
+  if(!o){var a=m.address||(c?clientAddr(c):'')||'';o=a.split(',').pop()||''}
+  return String(o).replace(/\d+/g,'').trim()||'?';
+}
+function initials(n){return String(n||'').split(/\s+/).filter(Boolean).map(function(w){return w.charAt(0).toUpperCase()}).slice(0,2).join('')}
+function rtDayGo(ds){$('rtDate').value=ds;rtMode='d';renderRoute()}
 function renderRouteWeek(el,tv){
   var d0=new Date($('rtDate').value+'T12:00:00'),dow=(d0.getDay()+6)%7;d0.setDate(d0.getDate()-dow);
-  var names=['Pondelok','Utorok','Streda','Štvrtok','Piatok','Sobota','Nedeľa'],h='',tot=0,d6=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+6);
+  var nm7=['Po','Ut','St','Št','Pi','So','Ne'],h='',tot=0,d6=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+6),t0=ymd(new Date());
   for(var i=0;i<7;i++){
     var d=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i),ds=ymd(d),arr=rtItems(ds,tv);
-    if(!arr.length&&i>=5)continue;
     tot+=arr.length;
-    var addrs=arr.map(mAddr),obce={};
-    h+='<h3 style="margin:14px 0 6px">'+names[i]+' '+d.getDate()+'.'+(d.getMonth()+1)+'. <small style="color:#8e8e93">('+arr.length+')</small></h3>';
-    if(!arr.length){h+='<div class="td-none">Nič naplánované</div>';continue}
-    h+=arr.map(function(m,k){
-      var a=addrs[k],c=clientOfMontaz(m);
-      return '<div class="day-row" style="border-left-color:'+(m._obh?'#7c3aed':srvColor(m))+'" onclick="showEvent(\''+(m._obh?'obhliadky':'montaze')+'\',\''+esc(m.id)+'\')"><b>'+(k+1)+'. '+(m.time?esc(m.time)+' – ':'')+esc(m._obh?'🔍 Obhliadka':srvIcon(m)+(m.title||'Zákazka'))+'</b><span>'+(m.clientName?'👤 '+esc(m.clientName)+' · ':'')+esc(a||'bez adresy')+(!tv&&m.memberNames&&m.memberNames.length?' · 👷 '+esc(m.memberNames.join(', ')):'')+'</span></div>';
-    }).join('');
-    if(arr.length>1&&addrs.filter(Boolean).length>1)h+='<a class="action-btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="'+mapsDir(addrs)+'">🗺 Celá trasa – '+names[i]+'</a>';
+    h+='<div class="wkc'+(ds===t0?' today':'')+(i>=5?' we':'')+'"><div class="wkh" onclick="rtDayGo(\''+ds+'\')"><small>'+nm7[i]+'</small><b>'+d.getDate()+'</b></div>'+
+      arr.map(function(m){
+        var who=(m.memberNames||[]).map(initials).join(' ');
+        return '<div class="wkb" style="border-left-color:'+(m._obh?'#7c3aed':srvColor(m))+'" onclick="showEvent(\''+(m._obh?'obhliadky':'montaze')+'\',\''+esc(m.id)+'\')"><span>'+(m._obh?'🔍':'')+esc(obecLabel(m))+'</span><i>'+esc(who||'–')+'</i></div>';
+      }).join('')+'</div>';
   }
-  el.innerHTML='<p style="color:#64748b;font-size:.9rem">Týždeň '+d0.getDate()+'.'+(d0.getMonth()+1)+'. – '+d6.getDate()+'.'+(d6.getMonth()+1)+'.: <b>'+tot+'</b> '+(tot===1?'zákazka/obhliadka':'zákaziek a obhliadok')+'. Ťuknutím otvoríš detail, poradie upravíš v pohľade Deň.</p>'+h;
+  el.innerHTML='<p style="color:#64748b;font-size:.9rem;margin:4px 0">'+d0.getDate()+'.'+(d0.getMonth()+1)+'. – '+d6.getDate()+'.'+(d6.getMonth()+1)+'.'+d6.getFullYear()+' · <b>'+tot+'</b> spolu. Ťuknutím na zastávku otvoríš detail, na dátum celý deň.</p><div class="wkg">'+h+'</div>';
 }
 function renderRoute(){
   var el=$('rtList');if(!el)return;
@@ -2429,7 +2433,7 @@ var HELP=[
 ['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
 ['🧪 Upozornenie na kontrolu tesnosti',0,'Správca vidí na úvodnej stránke Dnes červený pruh, keď je kontrola tesnosti chladiva po termíne alebo do 60 dní. Ťuknutím sa otvoria Servisné termíny, kde ju zapíšeš.'],
 ['📅 Kalendár',0,'Prepínaš <b>Mesiac / Týždeň</b>. Ťuknutím na deň vidíš udalosti a môžeš pridať montáž, čistenie alebo opravu. Ťuknutím na udalosť sa otvorí jej detail. Na mobile môžeš listovať potiahnutím doľava a doprava. Správca si môže filtrovať podľa technika.'],
-['🗺 Trasa týždňa',0,'V Trase dňa prepni hore na <b>Týždeň</b>: uvidíš Pondelok až Piatok (víkend len ak niečo je) s počtom zákaziek, časom, klientom a adresou. Ťuknutím otvoríš detail, pri každom dni je <b>Celá trasa</b> v mapách. Šípkami ‹ › listuješ týždne. Poradie zastávok upravíš v pohľade Deň.'],
+['🗺 Trasa týždňa',0,'V Trase dňa prepni hore na <b>Týždeň</b>: uvidíš týždeň ako <b>kalendár</b>: v každom dni obec a v skratke (iniciálky), kto tam ide. Ťuknutím na zastávku otvoríš detail, ťuknutím na dátum celý deň. Šípkami listuješ týždne.'],
 ['🗺 Trasa dňa',0,'Vyber deň a uvidíš svoje otvorené zákazky podľa času. <b>🧭 Navigovať</b> otvorí Google mapy, <b>▲▼</b> zmení poradie a <b>Celá trasa</b> otvorí všetky zastávky naraz.'],
 ['🏖 Voľno',0,'Voľno môže byť na <b>celý deň (aj viac dní)</b> alebo <b>na určitý čas</b> (od–do hodiny). Technik pošle žiadosť, správca ju schváli alebo zamietne. Správca môže voľno inému určiť sám, platí hneď. <b>Vlastné voľno správcu musí schváliť iný správca.</b> Schválené voľno je v kalendári tyrkysové. Appka upozorní: (1) keď niekomu naplánuješ prácu v čase jeho voľna, (2) keď technik žiada o voľno a už má v tom čase zákazku, (3) správcu pri schvaľovaní, ak má technik v tom čase zákazku.'],
 ['❄️ Chladivo a kontrola tesnosti',0,'<ol><li><b>Práca → Chladivo:</b> zapíš dátum, klienta, (zariadenie), typ chladiva, množstvo v kg, dôvod a kto ho doplnil. Adresa sa doplní z karty klienta.</li><li>Záznamy sa dajú hľadať, filtrovať podľa roka a exportovať do CSV. Technik vidí len svoje.</li><li>Pri zariadení v montáži vyplň typ chladiva a náplň. Appka vypočíta t CO₂e a či je <b>kontrola tesnosti</b> povinná (a po koľkých mesiacoch).</li><li>Kontroly, ktoré sa blížia alebo meškajú, sú v <b>Viac → Servisné termíny</b>. Tlačidlo <b>Zapísať kontrolu</b> otvorí formulár s dôvodom „Kontrola tesnosti“.</li><li>Lehoty sú orientačné. Overte si ich u certifikovanej osoby.</li></ol>'],
@@ -3239,7 +3243,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-09.101';
+var APP_VERSION='2026-11-09.102';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
