@@ -1750,7 +1750,7 @@ function scanSn(inp,mode){
     if(!ok){$('scanMsg').textContent='Skener sa nepodarilo spustiť. Skús „Použiť fotku štítku“ nižšie.';return}
     try{
       scanObj=new Html5Qrcode('scanView',{experimentalFeatures:{useBarCodeDetectorIfSupported:true},verbose:false});
-      scanObj.start({facingMode:'environment'},{fps:10,qrbox:function(w,h){return {width:Math.min(w-20,320),height:Math.min(Math.round(h*0.5),170)}}},function(txt){scanDone(txt)},function(){})
+      scanObj.start({facingMode:'environment'},{fps:15,videoConstraints:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}},function(txt){scanDone(txt)},function(){})
       .catch(function(e){$('scanMsg').textContent='Kamera sa nespustila (povoľ prístup k fotoaparátu). Skús „Použiť fotku štítku“.';scanObj=null});
     }catch(e){$('scanMsg').textContent='Skener sa nepodarilo spustiť.'}
   });
@@ -1765,13 +1765,41 @@ function scanClose(cb){
   var fin=function(){$('scanBox').style.display='none';$('scanView').innerHTML='';scanObj=null;if(typeof cb==='function')cb()};
   if(scanObj){var o=scanObj;scanObj=null;o.stop().then(function(){try{o.clear()}catch(e){}fin()}).catch(fin)}else fin();
 }
+function scanImgVariants(f){
+  return new Promise(function(res){
+    var im=new Image(),u=URL.createObjectURL(f);
+    im.onload=function(){
+      var out=[];
+      function mk(maxSide,rot,gray){
+        var sc=Math.min(1,maxSide/Math.max(im.width,im.height)),w=Math.round(im.width*sc),h=Math.round(im.height*sc);
+        var c=document.createElement('canvas');
+        if(rot){c.width=h;c.height=w}else{c.width=w;c.height=h}
+        var x=c.getContext('2d');
+        if(rot){x.translate(h,0);x.rotate(Math.PI/2)}
+        if(gray)x.filter='grayscale(1) contrast(1.6)';
+        x.drawImage(im,0,0,w,h);
+        return new Promise(function(r){c.toBlob(function(b){r(b?new File([b],'v.png',{type:'image/png'}):null)},'image/png')});
+      }
+      Promise.all([mk(1800,0,1),mk(1200,0,1),mk(1800,1,1),mk(900,0,0),mk(2400,0,0)]).then(function(a){URL.revokeObjectURL(u);res(a.filter(Boolean))});
+    };
+    im.onerror=function(){URL.revokeObjectURL(u);res([])};
+    im.src=u;
+  });
+}
 function scanFromFile(inp){
   var f=inp.files&&inp.files[0];inp.value='';if(!f)return;
   scanLoad(function(ok){
     if(!ok){$('scanMsg').textContent='Skener sa nenačítal.';return}
+    $('scanMsg').textContent='Čítam fotku…';
+    var h=new Html5Qrcode('scanView',{experimentalFeatures:{useBarCodeDetectorIfSupported:true},verbose:false});
     var go=function(){
-      var h=new Html5Qrcode('scanView',{experimentalFeatures:{useBarCodeDetectorIfSupported:true},verbose:false});
-      h.scanFile(f,false).then(function(t){scanObj=null;scanDone(t)}).catch(function(){$('scanMsg').textContent='Na fotke sa nenašiel čiarový ani QR kód. Skús bližšie a ostrejšie.'});
+      var tryList=function(list,k){
+        if(k>=list.length){$('scanMsg').textContent='Na fotke sa nenašiel čiarový ani QR kód. Odfoť štítok zblízka, ostro a rovno, bez odleskov, a kód nech vyplní väčšinu fotky.';return}
+        h.scanFile(list[k],false).then(function(t){scanObj=null;scanDone(t)}).catch(function(){tryList(list,k+1)});
+      };
+      h.scanFile(f,false).then(function(t){scanObj=null;scanDone(t)}).catch(function(){
+        scanImgVariants(f).then(function(v){tryList(v,0)});
+      });
     };
     if(scanObj){var o=scanObj;scanObj=null;o.stop().then(go).catch(go)}else go();
   });
@@ -3353,7 +3381,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-09.109';
+var APP_VERSION='2026-11-09.110';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4096,7 +4124,7 @@ window.onload=function(){
 <body>
 <div id="splash"><img src="icon-192.png" alt=""><b>Firemný Portál</b><small>Úsporné klímy S&amp;N</small></div>
 <div id="nfyBox"></div>
-<div id="scanBox"><div class="nfy-c"><div class="nfy-t" id="scanTitle">📷 Načítať kód zo štítku</div><div class="nfy-r" style="color:#64748b">Namier kameru na čiarový alebo QR kód. Drž ho v rámčeku a bez odleskov.</div><div id="scanView" style="margin-top:8px;border-radius:12px;overflow:hidden;min-height:60px"></div><div id="scanMsg" class="nfy-r" style="color:#b45309"></div>
+<div id="scanBox"><div class="nfy-c"><div class="nfy-t" id="scanTitle">📷 Načítať kód zo štítku</div><div class="nfy-r" style="color:#64748b">Namier kameru na čiarový alebo QR kód zo vzdialenosti asi 15–25 cm, nech je kód ostrý a bez odleskov (štítok trochu nakloň). Ak sa nenačíta, ťukni nižšie na „Použiť fotku štítku“ a odfoť ho zblízka.</div><div id="scanView" style="margin-top:8px;border-radius:12px;overflow:hidden;min-height:60px"></div><div id="scanMsg" class="nfy-r" style="color:#b45309"></div>
 <button class="nfy-b" style="background:#2563eb" onclick="document.getElementById('scanFile').click()">🖼 Použiť fotku štítku</button><input type="file" id="scanFile" accept="image/*" capture="environment" style="display:none" onchange="scanFromFile(this)">
 <button class="nfy-b nfy-l" onclick="scanClose()">Zrušiť</button></div></div>
 <div id="fabSheet" onclick="if(event.target===this)this.style.display='none'"><div class="fab-menu">
