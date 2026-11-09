@@ -1868,7 +1868,38 @@ function rtMove(i,d){
   if(j<0||j>=arr.length)return;
   var t=arr[i];arr[i]=arr[j];arr[j]=t;rtOrder[ds]=arr;renderRoute();
 }
-var rtCur=[];
+var rtCur=[],rtMode='d';
+function rtSetMode(m){rtMode=m;renderRoute()}
+function rtShift(n){var d=new Date($('rtDate').value+'T12:00:00');d.setDate(d.getDate()+n);$('rtDate').value=ymd(d);renderRoute()}
+function rtItems(ds,tv){
+  var arr=dbData.montaze.filter(function(m){return m.date===ds&&(!tv||(m.memberIds||[]).indexOf(tv)>-1)&&m.stav!=='Hotová'&&m.stav!=='Čaká na jednotku'});
+  dbData.obhliadky.forEach(function(o){
+    if(o.vykonana||o.date!==ds||(tv&&(o.memberIds||[]).indexOf(tv)<0))return;
+    arr.push({id:o.id,_obh:true,time:o.time||'',title:'Obhliadka',clientName:onm(o),address:[o.adresa,o.obec].filter(Boolean).join(', '),telefon:o.telefon||'',date:o.date});
+  });
+  arr.sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99')});
+  var ord=rtOrder[ds];
+  if(ord)arr.sort(function(a,b){var x=ord.indexOf(a.id),y=ord.indexOf(b.id);return (x<0?999:x)-(y<0?999:y)});
+  return arr;
+}
+function renderRouteWeek(el,tv){
+  var d0=new Date($('rtDate').value+'T12:00:00'),dow=(d0.getDay()+6)%7;d0.setDate(d0.getDate()-dow);
+  var names=['Pondelok','Utorok','Streda','Štvrtok','Piatok','Sobota','Nedeľa'],h='',tot=0,d6=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+6);
+  for(var i=0;i<7;i++){
+    var d=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i),ds=ymd(d),arr=rtItems(ds,tv);
+    if(!arr.length&&i>=5)continue;
+    tot+=arr.length;
+    var addrs=arr.map(mAddr),obce={};
+    h+='<h3 style="margin:14px 0 6px">'+names[i]+' '+d.getDate()+'.'+(d.getMonth()+1)+'. <small style="color:#8e8e93">('+arr.length+')</small></h3>';
+    if(!arr.length){h+='<div class="td-none">Nič naplánované</div>';continue}
+    h+=arr.map(function(m,k){
+      var a=addrs[k],c=clientOfMontaz(m);
+      return '<div class="day-row" style="border-left-color:'+(m._obh?'#7c3aed':srvColor(m))+'" onclick="showEvent(\''+(m._obh?'obhliadky':'montaze')+'\',\''+esc(m.id)+'\')"><b>'+(k+1)+'. '+(m.time?esc(m.time)+' – ':'')+esc(m._obh?'🔍 Obhliadka':srvIcon(m)+(m.title||'Zákazka'))+'</b><span>'+(m.clientName?'👤 '+esc(m.clientName)+' · ':'')+esc(a||'bez adresy')+(!tv&&m.memberNames&&m.memberNames.length?' · 👷 '+esc(m.memberNames.join(', ')):'')+'</span></div>';
+    }).join('');
+    if(arr.length>1&&addrs.filter(Boolean).length>1)h+='<a class="action-btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="'+mapsDir(addrs)+'">🗺 Celá trasa – '+names[i]+'</a>';
+  }
+  el.innerHTML='<p style="color:#64748b;font-size:.9rem">Týždeň '+d0.getDate()+'.'+(d0.getMonth()+1)+'. – '+d6.getDate()+'.'+(d6.getMonth()+1)+'.: <b>'+tot+'</b> '+(tot===1?'zákazka/obhliadka':'zákaziek a obhliadok')+'. Ťuknutím otvoríš detail, poradie upravíš v pohľade Deň.</p>'+h;
+}
 function renderRoute(){
   var el=$('rtList');if(!el)return;
   if(!$('rtDate').value)$('rtDate').value=ymd(new Date());
@@ -1877,14 +1908,10 @@ function renderRoute(){
   if(!adm)tv=me||'__none';
   tsel.innerHTML='<option value="">👷 Všetci technici</option>'+dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('');
   tsel.value=tv==='__none'?'':tv;tsel.style.display=adm?'':'none';
-  var arr=dbData.montaze.filter(function(m){return m.date===ds&&(!tv||(m.memberIds||[]).indexOf(tv)>-1)&&m.stav!=='Hotová'});
-  dbData.obhliadky.forEach(function(o){
-    if(o.vykonana||o.date!==ds||(tv&&(o.memberIds||[]).indexOf(tv)<0))return;
-    arr.push({id:o.id,_obh:true,time:o.time||'',title:'Obhliadka',clientName:onm(o),address:[o.adresa,o.obec].filter(Boolean).join(', '),telefon:o.telefon||'',date:o.date});
-  });
-  arr.sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99')});
-  var ord=rtOrder[ds];
-  if(ord)arr.sort(function(a,b){var x=ord.indexOf(a.id),y=ord.indexOf(b.id);return (x<0?999:x)-(y<0?999:y)});
+  $('rtBd').style.background=rtMode==='d'?'#2563eb':'#64748b';$('rtBw').style.background=rtMode==='w'?'#2563eb':'#64748b';
+  $('rtWkNav').style.display=rtMode==='w'?'flex':'none';
+  if(rtMode==='w'){renderRouteWeek(el,tv);return}
+  var arr=rtItems(ds,tv);
   rtCur=arr;
   var addrs=arr.map(mAddr);
   el.innerHTML=(arr.length?'<p style="color:#64748b;font-size:.9rem">Poradie je podľa času, šípkami ▲▼ ho môžeš upraviť. Hotové zákazky sa nezobrazujú. Obhliadky sú označené 🔍.</p>':'')+arr.map(function(m,i){
@@ -2402,6 +2429,7 @@ var HELP=[
 ['🔍 Hľadanie v montážach',0,'V zozname montáží a servisov je hore pole <b>Hľadať</b>. Píš meno klienta, názov zákazky, adresu alebo meno technika (diakritika nevadí). Dá sa spojiť s filtrom „Zobraziť“.'],
 ['🧪 Upozornenie na kontrolu tesnosti',0,'Správca vidí na úvodnej stránke Dnes červený pruh, keď je kontrola tesnosti chladiva po termíne alebo do 60 dní. Ťuknutím sa otvoria Servisné termíny, kde ju zapíšeš.'],
 ['📅 Kalendár',0,'Prepínaš <b>Mesiac / Týždeň</b>. Ťuknutím na deň vidíš udalosti a môžeš pridať montáž, čistenie alebo opravu. Ťuknutím na udalosť sa otvorí jej detail. Na mobile môžeš listovať potiahnutím doľava a doprava. Správca si môže filtrovať podľa technika.'],
+['🗺 Trasa týždňa',0,'V Trase dňa prepni hore na <b>Týždeň</b>: uvidíš Pondelok až Piatok (víkend len ak niečo je) s počtom zákaziek, časom, klientom a adresou. Ťuknutím otvoríš detail, pri každom dni je <b>Celá trasa</b> v mapách. Šípkami ‹ › listuješ týždne. Poradie zastávok upravíš v pohľade Deň.'],
 ['🗺 Trasa dňa',0,'Vyber deň a uvidíš svoje otvorené zákazky podľa času. <b>🧭 Navigovať</b> otvorí Google mapy, <b>▲▼</b> zmení poradie a <b>Celá trasa</b> otvorí všetky zastávky naraz.'],
 ['🏖 Voľno',0,'Voľno môže byť na <b>celý deň (aj viac dní)</b> alebo <b>na určitý čas</b> (od–do hodiny). Technik pošle žiadosť, správca ju schváli alebo zamietne. Správca môže voľno inému určiť sám, platí hneď. <b>Vlastné voľno správcu musí schváliť iný správca.</b> Schválené voľno je v kalendári tyrkysové. Appka upozorní: (1) keď niekomu naplánuješ prácu v čase jeho voľna, (2) keď technik žiada o voľno a už má v tom čase zákazku, (3) správcu pri schvaľovaní, ak má technik v tom čase zákazku.'],
 ['❄️ Chladivo a kontrola tesnosti',0,'<ol><li><b>Práca → Chladivo:</b> zapíš dátum, klienta, (zariadenie), typ chladiva, množstvo v kg, dôvod a kto ho doplnil. Adresa sa doplní z karty klienta.</li><li>Záznamy sa dajú hľadať, filtrovať podľa roka a exportovať do CSV. Technik vidí len svoje.</li><li>Pri zariadení v montáži vyplň typ chladiva a náplň. Appka vypočíta t CO₂e a či je <b>kontrola tesnosti</b> povinná (a po koľkých mesiacoch).</li><li>Kontroly, ktoré sa blížia alebo meškajú, sú v <b>Viac → Servisné termíny</b>. Tlačidlo <b>Zapísať kontrolu</b> otvorí formulár s dôvodom „Kontrola tesnosti“.</li><li>Lehoty sú orientačné. Overte si ich u certifikovanej osoby.</li></ol>'],
@@ -3211,7 +3239,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-09.100';
+var APP_VERSION='2026-11-09.101';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4394,7 +4422,9 @@ window.onload=function(){
   <div id="routeSection" class="section-content">
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Trasa dňa</h2>
+    <div style="display:flex;gap:8px;margin:6px 0"><button id="rtBd" class="btn-edit" style="flex:1;background:#2563eb" onclick="rtSetMode('d')">Deň</button><button id="rtBw" class="btn-edit" style="flex:1;background:#64748b" onclick="rtSetMode('w')">Týždeň</button></div>
     <div class="form-grid"><label class="fl">Dátum<input type="date" id="rtDate" onchange="renderRoute()"></label><select id="rtTech" onchange="renderRoute()"></select></div>
+    <div id="rtWkNav" style="display:none;gap:8px;margin:4px 0"><button class="btn-edit" style="flex:1;background:#64748b" onclick="rtShift(-7)">‹ Minulý týždeň</button><button class="btn-edit" style="flex:1;background:#64748b" onclick="rtShift(7)">Ďalší týždeň ›</button></div>
     <div id="rtList"></div>
   </div>
 
