@@ -2010,8 +2010,12 @@ function pdfBuild(pgs,W,H){
 var ponukaFile=null;
 function ponukaText(p){
   var t=ponukaTotal(p),f=firmaData(),k=p.klient||{};
-  return 'Dobrý deň'+(k.meno?' '+k.meno:'')+',\n\nv prílohe vám posielame cenovú ponuku č. '+p.cislo+'.\n\n'+(p.polozky||[]).map(function(x){return '• '+x.n+' – '+x.q+' '+x.u+' × '+fmtEur(num(x.c))}).join('\n')+
-    '\n\nCelkom'+(t.d?' s DPH':'')+': '+fmtEur(t.total)+(k.adresa?'\nMiesto realizácie: '+k.adresa:'')+(p.pozn?'\n\n'+p.pozn:'')+'\n\nS pozdravom\n'+(f.nazov||'Úsporné klímy S&N')+(f.tel?'\n'+f.tel:'');
+  return 'Dobrý deň'+(k.meno?' '+k.meno:'')+',\n\nv prílohe vám posielame cenovú ponuku č. '+p.cislo+'.\n\nCena spolu'+(t.d?' s DPH':'')+': '+fmtEur(t.total)+'.'+(k.adresa?'\nMiesto realizácie: '+k.adresa+'.':'')+(p.pozn?'\n\n'+p.pozn:'')+'\n\nS pozdravom\n'+(f.nazov||'Úsporné klímy S&N')+(f.tel?'\n'+f.tel:'');
+}
+function ponukaCopyMail(id){
+  var p=findById('ponuky',id),e=(p&&p.klient&&p.klient.email)||'';if(!e)return false;
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(e);return true}}catch(x){}
+  return false;
 }
 function sharePonuka(id){
   var p=findById('ponuky',id);if(!p)return;
@@ -2023,7 +2027,8 @@ function sharePonuka(id){
     var k=p.klient||{};
     $('eventModalBody').innerHTML='<h3>📤 Poslať ponuku '+esc(p.cislo||'')+'</h3>'+
       '<div class="modal-row">✅ PDF je pripravené ('+Math.round(blob.size/1024)+' kB).</div>'+
-      '<div class="modal-row"><strong>Pre:</strong> '+esc(k.meno||'')+(k.email?' · '+esc(k.email):'<br><span style="color:#b91c1c">Klient nemá e-mail – doplň ho v ponuke.</span>')+'</div>'+
+      '<div class="modal-row"><strong>Pre:</strong> '+esc(k.meno||'')+(k.email?'<br><b>'+esc(k.email)+'</b> <button class="btn-edit" style="background:#475569;padding:4px 10px;margin-left:6px" onclick="toast(ponukaCopyMail(\''+esc(id)+'\')?\'E-mail skopírovaný\':\'Nepodarilo sa skopírovať\')">📋 Kopírovať</button>':'<br><span style="color:#b91c1c">Klient nemá e-mail – doplň ho v ponuke.</span>')+'</div>'+
+      '<div class="modal-row" style="font-size:.85rem;color:#64748b">Pri „Odoslať s PDF prílohou“ sa e-mail klienta skopíruje – v poli <b>Pre</b> ho vložíš klávesmi <b>⌘V</b> (na iPhone podržíš prst a Vložiť). Pri „Otvoriť e-mail“ je príjemca vyplnený sám, no PDF pridáš ručne.</div>'+
       '<div class="modal-actions" style="flex-direction:column;align-items:stretch">'+
       '<button class="btn-edit" style="background:#16a34a;padding:14px" onclick="ponukaSend(\''+esc(id)+'\',\'share\')">📤 Odoslať (e-mail, správy…) s PDF prílohou</button>'+
       '<button class="btn-edit" style="background:#2563eb;padding:14px" onclick="ponukaSend(\''+esc(id)+'\',\'mail\')">✉️ Otvoriť e-mail (PDF si pridáš ručne)</button>'+
@@ -2041,8 +2046,9 @@ function ponukaSend(id,how){
   var k=p.klient||{},title='Cenová ponuka '+p.cislo+' – '+((firmaData().nazov)||'Úsporné klímy S&N'),txt=ponukaText(p);
   if(how==='dl'){ponukaDl();toast('PDF stiahnuté');return}
   if(how==='share'){
+    var cpd=ponukaCopyMail(id);
     if(ponukaFile.file&&navigator.canShare&&navigator.canShare({files:[ponukaFile.file]})){
-      navigator.share({files:[ponukaFile.file],title:title,text:txt}).catch(function(){});return;
+      navigator.share({files:[ponukaFile.file],title:title,text:txt}).catch(function(){});if(cpd)toast('E-mail klienta skopírovaný – vlož ho do poľa Pre');return;
     }
     ponukaDl();toast('Tento prehliadač nevie pripojiť prílohu – PDF je stiahnuté, pridaj ho do e-mailu');
   }
@@ -3494,7 +3500,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-10.123';
+var APP_VERSION='2026-11-10.124';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
