@@ -1761,10 +1761,12 @@ function shareDoc(title,text,mail){
 }
 function ponukaTotal(p){
   var sub=0;(p.polozky||[]).forEach(function(x){sub+=num(x.q)*num(x.c)});
-  var d=num(p.dph);return {sub:sub,dph:sub*d/100,total:sub*(1+d/100),d:d};
+  var d=num(p.dph);
+  if(p.sDph)return {sub:d?sub/(1+d/100):sub,dph:d?sub-sub/(1+d/100):0,total:sub,d:d};
+  return {sub:sub,dph:sub*d/100,total:sub*(1+d/100),d:d};
 }
 function pRowHtml(x){
-  return '<div class="dev-row" style="margin-bottom:6px"><input class="pN" placeholder="Položka" value="'+esc(x.n||'')+'" oninput="ponukaSum()"><input class="pQ" style="max-width:52px" inputmode="decimal" value="'+esc(x.q||1)+'" oninput="ponukaSum()"><input class="pU" style="max-width:52px" value="'+esc(x.u||'ks')+'"><input class="pC" style="max-width:80px" inputmode="decimal" placeholder="€" value="'+esc(x.c||'')+'" oninput="ponukaSum()"><button type="button" class="dev-x" onclick="this.parentNode.remove();ponukaSum()">×</button></div>';
+  return '<div class="dev-row" style="margin-bottom:6px"><input class="pN" placeholder="Položka" value="'+esc(x.n||'')+'" oninput="ponukaSum()"><input class="pQ" style="max-width:52px" inputmode="decimal" value="'+esc(x.q||1)+'" oninput="ponukaSum()"><input class="pU" style="max-width:52px" value="'+esc(x.u||'ks')+'"><input class="pC" style="max-width:92px" inputmode="decimal" placeholder="s DPH €" value="'+esc(x.c||'')+'" oninput="ponukaSum()"><button type="button" class="dev-x" onclick="this.parentNode.remove();ponukaSum()">×</button></div>';
 }
 function ponukaRead(){
   return Array.prototype.map.call(document.querySelectorAll('#pRows .dev-row'),function(r){
@@ -1772,8 +1774,8 @@ function ponukaRead(){
   }).filter(function(x){return x.n});
 }
 function ponukaSum(){
-  var t=ponukaTotal({polozky:ponukaRead(),dph:firmaData().dph});
-  $('pSum').textContent='Spolu bez DPH: '+fmtEur(t.sub)+(t.d?' · s DPH '+t.d+' %: '+fmtEur(t.total):'');
+  var t=ponukaTotal({polozky:ponukaRead(),dph:firmaData().dph,sDph:true});
+  $('pSum').textContent='Celkom s DPH: '+fmtEur(t.total)+(t.d?' (základ '+fmtEur(t.sub)+' + DPH '+t.d+' %: '+fmtEur(t.dph)+')':'');
 }
 function ponukaAddRow(x){$('pRows').insertAdjacentHTML('beforeend',pRowHtml(x&&x.n!==undefined?x:{}));ponukaSum()}
 function ponukaAddCn(){
@@ -1847,19 +1849,20 @@ function savePonuka(){
   }
   put('ponuky',{cislo:cislo,datum:(old&&old.datum)||ymd(new Date()),ts:(old&&old.ts)||Date.now(),obhliadkaId:$('pObh').value||'',
     klient:{meno:$('pMeno').value.trim(),tel:$('pTel').value.trim(),email:$('pEmail').value.trim(),adresa:$('pAdresa').value.trim()},
-    polozky:pol,pozn:$('pPozn').value.trim(),dph:firmaData().dph||0},eid);
+    polozky:pol,pozn:$('pPozn').value.trim(),dph:firmaData().dph||0,sDph:true},eid);
   hidePonukaForm();toast('Ponuka '+cislo+' uložená');
 }
 function printPonuka(id){
   var p=findById('ponuky',id);if(!p)return;
   var t=ponukaTotal(p),f=firmaData(),k=p.klient||{};
   var rows=(p.polozky||[]).map(function(x,i){var s=num(x.q)*num(x.c);return '<tr><td>'+(i+1)+'</td><td>'+esc(x.n)+'</td><td>'+esc(x.q)+' '+esc(x.u)+'</td><td style="text-align:right">'+fmtEur(num(x.c))+'</td><td style="text-align:right">'+fmtEur(s)+'</td></tr>'}).join('');
-  var tot='<tr class="tot"><td colspan="4">Spolu'+(t.d?' bez DPH':'')+'</td><td style="text-align:right">'+fmtEur(t.sub)+'</td></tr>'+
-    (t.d?'<tr class="tot"><td colspan="4">DPH '+t.d+' %</td><td style="text-align:right">'+fmtEur(t.dph)+'</td></tr><tr class="tot"><td colspan="4">Celkom s DPH</td><td style="text-align:right">'+fmtEur(t.total)+'</td></tr>':'');
+  var gross=!!p.sDph;
+  var tot=(t.d?(gross?'<tr class="tot"><td colspan="4">Základ dane</td><td style="text-align:right">'+fmtEur(t.sub)+'</td></tr><tr class="tot"><td colspan="4">DPH '+t.d+' %</td><td style="text-align:right">'+fmtEur(t.dph)+'</td></tr>':'<tr class="tot"><td colspan="4">Spolu bez DPH</td><td style="text-align:right">'+fmtEur(t.sub)+'</td></tr><tr class="tot"><td colspan="4">DPH '+t.d+' %</td><td style="text-align:right">'+fmtEur(t.dph)+'</td></tr>'):'')+
+    '<tr class="tot"><td colspan="4">Celkom'+(t.d?' s DPH':'')+'</td><td style="text-align:right">'+fmtEur(t.total)+'</td></tr>';
   openDoc('<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cenová ponuka '+esc(p.cislo)+'</title><style>'+pdfCss()+'</style></head><body>'+letterhead()+
     '<h1>Cenová ponuka č. '+esc(p.cislo)+'</h1><div>Dátum: '+esc(p.datum?fmtD(p.datum):'')+'</div>'+
     '<p><b>Pre:</b> '+esc(k.meno||'')+'<br>'+esc(k.adresa||'')+'<br>'+esc([k.tel,k.email].filter(Boolean).join(' · '))+'</p>'+
-    '<table><tr><th>#</th><th>Položka</th><th>Množstvo</th><th>Cena/MJ</th><th>Spolu</th></tr>'+rows+tot+'</table>'+
+    '<table><tr><th>#</th><th>Položka</th><th>Množstvo</th><th>Cena/MJ'+(gross&&t.d?' s DPH':'')+'</th><th>Spolu'+(gross&&t.d?' s DPH':'')+'</th></tr>'+rows+tot+'</table>'+
     (p.pozn?'<p>'+esc(p.pozn).replace(/\n/g,'<br>')+'</p>':'')+'<div style="display:flex;gap:14px;align-items:center;margin-top:18px;border:1px solid #ccc;border-radius:10px;padding:10px;page-break-inside:avoid"><div>'+QR.svg(formUrl({p:p.cislo}),110)+'</div><div><b>Súhlasíte s ponukou?</b><br>Naskenujte QR kód telefónom a odošlite nám objednávku. Ozveme sa vám a dohodneme termín.</div></div>'+(f.pata?'<p style="font-size:12px;color:#555">'+esc(f.pata).replace(/\n/g,'<br>')+'</p>':'')+
     '<p class="np" style="margin-top:24px"><button onclick="window.print()" style="padding:10px 16px;font-size:15px">🖨 Tlačiť / Uložiť ako PDF</button></p></body></html>');
 }
@@ -2496,7 +2499,7 @@ var HELP=[
 ['👥 Klienti',1,'Karta klienta má meno, adresu, telefón a e-mail. Ťuknutím na telefón volíš, na adresu naviguješ (Google mapy). V karte vidíš históriu: montáže, servisy a čistenia aj s podrobnosťami. Pri uložení s rovnakým telefónom ťa appka upozorní na duplicitu.'],
 ['🔧 Montáž / Servis (zadávanie)',1,'<ol><li>Vyber <b>Montáž</b> alebo <b>Servis</b> (Oprava, Čistenie).</li><li>Klienta vyberieš z karty klientov, adresa sa doplní sama.</li><li>Pri montáži môžeš pridať viac zariadení, viac vnútorných jednotiek, sériové čísla a záruku v rokoch, typ chladiva a jeho náplň v kg (podľa nej appka určí povinnosť kontroly tesnosti).</li><li>Po uložení montáže so zárukou sa sám vytvorí <b>záručný servis</b> (340 dní po montáži a potom každý rok).</li><li>Priraď členov tímu, ktorí tam idú.</li></ol>'],
 ['🔍 Obhliadky',1,'Obhliadka je potenciálny klient. Vyplníš údaje a parametre (typ, budova, stena, miesto jednotiek…). Po potvrdení klikni <b>✅ Na klienta</b> a prenesie sa do kariet klientov.'],
-['💶 Cenové ponuky',1,'Dlaždica <b>Ponuky</b> → Nová ponuka. Môžeš vybrať obhliadku, pridať položky z cenníka alebo vlastné a upraviť ceny. Číslo (PON-rok-001) sa pridelí samo. <b>🖨 PDF</b> vytvorí ponuku s hlavičkou firmy, <b>📤 Poslať</b> ju pošle.'],
+['💶 Cenové ponuky',1,'Dlaždica <b>Ponuky</b> → Nová ponuka. Môžeš vybrať obhliadku, pridať položky z cenníka alebo vlastné a upraviť ceny. Ceny zadávaš <b>s DPH</b> (celková suma); základ a DPH sa dopočítajú podľa nastavenia v Správe → Firma. Staršie ponuky ostávajú ako boli. Číslo (PON-rok-001) sa pridelí samo. <b>🖨 PDF</b> vytvorí ponuku s hlavičkou firmy, <b>📤 Poslať</b> ju pošle.'],
 ['🛠 Servisné termíny a SMS',1,'Hore sú zajtrajšie zákazky s tlačidlom SMS klientovi, pod nimi záručné servisy na 30 dní dopredu. Pri každom je 📞 Zavolať a 💬 SMS. Po odoslaní sa ukáže „kontaktovaný“, aby sa nepísalo dvakrát.'],
 ['🛡️ Tím a heslá',1,'V dlaždici <b>Tím</b> pridávaš členov. Rola <b>Správca</b> vidí všetko a prihlasuje sa heslom (min. 4 znaky), rola <b>Technik</b> vidí len svoje zákazky, kalendár, trasu a voľno. Heslo zmeníš úpravou člena.'],
 ['⚙️ Správa (firma, cenník, štatistiky, kôš)',1,'<ul><li><b>Firma:</b> IČO, adresa, telefón, IBAN, DPH, pätička. Ide do hlavičky protokolov a ponúk.</li><li><b>Cenník:</b> položky na ponuky.</li><li><b>Štatistiky:</b> mesiac, rok, technici, spotreba chladiva podľa typu a technika, export do CSV.</li><li><b>Kôš:</b> zmazané veci sa dajú obnoviť.</li><li><b>História zmien:</b> kto čo upravil.</li><li>Zálohu stiahneš v <b>Viac → Nastavenia → Stiahnuť zálohu</b>, odporúča sa raz týždenne. Stačí, ak ju urobí jeden správca.</li></ul>']
@@ -2577,7 +2580,7 @@ function saveFirma(){
   put('nastavenia',o,'firma');toast('Údaje o firme uložené');
 }
 function cnRow(x,i){
-  return '<div class="dev-row" style="margin-bottom:6px"><input class="cnN" placeholder="Názov položky" value="'+esc(x.n||'')+'"><input class="cnU" style="max-width:64px" placeholder="MJ" value="'+esc(x.u||'ks')+'"><input class="cnC" style="max-width:92px" inputmode="decimal" placeholder="Cena €" value="'+esc(x.c||'')+'"><button type="button" class="dev-x" onclick="cnDel('+i+')">×</button></div>';
+  return '<div class="dev-row" style="margin-bottom:6px"><input class="cnN" placeholder="Názov položky" value="'+esc(x.n||'')+'"><input class="cnU" style="max-width:64px" placeholder="MJ" value="'+esc(x.u||'ks')+'"><input class="cnC" style="max-width:92px" inputmode="decimal" placeholder="Cena s DPH €" value="'+esc(x.c||'')+'"><button type="button" class="dev-x" onclick="cnDel('+i+')">×</button></div>';
 }
 function cnReadRaw(){
   return Array.prototype.map.call(document.querySelectorAll('#cnRows .dev-row'),function(r){
@@ -2585,7 +2588,7 @@ function cnReadRaw(){
   });
 }
 function renderCennik(list){
-  $('admView').innerHTML='<h3>💶 Cenník</h3><p style="color:#64748b;font-size:.9rem;margin-top:0">Položky na cenové ponuky (názov, merná jednotka, cena bez DPH).</p><div id="cnRows">'+list.map(cnRow).join('')+'</div>'+
+  $('admView').innerHTML='<h3>💶 Cenník</h3><p style="color:#64748b;font-size:.9rem;margin-top:0">Položky na cenové ponuky (názov, merná jednotka, cena s DPH).</p><div id="cnRows">'+list.map(cnRow).join('')+'</div>'+
     '<button type="button" onclick="cnAdd()">➕ Pridať položku</button><button class="action-btn" onclick="cnSave()">💾 Uložiť cenník</button>';
 }
 function admCennik(){renderCennik(cennikData().map(function(x){return {n:x.n,u:x.u,c:x.c}}))}
@@ -2650,7 +2653,7 @@ function statsRender(){
 function statsCsv(){
   var mo=$('stMonth').value||'';
   var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'};
-  var lines=[['Dátum','Typ','Klient','Názov','Stav','Technici','Cena (€)'].map(q).join(';')];
+  var lines=[['Dátum','Typ','Klient','Názov','Stav','Technici','Cena s DPH (€)'].map(q).join(';')];
   dbData.montaze.filter(function(m){return (m.date||'').indexOf(mo)===0}).sort(function(a,b){return (a.date||'').localeCompare(b.date||'')}).forEach(function(m){
     lines.push([fmtD(m.date),m.kind?m.servisType:'Montáž',m.clientName||'',m.title||'',m.stav||'',(m.memberNames||[]).join(', '),m.cena||''].map(q).join(';'));
   });
@@ -2844,14 +2847,14 @@ function oprBody(m){
   return (m.servisType==='Oprava'?'\n<strong>Stav:</strong> '+esc(m.stav||'Nová')+(m.urgent?' · 🚨 Urgentné':''):'')+
     (cc?'\n<strong>🛡 Záruka:</strong> '+esc(warrantyInfo(cc).t):'')+
     (m.praca?'\n<strong>Vykonaná práca:</strong> '+esc(m.praca):'')+(m.diely?'\n<strong>Použité diely:</strong> '+esc(m.diely):'')+
-    (m.cena?'\n<strong>Cena:</strong> '+esc(m.cena)+' €':'')+(m.hodiny?'\n<strong>Čas na mieste:</strong> '+esc(m.hodiny):'');
+    (m.cena?'\n<strong>Cena s DPH:</strong> '+esc(m.cena)+' €':'')+(m.hodiny?'\n<strong>Čas na mieste:</strong> '+esc(m.hodiny):'');
 }
 function oprRows(o){
   var r=function(l,v){return v?'<div class="modal-row"><strong>'+l+':</strong> '+esc(v)+'</div>':''};
   var cc=o.clientId?findById('clients',o.clientId):null;
   return (o.servisType==='Oprava'?r('Stav',(o.stav||'Nová')+(o.urgent?' · 🚨 Urgentné':'')):'')+
     (cc?(function(){var w=warrantyInfo(cc);return '<div class="modal-row" style="color:'+w.c+'"><strong>🛡 Záruka:</strong> '+w.i+' '+esc(w.t)+'</div>'})():'')+
-    r('Vykonaná práca',o.praca)+r('Použité diely',o.diely)+r('Cena',o.cena?o.cena+' €':'')+r('Čas na mieste',o.hodiny);
+    r('Vykonaná práca',o.praca)+r('Použité diely',o.diely)+r('Cena s DPH',o.cena?o.cena+' €':'')+r('Čas na mieste',o.hodiny);
 }
 function markDone(id){
   col('montaze').doc(id).update({stav:'Hotová'}).then(function(){toast('Oprava označená ako hotová')}).catch(function(){toast('Nepodarilo sa uložiť')});
@@ -2885,7 +2888,7 @@ function protocolRows(m){
     ['Názov',isM?m.title:''],['Stav',m.stav?m.stav+(m.urgent?' (urgentné)':''):''],
     ['Dátum',(m.date?fmtD(m.date):'')+(m.time?' o '+m.time:'')]].concat(devRows).concat([
     ['Popis poruchy',m.popis],['Vykonaná práca',m.praca],['Použité diely',m.diely],['Čas na mieste',m.hodiny],
-    ['Cena',m.cena?m.cena+' €':''],['Technik / tím',(m.memberNames||[]).join(', ')]]).filter(function(r){return r[1]});
+    ['Cena s DPH',m.cena?m.cena+' €':''],['Technik / tím',(m.memberNames||[]).join(', ')]]).filter(function(r){return r[1]});
 }
 function checkRows(m){
   if(m.kind)return '';
@@ -3313,7 +3316,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-10.118';
+var APP_VERSION='2026-11-10.119';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4765,7 +4768,7 @@ window.onload=function(){
     <textarea id="rpWork" placeholder="Vykonaná práca" style="min-height:70px"></textarea>
     <input type="text" id="rpParts" placeholder="Použité diely">
     <div class="form-grid">
-      <input type="text" id="rpPrice" placeholder="Cena (€)" inputmode="decimal">
+      <input type="text" id="rpPrice" placeholder="Cena s DPH (€)" inputmode="decimal">
       <input type="text" id="rpHours" placeholder="Čas na mieste (napr. 1,5 h)">
     </div>
     </div>
