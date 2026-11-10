@@ -835,7 +835,7 @@ var V={
   ponuky:['ponukyList','Žiadne cenové ponuky.',function(a,b){return (b.ts||0)-(a.ts||0)},function(p){
     return card('ponuky',p,'💶 '+esc(p.cislo||'')+' – '+esc((p.klient&&p.klient.meno)||'')+' ('+fmtEur(ponukaTotal(p).total)+')',
       '<strong>Dátum:</strong> '+esc(p.datum?fmtD(p.datum):'')+'\n'+(p.polozky||[]).map(function(x){return esc(x.n)+' – '+esc(x.q)+' '+esc(x.u)+' × '+fmtEur(num(x.c))}).join('\n')+(p.pozn?'\n<em>'+esc(p.pozn)+'</em>':''),
-      'editPonuka',true,'<button class="btn-edit" style="background:#475569" onclick="printPonuka(\''+esc(p.id)+'\')">🖨 PDF</button><button class="btn-edit" style="background:#16a34a" onclick="sharePonuka(\''+esc(p.id)+'\')">📤 Poslať</button>')}],
+      'editPonuka',true,'<button class="btn-edit" style="background:#16a34a" onclick="sharePonuka(\''+esc(p.id)+'\')">📤 PDF / Poslať</button><button class="btn-edit" style="background:#475569" onclick="printPonuka(\''+esc(p.id)+'\')">🖨 Tlač</button>')}],
   chladivo:['chladivoList','Žiadne záznamy o chladive.',function(a,b){return (b.date||'').localeCompare(a.date||'')||(b.ts||0)-(a.ts||0)},function(r){
     return card('chladivo',r,'❄️ '+esc(fmtD(r.date))+' – '+esc(r.clientName||'')+' – <b>'+esc(String(r.kg))+' kg '+esc(r.typ||'')+'</b>',
       '<div class="modal-row"><strong>Kde:</strong> '+(r.adresa?'<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(r.adresa)+'" target="_blank" rel="noopener">📍 '+esc(r.adresa)+'</a>':'-')+'</div>'+
@@ -1833,7 +1833,7 @@ function showPonukaForm(p){
   var k=(p&&p.klient)||{};
   $('pObh').value=(p&&p.obhliadkaId)||'';$('pMeno').value=k.meno||'';$('pTel').value=k.tel||'';$('pEmail').value=k.email||'';$('pAdresa').value=k.adresa||'';
   $('pRows').innerHTML=((p&&p.polozky)||[]).map(pRowHtml).join('');
-  $('pPozn').value=(p&&p.pozn)||'';ponukaSum();
+  $('pPozn').value=(p&&p.pozn)||'';$('pPred').value=p?(p.predn||''):(firmaData().predn||'');ponukaSum();
 }
 function hidePonukaForm(){$('ponukaFormBox').style.display='none';$('ponukaAddBtn').style.display='block';$('editingPonukaId').value=''}
 function editPonuka(id){var p=findById('ponuky',id);if(!p)return;markRead('ponuky',id);openSection('ponukySection','Cenové ponuky');showPonukaForm(p);window.scrollTo({top:0,behavior:'smooth'})}
@@ -1849,7 +1849,7 @@ function savePonuka(){
   }
   put('ponuky',{cislo:cislo,datum:(old&&old.datum)||ymd(new Date()),ts:(old&&old.ts)||Date.now(),obhliadkaId:$('pObh').value||'',
     klient:{meno:$('pMeno').value.trim(),tel:$('pTel').value.trim(),email:$('pEmail').value.trim(),adresa:$('pAdresa').value.trim()},
-    polozky:pol,pozn:$('pPozn').value.trim(),dph:firmaData().dph||0,sDph:true},eid);
+    polozky:pol,pozn:$('pPozn').value.trim(),predn:$('pPred').value.trim(),dph:firmaData().dph||0,sDph:true},eid);
   hidePonukaForm();toast('Ponuka '+cislo+' uložená');
 }
 function ponukaCss(){return '*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;margin:0;color:#1e293b;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
@@ -1867,7 +1867,7 @@ function ponukaCss(){return '*{box-sizing:border-box}body{font-family:-apple-sys
 '.r{text-align:right;white-space:nowrap}.c{width:36px;color:#94a3b8}'+
 '.sum{margin-left:auto;margin-top:18px;width:330px}.sum .ln{display:flex;justify-content:space-between;padding:6px 4px;font-size:14px;color:#475569}'+
 '.sum .gt{display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#0f766e;color:#fff;border-radius:12px;padding:13px 18px;font-size:15px;font-weight:600}.sum .gt b{font-size:23px}'+
-'.note{margin-top:22px;border-left:4px solid #0d9488;background:#f0fdfa;border-radius:0 10px 10px 0;padding:12px 16px;font-size:14px;line-height:1.55}.note small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#0f766e;margin-bottom:3px}'+
+'.pros{margin-top:22px;page-break-inside:avoid}.pros h2{font-size:15px;margin:0 0 8px;color:#0f172a}.pros ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}.pros li{position:relative;padding:9px 12px 9px 38px;background:#f0fdfa;border-radius:10px;font-size:14px;line-height:1.4}.pros li:before{content:"✓";position:absolute;left:11px;top:8px;width:20px;height:20px;border-radius:50%;background:#0d9488;color:#fff;font-size:12px;font-weight:700;text-align:center;line-height:20px}@media(max-width:560px){.pros ul{grid-template-columns:1fr}}\n.note{margin-top:22px;border-left:4px solid #0d9488;background:#f0fdfa;border-radius:0 10px 10px 0;padding:12px 16px;font-size:14px;line-height:1.55}.note small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#0f766e;margin-bottom:3px}'+
 '.cta{display:flex;gap:18px;align-items:center;margin-top:26px;border:2px dashed #5eead4;border-radius:14px;padding:14px 18px}.cta b{font-size:17px;color:#0f172a}.cta div{font-size:14px;line-height:1.5}'+
 '.foot{margin-top:28px;padding-top:12px;border-top:1px solid #e2e8f0;text-align:center;font-size:12px;color:#64748b;line-height:1.6}.foot b{color:#0f172a}'+
 '@media print{@page{size:A4;margin:12mm}html,body{height:auto!important;overflow:visible!important;background:#fff!important}body{margin:0}.pg{padding:0;max-width:none}.np{display:none!important}.tag{background:#0f766e!important}.cta{page-break-inside:auto}tr,.sum,.note{page-break-inside:avoid}}@media(max-width:560px){.pg{padding:18px 14px}.top{flex-direction:column}.tag{text-align:left;min-width:0;width:100%}.sum{width:100%}}'}
@@ -1886,16 +1886,168 @@ function printPonuka(id){
     '<div class="tag"><small>Cenová ponuka</small><h1>'+esc(p.cislo)+'</h1><span>Dátum: '+esc(p.datum?fmtD(p.datum):'')+'</span></div></div>'+
     cust+
     '<table><thead><tr><th class="c" style="color:#fff">#</th><th>Položka</th><th class="r">Množstvo</th><th class="r">Cena/MJ'+sfx+'</th><th class="r">Spolu'+sfx+'</th></tr></thead><tbody>'+rows+'</tbody></table>'+sum+
+    ((p.predn||'').trim()?'<div class="pros"><h2>Prednosti tejto ponuky</h2><ul>'+p.predn.split(/\n+/).map(function(x){return x.trim()}).filter(Boolean).map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>':'')+
     (p.pozn?'<div class="note"><small>Popis a poznámky</small>'+esc(p.pozn).replace(/\n/g,'<br>')+'</div>':'')+
     '<div class="cta"><div>'+QR.svg(formUrl({p:p.cislo}),110)+'</div><div><b>Súhlasíte s ponukou?</b><br>Naskenujte QR kód telefónom a odošlite nám objednávku. Ozveme sa vám a dohodneme termín.</div></div>'+
     '<div class="foot"><b>Ďakujeme za vašu dôveru.</b><br>'+esc(f.nazov||'Úsporné klímy S&N spol.')+(l2?' · '+esc(l2):'')+(f.iban?'<br>IBAN: '+esc(f.iban):'')+(f.pata?'<br>'+esc(f.pata):'')+'</div>'+
     '<p class="np" style="margin-top:22px;text-align:center"><button onclick="window.print()" style="padding:12px 22px;font-size:15px;border:0;border-radius:10px;background:#0d9488;color:#fff;font-weight:600">🖨 Tlačiť / Uložiť ako PDF</button></p></div></body></html>');
 }
+/* ===== PDF cenovej ponuky (kreslené na plátno, bez knižníc, funguje aj ako príloha) ===== */
+function pdfImg(src){return new Promise(function(ok){var im=new Image();im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=src})}
+function ponukaPdf(p){
+  var t=ponukaTotal(p),f=firmaData(),k=p.klient||{},gross=!!p.sDph,vat=!!t.d;
+  var W=595,H=842,S=2.6,M=40,pages=[],cv,cx,y;
+  var svgQ='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(QR.svg(formUrl({p:p.cislo}),200));
+  return Promise.all([pdfImg(LOGO_URI),pdfImg(svgQ)]).then(function(im){
+    var logo=im[0],qr=im[1];
+    var FONT='Helvetica, Arial, sans-serif';
+    function font(w,sz){cx.font=w+' '+sz+'px '+FONT}
+    function rr(x,yy,w,h,r,fill,stroke,dash){cx.beginPath();cx.moveTo(x+r,yy);cx.arcTo(x+w,yy,x+w,yy+h,r);cx.arcTo(x+w,yy+h,x,yy+h,r);cx.arcTo(x,yy+h,x,yy,r);cx.arcTo(x,yy,x+w,yy,r);cx.closePath();if(fill){cx.fillStyle=fill;cx.fill()}if(stroke){cx.strokeStyle=stroke;cx.lineWidth=1.4;cx.setLineDash(dash||[]);cx.stroke();cx.setLineDash([])}}
+    function wrap(str,w){var out=[];String(str||'').split(/\n/).forEach(function(par){var words=par.split(/\s+/).filter(Boolean),line='';if(!words.length){out.push('');return}words.forEach(function(wd){var tr=line?line+' '+wd:wd;if(cx.measureText(tr).width>w&&line){out.push(line);line=wd}else line=tr});out.push(line)});return out}
+    function tx(str,x,yy,color,align){cx.fillStyle=color||'#1e293b';cx.textAlign=align||'left';cx.textBaseline='alphabetic';cx.fillText(str,x,yy)}
+    function newPage(){cv=document.createElement('canvas');cv.width=Math.round(W*S);cv.height=Math.round(H*S);cx=cv.getContext('2d');cx.scale(S,S);cx.fillStyle='#fff';cx.fillRect(0,0,W,H);y=M;pages.push(cv)}
+    function ensure(h){if(y+h>H-M-10)newPage()}
+    function header(){
+      if(logo)cx.drawImage(logo,M,M,52,52);
+      font('bold',14);tx(f.nazov||'Úsporné klímy S&N spol.',M+66,M+14,'#0f172a');
+      font('normal',8.6);var l=[f.adresa,[f.ico&&'IČO: '+f.ico,f.dic&&'DIČ: '+f.dic,f.icdph&&'IČ DPH: '+f.icdph].filter(Boolean).join(' · '),[f.tel,f.email,f.web].filter(Boolean).join(' · ')].filter(Boolean),ly=M+27;
+      l.forEach(function(x){wrap(x,300).forEach(function(z){tx(z,M+66,ly,'#475569');ly+=11.5})});
+      var g=cx.createLinearGradient(W-M-175,M,W-M,M+62);g.addColorStop(0,'#0d9488');g.addColorStop(1,'#0e7490');
+      rr(W-M-175,M,175,62,11,g);
+      font('600',7.5);tx('CENOVÁ PONUKA',W-M-14,M+16,'rgba(255,255,255,.85)','right');
+      font('bold',17);tx(p.cislo||'',W-M-14,M+37,'#fff','right');
+      font('normal',9);tx('Dátum: '+(p.datum?fmtD(p.datum):''),W-M-14,M+53,'#fff','right');
+      y=M+82;
+    }
+    function customer(){
+      font('bold',12);var adr=wrap(k.adresa||'',230);font('normal',10);
+      var h=Math.max(46,28+Math.max(adr.length,1)*13+8);
+      rr(M,y,W-2*M,h,9,'#f1f5f9');
+      font('600',7);tx('PRE',M+14,y+15,'#64748b');font('bold',12);tx(k.meno||'',M+14,y+30,'#0f172a');
+      font('normal',10);var ay=y+44;adr.forEach(function(z){tx(z,M+14,ay,'#334155');ay+=13});
+      if(k.tel||k.email){font('600',7);tx('KONTAKT',M+290,y+15,'#64748b');font('normal',10);var cy=y+30;[k.tel,k.email].filter(Boolean).forEach(function(z){tx(z,M+290,cy,'#334155');cy+=13})}
+      y+=h+18;
+    }
+    var sfx=(gross&&vat)?' s DPH':'';
+    function thead(){
+      rr(M,y,W-2*M,22,6,'#0f766e');font('bold',7.8);
+      tx('#',M+10,y+14.5,'#fff');tx('POLOŽKA',M+30,y+14.5,'#fff');tx('MNOŽSTVO',M+318,y+14.5,'#fff','right');tx(('CENA/MJ'+sfx).toUpperCase(),M+408,y+14.5,'#fff','right');tx(('SPOLU'+sfx).toUpperCase(),W-2*M+M-8,y+14.5,'#fff','right');y+=22;
+    }
+    function rows(){
+      thead();
+      (p.polozky||[]).forEach(function(x,i){
+        font('normal',10);var nl=wrap(x.n,250),h=nl.length*13+12;
+        if(y+h>H-M-60){newPage();thead()}
+        if(i%2)rr(M,y,W-2*M,h,0,'#f8fafc');
+        font('normal',10);tx(String(i+1),M+10,y+16,'#94a3b8');nl.forEach(function(z,j){tx(z,M+30,y+16+j*13,'#1e293b')});
+        tx((x.q||'')+' '+(x.u||''),M+318,y+16,'#1e293b','right');tx(fmtEur(num(x.c)),M+408,y+16,'#1e293b','right');
+        font('bold',10);tx(fmtEur(num(x.q)*num(x.c)),W-M-8,y+16,'#0f172a','right');
+        cx.strokeStyle='#e2e8f0';cx.lineWidth=.8;cx.beginPath();cx.moveTo(M,y+h);cx.lineTo(W-M,y+h);cx.stroke();y+=h;
+      });
+      y+=14;
+    }
+    function totals(){
+      var need=(vat?40:0)+52;ensure(need);var x0=W-M-210;
+      if(vat){font('normal',10);tx(gross?'Základ dane':'Spolu bez DPH',x0+4,y+12,'#475569');tx(fmtEur(t.sub),W-M-4,y+12,'#475569','right');tx('DPH '+t.d+' %',x0+4,y+28,'#475569');tx(fmtEur(t.dph),W-M-4,y+28,'#475569','right');y+=38}
+      rr(x0,y,210,40,9,'#0f766e');font('600',10.5);tx('Celkom'+(vat?' s DPH':''),x0+14,y+24,'#fff');font('bold',17);tx(fmtEur(t.total),W-M-14,y+26,'#fff','right');y+=40+20;
+    }
+    function pros(){
+      var arr=(p.predn||'').split(/\n+/).map(function(z){return z.trim()}).filter(Boolean);if(!arr.length)return;
+      ensure(40);font('bold',11);tx('Prednosti tejto ponuky',M,y+10,'#0f172a');y+=20;
+      var cw=(W-2*M-12)/2;
+      for(var i=0;i<arr.length;i+=2){
+        font('normal',10);var a=wrap(arr[i],cw-40),b=arr[i+1]?wrap(arr[i+1],cw-40):[],h=Math.max(a.length,b.length)*13+14;ensure(h+6);
+        [[a,0],[b,1]].forEach(function(c){if(!c[0].length)return;var x=M+c[1]*(cw+12);rr(x,y,cw,h,8,'#f0fdfa');cx.fillStyle='#0d9488';cx.beginPath();cx.arc(x+16,y+h/2,8,0,6.2832);cx.fill();
+          cx.strokeStyle='#fff';cx.lineWidth=1.8;cx.beginPath();cx.moveTo(x+12,y+h/2);cx.lineTo(x+15,y+h/2+3);cx.lineTo(x+20,y+h/2-3);cx.stroke();
+          font('normal',10);c[0].forEach(function(z,j){tx(z,x+32,y+16+j*13,'#1e293b')})});
+        y+=h+6;
+      }
+      y+=10;
+    }
+    function note(){
+      if(!p.pozn)return;font('normal',10);var l=wrap(p.pozn,W-2*M-30),h=l.length*13+28;ensure(h);
+      rr(M,y,W-2*M,h,6,'#f0fdfa');cx.fillStyle='#0d9488';cx.fillRect(M,y,3.5,h);
+      font('600',7);tx('POPIS A POZNÁMKY',M+14,y+14,'#0f766e');font('normal',10);l.forEach(function(z,j){tx(z,M+14,y+28+j*13,'#1e293b')});y+=h+18;
+    }
+    function cta(){
+      ensure(104);rr(M,y,W-2*M,92,11,null,'#5eead4',[5,4]);
+      if(qr)cx.drawImage(qr,M+16,y+12,68,68);
+      font('bold',12);tx('Súhlasíte s ponukou?',M+100,y+34,'#0f172a');font('normal',10);
+      wrap('Naskenujte QR kód telefónom a odošlite nám objednávku. Ozveme sa vám a dohodneme termín.',W-2*M-120).forEach(function(z,j){tx(z,M+100,y+52+j*13,'#334155')});y+=92+16;
+    }
+    function foot(){
+      var l=['Ďakujeme za vašu dôveru.',(f.nazov||'')+([f.tel,f.web].filter(Boolean).length?' · '+[f.tel,f.web].filter(Boolean).join(' · '):''),f.iban?'IBAN: '+f.iban:'',f.pata||''].filter(Boolean);
+      ensure(l.length*12+16);cx.strokeStyle='#e2e8f0';cx.lineWidth=.8;cx.beginPath();cx.moveTo(M,y);cx.lineTo(W-M,y);cx.stroke();y+=14;
+      l.forEach(function(z,j){font(j?'normal':'bold',8.6);tx(z,W/2,y,j?'#64748b':'#0f172a','center');y+=12});
+    }
+    newPage();header();customer();rows();totals();pros();note();cta();foot();
+    return pdfBuild(pages.map(function(c){return {w:c.width,h:c.height,jpg:c.toDataURL('image/jpeg',.92)}}),W,H);
+  });
+}
+function pdfBuild(pgs,W,H){
+  var parts=[],len=0,offs=[];
+  function add(x){var b=(typeof x==='string')?new TextEncoder().encode(x):x;parts.push(b);len+=b.length}
+  function obj(n,x){offs[n]=len;add(n+' 0 obj\n');add(x);add('\nendobj\n')}
+  add('%PDF-1.4\n');
+  var n=pgs.length,kids=[];
+  for(var i=0;i<n;i++)kids.push((3+i*3)+' 0 R');
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2,'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+n+' >>');
+  pgs.forEach(function(pg,i){
+    var po=3+i*3,co=po+1,io=po+2;
+    var bin=atob(pg.jpg.split(',')[1]),u=new Uint8Array(bin.length);for(var q=0;q<bin.length;q++)u[q]=bin.charCodeAt(q);
+    var cs='q '+W+' 0 0 '+H+' 0 0 cm /Im0 Do Q';
+    obj(po,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /XObject << /Im0 '+io+' 0 R >> >> /Contents '+co+' 0 R >>');
+    obj(co,'<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream');
+    offs[io]=len;add(io+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+pg.w+' /Height '+pg.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+u.length+' >>\nstream\n');add(u);add('\nendstream\nendobj\n');
+  });
+  var total=3+n*3,xr=len;
+  add('xref\n0 '+total+'\n0000000000 65535 f \n');
+  for(var k2=1;k2<total;k2++)add(String(offs[k2]).padStart(10,'0')+' 00000 n \n');
+  add('trailer\n<< /Size '+total+' /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF');
+  return new Blob(parts,{type:'application/pdf'});
+}
+var ponukaFile=null;
+function ponukaText(p){
+  var t=ponukaTotal(p),f=firmaData(),k=p.klient||{};
+  return 'Dobrý deň'+(k.meno?' '+k.meno:'')+',\n\nv prílohe vám posielame cenovú ponuku č. '+p.cislo+'.\n\n'+(p.polozky||[]).map(function(x){return '• '+x.n+' – '+x.q+' '+x.u+' × '+fmtEur(num(x.c))}).join('\n')+
+    '\n\nCelkom'+(t.d?' s DPH':'')+': '+fmtEur(t.total)+(k.adresa?'\nMiesto realizácie: '+k.adresa:'')+(p.pozn?'\n\n'+p.pozn:'')+'\n\nS pozdravom\n'+(f.nazov||'Úsporné klímy S&N')+(f.tel?'\n'+f.tel:'');
+}
 function sharePonuka(id){
   var p=findById('ponuky',id);if(!p)return;
-  var t=ponukaTotal(p),f=firmaData();
-  var txt='Cenová ponuka '+p.cislo+' – '+(f.nazov||'Úsporné klímy S&N')+'\n\n'+(p.polozky||[]).map(function(x){return '• '+x.n+' – '+x.q+' '+x.u+' × '+fmtEur(num(x.c))}).join('\n')+'\n\nSpolu'+(t.d?' s DPH':'')+': '+fmtEur(t.total)+(p.pozn?'\n'+p.pozn:'');
-  shareDoc('Cenová ponuka '+p.cislo,txt,(p.klient&&p.klient.email)||'');
+  toast('Pripravujem PDF…');
+  ponukaPdf(p).then(function(blob){
+    var name='Cenova-ponuka-'+(p.cislo||'')+'.pdf';
+    ponukaFile={blob:blob,name:name,id:id,file:null};
+    try{ponukaFile.file=new File([blob],name,{type:'application/pdf'})}catch(e){}
+    var k=p.klient||{};
+    $('eventModalBody').innerHTML='<h3>📤 Poslať ponuku '+esc(p.cislo||'')+'</h3>'+
+      '<div class="modal-row">✅ PDF je pripravené ('+Math.round(blob.size/1024)+' kB).</div>'+
+      '<div class="modal-row"><strong>Pre:</strong> '+esc(k.meno||'')+(k.email?' · '+esc(k.email):'<br><span style="color:#b91c1c">Klient nemá e-mail – doplň ho v ponuke.</span>')+'</div>'+
+      '<div class="modal-actions" style="flex-direction:column;align-items:stretch">'+
+      '<button class="btn-edit" style="background:#16a34a;padding:14px" onclick="ponukaSend(\''+esc(id)+'\',\'share\')">📤 Odoslať (e-mail, správy…) s PDF prílohou</button>'+
+      '<button class="btn-edit" style="background:#2563eb;padding:14px" onclick="ponukaSend(\''+esc(id)+'\',\'mail\')">✉️ Otvoriť e-mail (PDF si pridáš ručne)</button>'+
+      '<button class="btn-edit" style="background:#475569;padding:14px" onclick="ponukaSend(\''+esc(id)+'\',\'dl\')">⬇️ Len stiahnuť PDF</button>'+
+      '<button class="btn-delete" style="background:#64748b;padding:12px" onclick="closeEvent()">Zavrieť</button></div>';
+    $('eventModal').style.display='flex';
+  }).catch(function(e){toast('PDF sa nepodarilo vytvoriť')});
+}
+function ponukaDl(){
+  var a=document.createElement('a');a.href=URL.createObjectURL(ponukaFile.blob);a.download=ponukaFile.name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000);
+}
+function ponukaSend(id,how){
+  var p=findById('ponuky',id);if(!p||!ponukaFile)return;
+  var k=p.klient||{},title='Cenová ponuka '+p.cislo+' – '+((firmaData().nazov)||'Úsporné klímy S&N'),txt=ponukaText(p);
+  if(how==='dl'){ponukaDl();toast('PDF stiahnuté');return}
+  if(how==='share'){
+    if(ponukaFile.file&&navigator.canShare&&navigator.canShare({files:[ponukaFile.file]})){
+      navigator.share({files:[ponukaFile.file],title:title,text:txt}).catch(function(){});return;
+    }
+    ponukaDl();toast('Tento prehliadač nevie pripojiť prílohu – PDF je stiahnuté, pridaj ho do e-mailu');
+  }
+  if(how==='mail'){ponukaDl()}
+  setTimeout(function(){location.href='mailto:'+encodeURIComponent(k.email||'')+'?subject='+encodeURIComponent(title)+'&body='+encodeURIComponent(txt)},how==='mail'?500:1800);
 }
 function dueItems(){
   var out=[],n=new Date();
@@ -2524,10 +2676,10 @@ var HELP=[
 ['👥 Klienti',1,'Karta klienta má meno, adresu, telefón a e-mail. Ťuknutím na telefón volíš, na adresu naviguješ (Google mapy). V karte vidíš históriu: montáže, servisy a čistenia aj s podrobnosťami. Pri uložení s rovnakým telefónom ťa appka upozorní na duplicitu.'],
 ['🔧 Montáž / Servis (zadávanie)',1,'<ol><li>Vyber <b>Montáž</b> alebo <b>Servis</b> (Oprava, Čistenie).</li><li>Klienta vyberieš z karty klientov, adresa sa doplní sama.</li><li>Pri montáži môžeš pridať viac zariadení, viac vnútorných jednotiek, sériové čísla a záruku v rokoch, typ chladiva a jeho náplň v kg (podľa nej appka určí povinnosť kontroly tesnosti).</li><li>Po uložení montáže so zárukou sa sám vytvorí <b>záručný servis</b> (340 dní po montáži a potom každý rok).</li><li>Priraď členov tímu, ktorí tam idú.</li></ol>'],
 ['🔍 Obhliadky',1,'Obhliadka je potenciálny klient. Vyplníš údaje a parametre (typ, budova, stena, miesto jednotiek…). Po potvrdení klikni <b>✅ Na klienta</b> a prenesie sa do kariet klientov.'],
-['💶 Cenové ponuky',1,'Dlaždica <b>Ponuky</b> → Nová ponuka. Môžeš vybrať obhliadku, pridať položky z cenníka alebo vlastné a upraviť ceny. Ceny zadávaš <b>s DPH</b> (celková suma); základ a DPH sa dopočítajú podľa nastavenia v Správe → Firma. Staršie ponuky ostávajú ako boli. Číslo (PON-rok-001) sa pridelí samo. <b>🖨 PDF</b> vytvorí ponuku s hlavičkou firmy, <b>📤 Poslať</b> ju pošle.'],
+['💶 Cenové ponuky',1,'Dlaždica <b>Ponuky</b> → Nová ponuka. Môžeš vybrať obhliadku, pridať položky z cenníka alebo vlastné a upraviť ceny. Ceny zadávaš <b>s DPH</b> (celková suma); základ a DPH sa dopočítajú podľa nastavenia v Správe → Firma. Staršie ponuky ostávajú ako boli. Číslo (PON-rok-001) sa pridelí samo. <b>🖨 PDF</b> vytvorí ponuku s hlavičkou firmy, <b>📤 PDF / Poslať</b> vytvorí PDF súbor a ponúkne <b>Odoslať s prílohou</b> (e-mail, správy), <b>Otvoriť e-mail</b> (adresa klienta aj príjemca sú vyplnené) alebo <b>Len stiahnuť PDF</b>.'],
 ['🛠 Servisné termíny a SMS',1,'Hore sú zajtrajšie zákazky s tlačidlom SMS klientovi, pod nimi záručné servisy na 30 dní dopredu. Pri každom je 📞 Zavolať a 💬 SMS. Po odoslaní sa ukáže „kontaktovaný“, aby sa nepísalo dvakrát.'],
 ['🛡️ Tím a heslá',1,'V dlaždici <b>Tím</b> pridávaš členov. Rola <b>Správca</b> vidí všetko a prihlasuje sa heslom (min. 4 znaky), rola <b>Technik</b> vidí len svoje zákazky, kalendár, trasu a voľno. Heslo zmeníš úpravou člena.'],
-['⚙️ Správa (firma, cenník, štatistiky, kôš)',1,'<ul><li><b>Firma:</b> IČO, adresa, telefón, IBAN, DPH, pätička. Ide do hlavičky protokolov a ponúk.</li><li><b>Cenník:</b> položky na ponuky.</li><li><b>Štatistiky:</b> mesiac, rok, technici, spotreba chladiva podľa typu a technika, export do CSV.</li><li><b>Kôš:</b> zmazané veci sa dajú obnoviť.</li><li><b>História zmien:</b> kto čo upravil.</li><li>Zálohu stiahneš v <b>Viac → Nastavenia → Stiahnuť zálohu</b>, odporúča sa raz týždenne. Stačí, ak ju urobí jeden správca.</li></ul>']
+['⚙️ Správa (firma, cenník, štatistiky, kôš)',1,'<ul><li><b>Firma:</b> IČO, adresa, telefón, IBAN, DPH, pätička. Ide do hlavičky protokolov a ponúk.</li><li><b>Prednosti:</b> v <b>Firma</b> si nastav štandardný zoznam prednosti (každý riadok jedna) a v ponuke ho upravíš podľa klímy; v PDF sa ukážu s fajkami.</li><li><b>Cenník:</b> položky na ponuky.</li><li><b>Štatistiky:</b> mesiac, rok, technici, spotreba chladiva podľa typu a technika, export do CSV.</li><li><b>Kôš:</b> zmazané veci sa dajú obnoviť.</li><li><b>História zmien:</b> kto čo upravil.</li><li>Zálohu stiahneš v <b>Viac → Nastavenia → Stiahnuť zálohu</b>, odporúča sa raz týždenne. Stačí, ak ju urobí jeden správca.</li></ul>']
 ];
 function renderHelp(){
   var el=$('helpList');if(!el)return;
@@ -2595,13 +2747,14 @@ function admFirma(){
   $('admView').innerHTML='<h3>🏢 Údaje o firme</h3><p style="color:#64748b;font-size:.9rem;margin-top:0">Zobrazia sa v hlavičke protokolov a cenových ponúk.</p>'+
     FIRMA_F.map(function(x){return '<input type="text" id="f_'+x[0]+'" placeholder="'+x[1]+'" value="'+esc(f[x[0]]||(x[0]==='nazov'?'Úsporné klímy S&N spol. s r.o.':''))+'">'}).join('')+
     '<select id="f_dph"><option value="0">Neplatca DPH</option><option value="23">Platca DPH – 23 %</option><option value="20">Platca DPH – 20 %</option><option value="19">Platca DPH – 19 %</option></select>'+
+    '<textarea id="f_predn" placeholder="Štandardné prednosti pre nové ponuky – každý riadok jedna (napr. Tichý chod, Wi-Fi ovládanie, Záruka 5 rokov…). V ponuke ich môžeš upraviť." style="min-height:90px">'+esc(f.predn||'')+'</textarea>'+
     '<textarea id="f_pata" placeholder="Pätička dokumentov (napr. zápis v registri, poučenie)" style="min-height:70px">'+esc(f.pata||'')+'</textarea>'+
     '<button class="action-btn" onclick="saveFirma()">💾 Uložiť údaje o firme</button>';
   $('f_dph').value=String(f.dph||0);
 }
 function saveFirma(){
   var o={};FIRMA_F.forEach(function(x){o[x[0]]=$('f_'+x[0]).value.trim()});
-  o.dph=parseInt($('f_dph').value,10)||0;o.pata=$('f_pata').value.trim();
+  o.dph=parseInt($('f_dph').value,10)||0;o.pata=$('f_pata').value.trim();o.predn=$('f_predn').value.trim();
   put('nastavenia',o,'firma');toast('Údaje o firme uložené');
 }
 function cnRow(x,i){
@@ -3341,7 +3494,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-10.121';
+var APP_VERSION='2026-11-10.123';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4328,6 +4481,7 @@ window.onload=function(){
       <select id="pCn" class="full-width-input" onchange="ponukaAddCn()"></select>
       <button type="button" class="back-btn" onclick="ponukaAddRow()">➕ Vlastná položka</button>
       <div id="pSum" style="font-weight:bold;margin:8px 0"></div>
+      <textarea id="pPred" placeholder="✅ Prednosti tejto klímy / ponuky – každý riadok jedna (ukážu sa v ponuke s fajkou)" style="min-height:90px"></textarea>
       <textarea id="pPozn" placeholder="Poznámka (platnosť ponuky, podmienky…)" style="min-height:60px"></textarea>
       <button class="action-btn" onclick="savePonuka()">💾 Uložiť ponuku</button>
       <button class="btn-edit" id="pJobBtn" style="background:#0d9488;width:100%;margin:6px 0;display:none" onclick="jobFromPonuka($('editingPonukaId').value)">📋 Vytvoriť zákazku z tejto ponuky</button>
