@@ -371,11 +371,11 @@ html[data-theme=dark] .item-card[data-st=late]{box-shadow:inset 5px 0 0 var(--c-
 #tabPlus b{font-size:2.3rem;font-weight:400;line-height:1;margin-top:-3px}
 #tabPlus:active{transform:scale(.92)}
 .mbadge{display:inline-block;min-width:20px;height:20px;border-radius:10px;background:#ff3b30;color:#fff;font-style:normal;font-size:.75rem;font-weight:700;line-height:20px;text-align:center;padding:0 5px;margin-left:6px}
-#qkSheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:95;display:none;align-items:flex-end;justify-content:center;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
-#fabSheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:95;display:none;align-items:flex-end;justify-content:center;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+#qkSheet{position:fixed;inset:0;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:95;display:none;align-items:flex-end;justify-content:center;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+#fabSheet{position:fixed;inset:0;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:95;display:none;align-items:flex-end;justify-content:center;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
 .fab-menu{display:flex;flex-direction:column;gap:10px;width:min(300px,100%)}
 .fab-menu{max-height:88vh;overflow-y:auto}
-.fab-h{color:#fff;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:4px 4px -6px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.fab-h{color:#fff;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:6px 4px -4px;text-shadow:none;opacity:.85}
 #qkSheet .fab-menu{gap:8px}
 #qkSheet .fab-menu button{padding:11px 16px;min-height:44px;font-size:1rem}
 .fab-menu button{background:#fff;color:#111;border:0;border-radius:16px;padding:16px;font-size:1.05rem;font-weight:700;text-align:left;box-shadow:0 3px 12px rgba(0,0,0,.25);min-height:54px}
@@ -3313,7 +3313,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-10.117';
+var APP_VERSION='2026-11-10.118';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
