@@ -3038,7 +3038,7 @@ function remRow(r,who){
       '<button class="btn-edit" style="background:#16a34a;padding:6px 12px" onclick="remDone(\''+esc(r.id)+'\')">✓ Hotovo</button>'+
       (ph?'<a class="btn-edit" style="background:#2563eb;padding:6px 12px;text-decoration:none;color:#fff" href="tel:'+esc(ph)+'">📞 Zavolať</a>':'')+
       '<button class="btn-edit" style="background:#0ea5e9;padding:6px 12px" onclick="remSnoozeH(\''+esc(r.id)+'\')">⏱ +1 hod</button><button class="btn-edit" style="background:#d97706;padding:6px 12px" onclick="remSnooze(\''+esc(r.id)+'\')">⏱ Zajtra</button>')+
-    '<button class="btn-delete" style="background:#64748b;padding:6px 12px" onclick="remDel(\''+esc(r.id)+'\')">🗑</button></span></div>';
+    '<button class="btn-delete" style="background:#dc2626;color:#fff;padding:6px 12px;font-weight:700" onclick="remDel(\''+esc(r.id)+'\')">🗑 Vymazať</button></span></div>';
 }
 function remBlock(){
   if(!me)return '';
@@ -3680,7 +3680,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.134';
+var APP_VERSION='2026-11-11.135';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
