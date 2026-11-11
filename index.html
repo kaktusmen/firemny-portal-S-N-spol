@@ -2628,7 +2628,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
-['⏰ Pripomienky',0,'Pripomienku vytvoríš cez <b>+ → Nová pripomienka</b>, v <b>Nástroje → Pripomienky</b> alebo v <b>zákazníckej karte → ⏰ Pripomeň mi</b>. Napíš, čo treba urobiť (napr. zavolať), vyber dátum (Dnes / Zajtra / Za týždeň) a podľa potreby čas a klienta. Správca môže pripomienku nastaviť aj inému členovi. V deň pripomienky sa ukáže v bloku <b>Dnes</b> a v <b>Moje úlohy</b> s tlačidlami <b>✓ Hotovo</b>, <b>📞 Zavolať</b> a <b>⏱ Zajtra</b>. Ak má čas, apka ťa upozorní oknom, keď je otvorená. Na zamknutej obrazovke apka nezvoní, na to treba pripomienku v iPhone.'],
+['⏰ Pripomienky',0,'Pripomienku vytvoríš cez <b>+ → Nová pripomienka</b>, v <b>Nástroje → Pripomienky</b> alebo v <b>zákazníckej karte → ⏰ Pripomeň mi</b>. Napíš, čo treba urobiť (napr. zavolať), vyber dátum (Dnes / Zajtra / Za týždeň) a podľa potreby čas a klienta. Správca môže pripomienku nastaviť aj inému členovi. V deň pripomienky sa ukáže v bloku <b>Dnes</b> a v <b>Moje úlohy</b> s tlačidlami <b>✓ Hotovo</b>, <b>📞 Zavolať</b> a <b>⏱ Zajtra</b>. Ak má čas, apka ťa upozorní oknom, keď je otvorená. Na zamknutej obrazovke apka nezvoní: ťukni na <b>📅 Do kalendára</b> a pridaj ju do Kalendára v telefóne, ktorý zazvoní aj pri zamknutej obrazovke (bez času je upozornenie o 9:00).'],
 ['🧭 Kde čo nájdem',0,'Dole sú tlačidlá: <b>Dnes</b>, <b>Kalendár</b>, <b>+</b> (vytvoriť: montáž/servis, obhliadka, chladivo), <b>Nástroje</b> (Moje úlohy, Trasa dňa, zoznamy montáží, obhliadok a čakajúcich jednotiek, Hľadať, Mapa klientov, Voľno, Nová správa) a <b>Viac</b> (Správy, Dopyty, Zákazky, Ponuky, Prehľad, Servisné termíny, Klienti, Tím, Návod, Správa, Nastavenia). Zálohu a ďalšie zriedkavé veci nájdeš v <b>Nastavenia → Pokročilé</b>.'],
 ['📇 Zákaznícka karta',0,'V <b>Klientoch</b> ťukni na klienta a potom na <b>📇 Zákaznícka karta</b> (nájdeš ju aj v detaile zákazky). Hore je kontakt a záruka, potom <b>Namontované zariadenia</b> (značka, typ, výrobné čísla, chladivo, záruka) a pod tým <b>História práce</b> od najnovšej. Ťuknutím na záznam v histórii uvidíš podrobnosti, napríklad vykonanú prácu a podpisy.'],
 ['✍️ Podpis',0,'Políčka na podpis sú väčšie, aby sa dalo pohodlne podpísať prstom. Tlačidlo <b>Vymazať podpis</b> pod políčkom ho zmaže a môžeš podpísať znova.'],
@@ -3021,8 +3021,22 @@ function remRow(r,who){
     (r.done?'<button class="btn-edit" style="background:#64748b;padding:6px 12px" onclick="remUndo(\''+esc(r.id)+'\')">↩ Vrátiť</button>':
       '<button class="btn-edit" style="background:#16a34a;padding:6px 12px" onclick="remDone(\''+esc(r.id)+'\')">✓ Hotovo</button>'+
       (ph?'<a class="btn-edit" style="background:#2563eb;padding:6px 12px;text-decoration:none;color:#fff" href="tel:'+esc(ph)+'">📞 Zavolať</a>':'')+
-      '<button class="btn-edit" style="background:#d97706;padding:6px 12px" onclick="remSnooze(\''+esc(r.id)+'\')">⏱ Zajtra</button>')+
+      '<button class="btn-edit" style="background:#0ea5e9;padding:6px 12px" onclick="remIcs(\''+esc(r.id)+'\')">📅 Do kalendára</button><button class="btn-edit" style="background:#d97706;padding:6px 12px" onclick="remSnooze(\''+esc(r.id)+'\')">⏱ Zajtra</button>')+
     '<button class="btn-delete" style="background:#64748b;padding:6px 12px" onclick="remDel(\''+esc(r.id)+'\')">🗑</button></span></div>';
+}
+function icsEsc(x){return String(x||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n')}
+function remIcs(id){
+  var r=findById('pripomienky',id);if(!r)return;
+  var cl=r.clientId?findById('clients',r.clientId):null,d=(r.date||ymd(new Date())).replace(/-/g,''),tm=(r.time||'09:00').split(':');
+  var h=('0'+(tm[0]||'9')).slice(-2),mi=('0'+(tm[1]||'0')).slice(-2),st=d+'T'+h+mi+'00';
+  var en=new Date(2000,0,1,parseInt(h,10),parseInt(mi,10)+15),eh=('0'+en.getHours()).slice(-2)+('0'+en.getMinutes()).slice(-2);
+  var now=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,''),desc=[r.clientName&&'Klient: '+r.clientName,cl&&cl.telefon&&'Tel: '+cl.telefon].filter(Boolean).join('\n');
+  var ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//S&N Portal//SK','BEGIN:VEVENT','UID:'+id+'@sn-portal','DTSTAMP:'+now,'DTSTART:'+st,'DTEND:'+d+'T'+eh+'00','SUMMARY:'+icsEsc('⏰ '+r.text),(desc?'DESCRIPTION:'+icsEsc(desc):''),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(r.text),'TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n')+'\r\n';
+  var name='pripomienka-'+(r.date||'')+'.ics',blob=new Blob([ics],{type:'text/calendar'}),f=null;
+  try{f=new File([blob],name,{type:'text/calendar'})}catch(e){}
+  if(f&&navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:r.text}).catch(function(){});return}
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000);
+  toast('Súbor stiahnutý – otvor ho a pridaj do kalendára');
 }
 function remBlock(){
   if(!me)return '';
@@ -3594,7 +3608,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.127';
+var APP_VERSION='2026-11-11.128';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
