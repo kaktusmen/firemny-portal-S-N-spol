@@ -172,7 +172,7 @@ a.btn-edit{display:inline-block}
 .modal-row{color:#3a3a3c}
 .day-row{background:#fff;border-radius:14px;border-left-width:4px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
 .day-row b{font-weight:600}
-.today-box .day-row{box-shadow:none;background:#f2f2f7}
+.day-row.dr-done{background:#e5e7eb;box-shadow:none}.day-row.dr-done>b{color:#6b7280;font-weight:500}.day-row.dr-done>b .tm{background:#d1d5db;color:#6b7280}.day-row.dr-done>span{color:#6b7280}.day-row.dr-done .dr-q a{opacity:.75}html[data-theme=dark] .day-row.dr-done{background:#0f0f10;opacity:.6}html[data-theme=dark] .day-row.dr-done>b,html[data-theme=dark] .day-row.dr-done>span{color:#8e8e93}.today-box .day-row{box-shadow:none;background:#f2f2f7}
 .ms-choice button{border-radius:18px;font-weight:600}
 .dev-box{background:#fff;border:none;border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.04)}
 .dev-x{background:rgba(255,59,48,.12);color:var(--danger);border-radius:999px}
@@ -2641,6 +2641,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['✅ Hotové zákazky sú sivé',0,'V zozname na <b>Dnes</b> a v kalendári sú zákazky, ktoré sú už <b>Hotové</b>, zosivené (sivé pozadie a tlmený text), aby bolo hneď jasné, že sú vybavené. Aktívne zákazky ostávajú farebné.'],
 ['🔘 Stav zákazky – jednoducho',0,'Technik už nevidí kopu tlačidiel (Naplánovaná, Prebieha, Hotová, Urgentné). Vidí len <b>Stav</b> a krátky pokyn, čo urobiť. Postup je vždy rovnaký: <b>📋 Otvoriť zákazku → ▶ Som na mieste</b> (stav sa zmení na Prebieha) a na konci <b>✔ Dokončiť zákazku</b> (stav Hotová). Správca môže stav zmeniť ručne v rozbaľovacej časti <b>⚙️ Zmeniť stav ručne</b>.'],
 ['❄️ Multisplit v obhliadke',0,'Keď v obhliadke vyberieš typ zariadenia <b>Multisplit</b>, objaví sa tlačidlo <b>➕ Pridať vnútornú jednotku</b>. Prvá vnútorná jednotka je v poli „Miesto zabudovania“ a výkon hore, ďalšie (2., 3., …) pridáš tlačidlom – každá má miesto (izbu) a výkon v kW. Zbytočnú odstrániš krížikom ×. Jednotky sa zobrazia v detaile obhliadky aj pri zákazke veľkého klienta.'],
 ['🏢 Zákazka veľkého klienta (VSE)',0,'Zákazka, pri ktorej je vyplnený <b>Veľký klient</b>, má iba 3 kroky: <b>Príchod → Fotky → Odchod</b>. Nevyplňuje sa podpis, zariadenia ani kontrola. Kontakt, adresa a údaje o zariadení sa zobrazia automaticky <b>z obhliadky</b> (hľadá sa podľa adresy alebo mena) a z karty zákazníka. Tlačidlom <b>Odchod – dokončiť</b> sa zákazka uzavrie; povinné sú len fotky.'],
@@ -3684,7 +3685,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.136';
+var APP_VERSION='2026-11-11.137';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3901,7 +3902,8 @@ function dayRow(e){
         navBtn(m)+'<a href="#" onclick="showJob(\''+esc(e.id)+'\');return false">📋 '+(st0?'Vytvoriť zákazku':'Zákazka')+(mi.length?' · <span style="color:#dc2626">chýba '+mi.length+'</span>':'')+'</a></div>';
     }
   }
-  return '<div class="day-row" style="border-left-color:'+e.color+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+(e.time?'<i class="tm" style="font-style:normal">'+esc(e.time)+'</i>':'')+(e.type==='montaze'&&findById('montaze',e.id)?stavPill(findById('montaze',e.id)):'')+esc(e.text)+(e.type==='montaze'&&findById('montaze',e.id)?'<span class="avs">'+techAvs(findById('montaze',e.id).memberNames)+'</span>':'')+'</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+q+'</div>';
+  var dn=e.type==='montaze'&&(findById('montaze',e.id)||{}).stav==='Hotová';
+  return '<div class="day-row'+(dn?' dr-done':'')+'" style="border-left-color:'+(dn?'#94a3b8':e.color)+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+(e.time?'<i class="tm" style="font-style:normal">'+esc(e.time)+'</i>':'')+(e.type==='montaze'&&findById('montaze',e.id)?stavPill(findById('montaze',e.id)):'')+esc(e.text)+(e.type==='montaze'&&findById('montaze',e.id)?'<span class="avs">'+techAvs(findById('montaze',e.id).memberNames)+'</span>':'')+'</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+q+'</div>';
 }
 function msgForMe(x){
   var mm=me?findById('members',me):null;if(!mm||x.fromId===me)return false;
