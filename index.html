@@ -1313,6 +1313,18 @@ function editMember(id){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 var OF=['Meno','Priezvisko','Obec','Adresa','Telefon','Email','Zariadenie','Kw','Budova','Stena','Vnutorna','Vonkajsia','Elektro','Odvod','Poznamky'];
+var oUnits=[];
+function oUnitTxt(o){return (o.jednotky||[]).map(function(u,i){return (i+2)+'. '+[u.miesto,u.kw?u.kw+' kW':''].filter(Boolean).join(' · ')}).filter(function(t){return t.length>3}).join('; ')}
+function oUnitsUi(){
+  var b=$('oJednotkyBox');if(!b)return;
+  var multi=gv('oZariadenie')==='Multisplit';
+  b.style.display=multi?'block':'none';
+  if(!multi)return;
+  $('oJednotky').innerHTML=oUnits.map(function(u,i){
+    return '<div style="display:flex;gap:6px;margin:6px 0;align-items:center"><b style="min-width:26px">'+(i+2)+'.</b><input type="text" list="oRoomList" placeholder="Miesto (izba)" value="'+esc(u.miesto||'')+'" oninput="oUnits['+i+'].miesto=this.value" style="flex:2;min-width:0"><input type="text" inputmode="decimal" placeholder="kW" value="'+esc(u.kw||'')+'" oninput="oUnits['+i+'].kw=this.value" style="flex:1;min-width:0"><button type="button" onclick="oUnitDel('+i+')" style="color:#dc2626;font-weight:700;background:none;border:0;font-size:20px">×</button></div>'}).join('');
+}
+function oUnitAdd(){oUnits.push({miesto:'',kw:''});oUnitsUi()}
+function oUnitDel(i){oUnits.splice(i,1);oUnitsUi()}
 var OL=[['zariadenie','Typ zariadenia'],['kw','Výkon (kW)'],['budova','Typ budovy'],['stena','Stena'],['vnutorna','Vnútorná jednotka'],['vonkajsia','Vonkajšia jednotka'],['elektro','Elektrické pripojenie'],['odvod','Odvod kondenzátu'],['poznamky','Poznámky']];
 function onm(o){return o.name||((o.meno||'')+' '+(o.priezvisko||'')).trim()||'Obhliadka'}
 var oTeam=[];
@@ -1335,7 +1347,7 @@ function fillObhMember(){
 }
 function obhliadkaBody(o){
   return '<strong>Telefón:</strong> '+telA(o.telefon)+' | <strong>E-mail:</strong> '+mailA(o.email)+'\n<strong>Adresa:</strong> '+mapA(o)+(o.memberNames&&o.memberNames.length?'\n<strong>👷 Technik:</strong> '+o.memberNames.map(esc).join(', '):'')+
-    OL.map(function(x){return o[x[0]]?'\n<strong>'+x[1]+':</strong> '+esc(o[x[0]]):''}).join('')+(o.big?'\n<strong>🏢 Veľký klient:</strong> '+esc(o.big)+(o.faktStav?' · 🧾 '+esc(o.faktStav):' · bez faktúry'):'');
+    OL.map(function(x){return o[x[0]]?'\n<strong>'+x[1]+':</strong> '+esc(o[x[0]])+(x[0]==='vnutorna'&&oUnitTxt(o)?' · '+esc(oUnitTxt(o)):''):''}).join('')+(o.big?'\n<strong>🏢 Veľký klient:</strong> '+esc(o.big)+(o.faktStav?' · 🧾 '+esc(o.faktStav):' · bez faktúry'):'');
 }
 var obhTmpId=null;
 function obhFotoInit(){
@@ -1344,7 +1356,7 @@ function obhFotoInit(){
   b.innerHTML=fotoSection({id:id});fotoLoad(id);
 }
 function clearObhliadka(){
-  OF.forEach(function(n){sv('o'+n,'')});$('oDate').value='';$('oTime').value='';sv('oBig','');oTeam=[];if($('oMember')){$('oMember').value='';renderObhChips()}
+  OF.forEach(function(n){sv('o'+n,'')});oUnits=[];oUnitsUi();$('oDate').value='';$('oTime').value='';sv('oBig','');oTeam=[];if($('oMember')){$('oMember').value='';renderObhChips()}
   $('editingObhliadkaId').value='';$('obhliadkaSaveBtn').innerText='Uložiť obhliadku';$('obhliadkaCancelBtn').style.display='none';
   obhTmpId=null;obhFotoInit();
 }
@@ -1353,6 +1365,7 @@ function saveObhliadka(){
   OF.forEach(function(n){o[lf(n)]=gv('o'+n)});
   o.name=(o.meno+' '+o.priezvisko).trim();
   if(!o.name){toast('Zadajte meno alebo priezvisko');return}
+  o.jednotky=(o.zariadenie==='Multisplit'?oUnits:[]).filter(function(u){return (u.miesto||'').trim()||(u.kw||'').trim()}).map(function(u){return {miesto:(u.miesto||'').trim(),kw:(u.kw||'').trim()}});
   o.date=$('oDate').value;o.time=$('oTime').value;o.big=gv('oBig');
   if($('oMember').value)addObhMember(true);
   o.memberIds=oTeam.map(function(x){return x.id});o.memberNames=oTeam.map(function(x){return x.name});
@@ -1426,7 +1439,7 @@ function readInfo(c,o){
 function editObhliadka(id){
   var o=findById('obhliadky',id);if(!o)return;obhRead(id);
   openSection('obhliadkaSection','Obhliadky');
-  OF.forEach(function(n){sv('o'+n,o[lf(n)]||'')});
+  OF.forEach(function(n){sv('o'+n,o[lf(n)]||'')});oUnits=(o.jednotky||[]).map(function(u){return {miesto:u.miesto||'',kw:u.kw||''}});oUnitsUi();
   if(!o.meno&&!o.priezvisko)$('oMeno').value=o.name||'';
   $('oDate').value=o.date||'';$('oTime').value=o.time||'';sv('oBig',o.big||'');fillObhMember();oTeam=(o.memberNames||[]).map(function(n,i){return {id:(o.memberIds&&o.memberIds[i])||'',name:n}});$('oMember').value='';renderObhChips();
   $('editingObhliadkaId').value=o.id;$('obhliadkaSaveBtn').innerText='Aktualizovať obhliadku';$('obhliadkaCancelBtn').style.display='block';obhFotoInit();
@@ -1682,7 +1695,7 @@ function eventDetail(e){
     btn='<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+esc(e.id)+'\')">🧾 Protokol / podpis</button>';
   }else{
     h+=row('Dátum',rec.date?fmtD(rec.date):'')+row('Telefón',rec.telefon)+row('E-mail',rec.email)+row('Adresa',clientAddr({adresa:rec.adresa,obec:rec.obec}));
-    OL.forEach(function(x){if(rec[x[0]])h+=row(x[1],rec[x[0]])});
+    OL.forEach(function(x){if(rec[x[0]])h+=row(x[1],rec[x[0]]+(x[0]==='vnutorna'&&oUnitTxt(rec)?' · '+oUnitTxt(rec):''))});
   }
   return h+'<div class="modal-actions" style="flex-wrap:wrap;margin-top:8px">'+btn+'<button class="btn-edit" style="background:#64748b" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')">Otvoriť udalosť</button></div>';
 }
@@ -2628,6 +2641,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['❄️ Multisplit v obhliadke',0,'Keď v obhliadke vyberieš typ zariadenia <b>Multisplit</b>, objaví sa tlačidlo <b>➕ Pridať vnútornú jednotku</b>. Prvá vnútorná jednotka je v poli „Miesto zabudovania“ a výkon hore, ďalšie (2., 3., …) pridáš tlačidlom – každá má miesto (izbu) a výkon v kW. Zbytočnú odstrániš krížikom ×. Jednotky sa zobrazia v detaile obhliadky aj pri zákazke veľkého klienta.'],
 ['🏢 Zákazka veľkého klienta (VSE)',0,'Zákazka, pri ktorej je vyplnený <b>Veľký klient</b>, má iba 3 kroky: <b>Príchod → Fotky → Odchod</b>. Nevyplňuje sa podpis, zariadenia ani kontrola. Kontakt, adresa a údaje o zariadení sa zobrazia automaticky <b>z obhliadky</b> (hľadá sa podľa adresy alebo mena) a z karty zákazníka. Tlačidlom <b>Odchod – dokončiť</b> sa zákazka uzavrie; povinné sú len fotky.'],
 ['💬 Okno novej správy',0,'Keď ti príde nová správa a máš apku otvorenú, vyskočí okno s textom správy a tlačidlami <b>✓ Prečítané</b> a <b>Otvoriť</b>. Správa sa pri ťuknutí na Prečítané označí ako prečítaná (odosielateľ to uvidí). Ak okno zavrieš, správa ostane nečítaná. Ak apku práve nemáš otvorenú, správy uvidíš pri jej otvorení v okne „Nové pre teba“.'],
 ['⏰ Pripomienky',0,'Pripomienku vytvoríš cez <b>+ → Nová pripomienka</b>, v <b>Nástroje → Pripomienky</b> alebo v <b>zákazníckej karte → ⏰ Pripomeň mi</b>. Napíš, čo treba urobiť (napr. zavolať), vyber dátum (Dnes / Zajtra / Za týždeň) a podľa potreby čas a klienta. Správca môže pripomienku nastaviť aj inému členovi. V deň pripomienky sa ukáže v bloku <b>Dnes</b> a v <b>Moje úlohy</b> s tlačidlami <b>✓ Hotovo</b>, <b>📞 Zavolať</b> a <b>⏱ Zajtra</b>. Keď pripomienka nastane (v zadaný čas, alebo ráno pri otvorení apky, ak čas nemá), vyskočí v apke okno s tlačidlami <b>✓ Hotovo</b>, <b>⏱ +1 hod</b>, <b>⏱ Zajtra</b>. Okno sa ukáže len keď máš apku otvorenú; na zamknutej obrazovke apka nezvoní.'],
@@ -2989,7 +3003,7 @@ function showEvent(type,id){
       c=(o.klientId&&findById('clients',o.klientId))||null;
       info='<h3>🔍 Obhliadka: '+esc(onm(o))+(o.vykonana?' <small style="color:#16a34a">✅ vykonaná</small>':'')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+'</div>'+
         '<div class="modal-row"><strong>Telefón:</strong> '+telA(o.telefon)+'</div><div class="modal-row"><strong>E-mail:</strong> '+mailA(o.email)+'</div><div class="modal-row"><strong>Adresa:</strong> '+mapA(o)+'</div>'+
-        OL.map(function(x){return o[x[0]]?'<div class="modal-row"><strong>'+x[1]+':</strong> '+esc(o[x[0]])+'</div>':''}).join('');
+        OL.map(function(x){return o[x[0]]?'<div class="modal-row"><strong>'+x[1]+':</strong> '+esc(o[x[0]])+(x[0]==='vnutorna'&&oUnitTxt(o)?' · '+esc(oUnitTxt(o)):'')+'</div>':''}).join('');
       var edO=(o.vykonana?'<button class="btn-edit" style="background:#64748b" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',false)">↩ Vrátiť do úloh</button>':'<button class="btn-edit" style="background:#0d9488" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',true)">✅ Vykonaná</button>')+(isAdmin()?'<button class="btn-edit" style="background:#2563eb" onclick="closeEvent();ponukaFromObhId(\''+esc(o.id)+'\')">💶 Vytvoriť ponuku</button>':'')+'<button class="btn-edit" onclick="closeEvent();editObhliadka(\''+esc(o.id)+'\')">Upraviť obhliadku</button>'+
         (o.klientId?'':'<button class="btn-edit" style="background:#16a34a" onclick="closeEvent();convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>');
     }
@@ -3391,7 +3405,7 @@ function showJob(id,step){
       (m.popis?'<div class="modal-row"><strong>Popis:</strong> '+esc(m.popis)+'</div>':'')+
       (function(){var ob=jobObh(m);if(!ob)return jobShort(m)?'<div class="modal-row" style="color:#64748b">ℹ️ Údaje o zákazníkovi sa berú z karty zákazníka.</div>':'';
         return '<div class="modal-row" style="background:#f1f5f9;border-radius:8px;padding:8px">📋 <b>Z obhliadky</b>'+(ob.date?' ('+esc(fmtD(ob.date))+')':'')+'<br>'+[ob.name,ob.telefon,ob.email].filter(Boolean).map(esc).join(' · ')+
-          (ob.zariadenie||ob.kw?'<br>❄️ '+esc([ob.zariadenie,ob.kw?ob.kw+' kW':''].filter(Boolean).join(' · ')):'')+(ob.poznamky?'<br>📝 '+esc(ob.poznamky):'')+'</div>'})()+
+          (ob.zariadenie||ob.kw?'<br>❄️ '+esc([ob.zariadenie,ob.kw?ob.kw+' kW':''].filter(Boolean).join(' · ')):'')+(oUnitTxt(ob)?'<br>🏠 Ďalšie vnútorné: '+esc(oUnitTxt(ob)):'')+(ob.poznamky?'<br>📝 '+esc(ob.poznamky):'')+'</div>'})()+
       (ph?'<button class="btn-edit" style="background:#2563eb" onclick="smsTplDlg(\''+esc(ph)+'\')">💬 Šablóny SMS</button>':'')+
       (m.stav==='Hotová'?'<div class="jb-ok">✅ Zákazka je hotová</div>':(m.stav==='Prebieha'?'<div class="jb-ok">▶ Prebieha</div>':'<button class="action-btn" style="background:#ca8a04" onclick="jobStart(\''+esc(id)+'\')">▶ Som na mieste – začať</button>'));
   }else if(key==='devs'){
@@ -3666,7 +3680,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.133';
+var APP_VERSION='2026-11-11.134';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5162,11 +5176,12 @@ window.onload=function(){
       <button type="button" id="oAddBtn" class="full-width-input" style="display:none" onclick="showMemSel('o')">➕ Pridaj technika</button>
       <div id="oTeamChips" class="chips full-width-input"></div>
       <select id="oBig" data-iny data-iny-ph="Názov veľkého klienta" class="full-width-input"><option value="">-- Náš zákazník (nie veľký klient) --</option><option>VSE</option></select>
-      <select id="oZariadenie" data-iny><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Multisplit</option><option>Tepelné čerpadlo</option></select>
+      <select id="oZariadenie" data-iny onchange="oUnitsUi()"><option value="">-- Typ zariadenia --</option><option>Klimatizácia</option><option>Multisplit</option><option>Tepelné čerpadlo</option></select>
       <input type="text" inputmode="decimal" id="oKw" placeholder="⚡ Výkon zariadenia (kW), napr. 2,5">
       <select id="oBudova" data-iny><option value="">-- Typ budovy --</option><option>Dom</option><option>Byt</option></select>
       <select id="oStena" data-iny><option value="">-- Stena --</option><option>Betón</option><option>Tehla</option></select>
       <select id="oVnutorna" data-iny><option value="">-- Miesto zabudovania vnútornej jednotky --</option><option>Obývacia izba</option><option>Kuchyňa</option><option>Detská izba</option></select>
+      <div id="oJednotkyBox" class="full-width-input" style="display:none"><div style="color:#64748b;font-size:13px">Multisplit: jedna vonkajšia a viac vnútorných jednotiek. Prvá vnútorná je vyššie (miesto) a hore (výkon), ďalšie pridaj tu.</div><div id="oJednotky"></div><button type="button" class="btn-edit" style="background:#0d9488" onclick="oUnitAdd()">➕ Pridať vnútornú jednotku</button><datalist id="oRoomList"><option value="Obývacia izba"><option value="Kuchyňa"><option value="Detská izba"><option value="Spálňa"><option value="Pracovňa"><option value="Chodba"></datalist></div>
       <select id="oVonkajsia" data-iny><option value="">-- Vonkajšia jednotka --</option><option>Pod okno</option><option>Na konzolu</option><option>Na nohy</option></select>
       <select id="oElektro" data-iny><option value="">-- Elektrické pripojenie --</option><option>Na istič</option><option>Na zásuvku</option></select>
       <select id="oOdvod" data-iny><option value="">-- Odvod kondenzátu --</option><option>Do zbernej nádoby</option><option>Exteriér</option><option>Interiér</option></select>
