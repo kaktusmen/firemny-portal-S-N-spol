@@ -2641,6 +2641,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['🔘 Stav zákazky – jednoducho',0,'Technik už nevidí kopu tlačidiel (Naplánovaná, Prebieha, Hotová, Urgentné). Vidí len <b>Stav</b> a krátky pokyn, čo urobiť. Postup je vždy rovnaký: <b>📋 Otvoriť zákazku → ▶ Som na mieste</b> (stav sa zmení na Prebieha) a na konci <b>✔ Dokončiť zákazku</b> (stav Hotová). Správca môže stav zmeniť ručne v rozbaľovacej časti <b>⚙️ Zmeniť stav ručne</b>.'],
 ['❄️ Multisplit v obhliadke',0,'Keď v obhliadke vyberieš typ zariadenia <b>Multisplit</b>, objaví sa tlačidlo <b>➕ Pridať vnútornú jednotku</b>. Prvá vnútorná jednotka je v poli „Miesto zabudovania“ a výkon hore, ďalšie (2., 3., …) pridáš tlačidlom – každá má miesto (izbu) a výkon v kW. Zbytočnú odstrániš krížikom ×. Jednotky sa zobrazia v detaile obhliadky aj pri zákazke veľkého klienta.'],
 ['🏢 Zákazka veľkého klienta (VSE)',0,'Zákazka, pri ktorej je vyplnený <b>Veľký klient</b>, má iba 3 kroky: <b>Príchod → Fotky → Odchod</b>. Nevyplňuje sa podpis, zariadenia ani kontrola. Kontakt, adresa a údaje o zariadení sa zobrazia automaticky <b>z obhliadky</b> (hľadá sa podľa adresy alebo mena) a z karty zákazníka. Tlačidlom <b>Odchod – dokončiť</b> sa zákazka uzavrie; povinné sú len fotky.'],
 ['💬 Okno novej správy',0,'Keď ti príde nová správa a máš apku otvorenú, vyskočí okno s textom správy a tlačidlami <b>✓ Prečítané</b> a <b>Otvoriť</b>. Správa sa pri ťuknutí na Prečítané označí ako prečítaná (odosielateľ to uvidí). Ak okno zavrieš, správa ostane nečítaná. Ak apku práve nemáš otvorenú, správy uvidíš pri jej otvorení v okne „Nové pre teba“.'],
@@ -3669,7 +3670,10 @@ function stavButtons(o){
   var btns=st==='Hotová'?b('↩ Znovu otvoriť','Nová','#64748b'):
     (st==='Nová'?b('📅 Naplánovaná','Naplánovaná','#2563eb'):'')+(st!=='Prebieha'?b('▶ Prebieha (som na mieste)','Prebieha','#ca8a04'):'')+b('✔ Hotová','Hotová','#16a34a')+
     '<button class="btn-edit" style="background:#b91c1c" onclick="toggleUrgent(\''+id+'\')">'+(o.urgent?'Zrušiť urgentné':'🚨 Urgentné')+'</button>';
-  return '<div class="modal-row"><strong>Stav:</strong> '+chip+'</div><div class="modal-actions" style="flex-wrap:wrap">'+btns+smsBtn(o)+'</div>';
+  var hint={'Nová':'Zákazka čaká. Keď prídeš na miesto, ťukni <b>📋 Otvoriť zákazku</b> a potom <b>▶ Som na mieste</b>.','Naplánovaná':'Zákazka čaká. Keď prídeš na miesto, ťukni <b>📋 Otvoriť zákazku</b> a potom <b>▶ Som na mieste</b>.','Prebieha':'Zákazka práve prebieha. Na konci ťukni <b>📋 Otvoriť zákazku</b> a <b>✔ Dokončiť zákazku</b>.','Hotová':'Zákazka je hotová.'}[st]||'';
+  var head='<div class="modal-row" style="font-size:17px"><strong>Stav:</strong> '+chip+(o.urgent&&st!=='Hotová'?'':'')+'</div>'+(hint?'<div class="modal-row" style="color:#64748b">'+hint+'</div>':'');
+  if(!isAdmin())return head+'<div class="modal-actions" style="flex-wrap:wrap">'+smsBtn(o)+'</div>';
+  return head+'<details style="margin:6px 0"><summary style="cursor:pointer;color:#64748b;padding:6px 0">⚙️ Zmeniť stav ručne (správca)</summary><div class="modal-actions" style="flex-wrap:wrap">'+btns+'</div></details><div class="modal-actions" style="flex-wrap:wrap">'+smsBtn(o)+'</div>';
 }
 function navUrl(a){var e=encodeURIComponent(a);return /iPad|iPhone|iPod/.test(navigator.userAgent)?'https://maps.apple.com/?daddr='+e:'https://www.google.com/maps/dir/?api=1&destination='+e}
 function navBtn(m,cls){var a=jobAddr(m);return a?'<a '+(cls?'class="'+cls+'" ':'')+'href="'+esc(navUrl(a))+'" target="_blank" rel="noopener" style="background:#0ea5e9;color:#fff;text-decoration:none">🧭 Navigovať</a>':''}
@@ -3680,7 +3684,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.135';
+var APP_VERSION='2026-11-11.136';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
