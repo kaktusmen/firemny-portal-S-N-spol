@@ -2628,6 +2628,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['🏢 Zákazka veľkého klienta (VSE)',0,'Zákazka, pri ktorej je vyplnený <b>Veľký klient</b>, má iba 3 kroky: <b>Príchod → Fotky → Odchod</b>. Nevyplňuje sa podpis, zariadenia ani kontrola. Kontakt, adresa a údaje o zariadení sa zobrazia automaticky <b>z obhliadky</b> (hľadá sa podľa adresy alebo mena) a z karty zákazníka. Tlačidlom <b>Odchod – dokončiť</b> sa zákazka uzavrie; povinné sú len fotky.'],
 ['💬 Okno novej správy',0,'Keď ti príde nová správa a máš apku otvorenú, vyskočí okno s textom správy a tlačidlami <b>✓ Prečítané</b> a <b>Otvoriť</b>. Správa sa pri ťuknutí na Prečítané označí ako prečítaná (odosielateľ to uvidí). Ak okno zavrieš, správa ostane nečítaná. Ak apku práve nemáš otvorenú, správy uvidíš pri jej otvorení v okne „Nové pre teba“.'],
 ['⏰ Pripomienky',0,'Pripomienku vytvoríš cez <b>+ → Nová pripomienka</b>, v <b>Nástroje → Pripomienky</b> alebo v <b>zákazníckej karte → ⏰ Pripomeň mi</b>. Napíš, čo treba urobiť (napr. zavolať), vyber dátum (Dnes / Zajtra / Za týždeň) a podľa potreby čas a klienta. Správca môže pripomienku nastaviť aj inému členovi. V deň pripomienky sa ukáže v bloku <b>Dnes</b> a v <b>Moje úlohy</b> s tlačidlami <b>✓ Hotovo</b>, <b>📞 Zavolať</b> a <b>⏱ Zajtra</b>. Keď pripomienka nastane (v zadaný čas, alebo ráno pri otvorení apky, ak čas nemá), vyskočí v apke okno s tlačidlami <b>✓ Hotovo</b>, <b>⏱ +1 hod</b>, <b>⏱ Zajtra</b>. Okno sa ukáže len keď máš apku otvorenú; na zamknutej obrazovke apka nezvoní.'],
 ['🧭 Kde čo nájdem',0,'Dole sú tlačidlá: <b>Dnes</b>, <b>Kalendár</b>, <b>+</b> (vytvoriť: montáž/servis, obhliadka, chladivo), <b>Nástroje</b> (Moje úlohy, Trasa dňa, zoznamy montáží, obhliadok a čakajúcich jednotiek, Hľadať, Mapa klientov, Voľno, Nová správa) a <b>Viac</b> (Správy, Dopyty, Zákazky, Ponuky, Prehľad, Servisné termíny, Klienti, Tím, Návod, Správa, Nastavenia). Zálohu a ďalšie zriedkavé veci nájdeš v <b>Nastavenia → Pokročilé</b>.'],
@@ -3293,10 +3294,20 @@ function showProtocol(id){
 }
 
 /* ===== Zákazka – jedno miesto: kontakt, údaje, fotky, podpisy ===== */
-function jobPhone(m){var c=clientOfMontaz(m);return String(m.telefon||(c&&c.telefon)||'').replace(/[^\d+]/g,'')}
-function jobAddr(m){var c=clientOfMontaz(m);return m.address||(c?clientAddr(c):'')||''}
+function jobShort(m){return !m.kind&&!!String(m.big||'').trim()}
+function jobObh(m){
+  if(!jobShort(m))return null;
+  var b=norm(m.big),a=norm(m.address||''),n=norm(m.clientName||'');
+  var L=dbData.obhliadky.filter(function(o){return norm(o.big||'')===b});
+  var r=L.filter(function(o){var oa=norm((o.adresa||'')+' '+(o.obec||''));return a&&oa.trim()&&(a.indexOf(norm(o.adresa||'x'))>=0||oa.indexOf(a)>=0)});
+  if(!r.length&&n)r=L.filter(function(o){return norm(o.name||'')===n});
+  return r.sort(function(x,y){return (y.date||'').localeCompare(x.date||'')})[0]||null;
+}
+function jobPhone(m){var c=clientOfMontaz(m),ob=jobObh(m);return String(m.telefon||(ob&&ob.telefon)||(c&&c.telefon)||'').replace(/[^\d+]/g,'')}
+function jobAddr(m){var c=clientOfMontaz(m),ob=jobObh(m);return m.address||(ob&&ob.adresa?(ob.adresa+(ob.obec?', '+ob.obec:'')):'')||(c?clientAddr(c):'')||''}
 function jobMissing(m){
   var out=[];
+  if(jobShort(m)){if(!(m.fotoCount>0))out.push('fotky');return out}
   if(!m.kind){var mi=missingOf(m);out=out.concat(mi)}
   if(!(m.fotoCount>0))out.push('fotky');
   if(!sigOk(m.podpisZ))out.push('podpis zákazníka');
@@ -3307,8 +3318,9 @@ function jbIn(id,val,ph,need,extra){
   return '<input id="'+id+'" class="jb'+(need&&!val?' need':'')+'" value="'+esc(val||'')+'" placeholder="'+esc(ph)+'" oninput="jbN(this)" '+(extra||'')+'>';
 }
 var jobStep=1;
-function jobSteps(m){return m.kind?['arrive','photos','sign','done']:['arrive','devs','check','photos','sign','done']}
+function jobSteps(m){return jobShort(m)?['arrive','photos','done']:m.kind?['arrive','photos','sign','done']:['arrive','devs','check','photos','sign','done']}
 var JSN={arrive:'Príchod',devs:'Zariadenia',check:'Kontrola',photos:'Fotky',sign:'Podpisy',done:'Hotovo'};
+var JSN_S={done:'Odchod'};
 function jobCollect(m){
   var u={};
   if($('jbNote'))u.poznTech=$('jbNote').value.trim();
@@ -3368,7 +3380,7 @@ function showJob(id,step){
   var nmC=m.clientName||(c?nm(c):'');
   var dots='<div class="jb-steps">'+st.map(function(k,i){return '<span class="'+(i+1===step?'on':(i+1<step?'ok':''))+'" onclick="jobGo(\''+esc(id)+'\','+(i+1)+')">'+(i+1<step?'✓':(i+1))+'</span>'}).join('')+'</div>';
   var h='<div class="modal-row" style="color:#64748b">'+esc(m.title||m.servisType||'Montáž')+' · 👤 '+esc(nmC||'-')+'</div>'+dots+
-    '<h3 style="margin:6px 0">Krok '+step+'/'+st.length+' · '+JSN[key]+'</h3>';
+    '<h3 style="margin:6px 0">Krok '+step+'/'+st.length+' · '+((jobShort(m)&&JSN_S[key])||JSN[key])+'</h3>';
   if(key==='arrive'){
     if(needsAck(m))h+='<button class="action-btn" style="background:#16a34a" onclick="ackJob(\''+esc(id)+'\')">👍 Beriem na vedomie'+(m.chg?' (zmenený termín/tím)':'')+'</button>';
     h+=readInfo('montaze',m);
@@ -3377,6 +3389,9 @@ function showJob(id,step){
       (ad?'<a class="btn-edit" style="background:#0d9488;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(ad)+'">🧭 Navigovať</a>':'')+'</div>'+
       '<div class="modal-row">'+(ph?'📞 '+telA(ph)+'<br>':'')+(ad?'📍 '+esc(ad)+'<br>':'')+'<strong>Dátum:</strong> '+esc(m.date?fmtD(m.date):'-')+(m.time?' o '+esc(m.time):'')+(m.memberNames&&m.memberNames.length?'<br>👷 '+m.memberNames.map(esc).join(', '):'')+'</div>'+
       (m.popis?'<div class="modal-row"><strong>Popis:</strong> '+esc(m.popis)+'</div>':'')+
+      (function(){var ob=jobObh(m);if(!ob)return jobShort(m)?'<div class="modal-row" style="color:#64748b">ℹ️ Údaje o zákazníkovi sa berú z karty zákazníka.</div>':'';
+        return '<div class="modal-row" style="background:#f1f5f9;border-radius:8px;padding:8px">📋 <b>Z obhliadky</b>'+(ob.date?' ('+esc(fmtD(ob.date))+')':'')+'<br>'+[ob.name,ob.telefon,ob.email].filter(Boolean).map(esc).join(' · ')+
+          (ob.zariadenie||ob.kw?'<br>❄️ '+esc([ob.zariadenie,ob.kw?ob.kw+' kW':''].filter(Boolean).join(' · ')):'')+(ob.poznamky?'<br>📝 '+esc(ob.poznamky):'')+'</div>'})()+
       (ph?'<button class="btn-edit" style="background:#2563eb" onclick="smsTplDlg(\''+esc(ph)+'\')">💬 Šablóny SMS</button>':'')+
       (m.stav==='Hotová'?'<div class="jb-ok">✅ Zákazka je hotová</div>':(m.stav==='Prebieha'?'<div class="jb-ok">▶ Prebieha</div>':'<button class="action-btn" style="background:#ca8a04" onclick="jobStart(\''+esc(id)+'\')">▶ Som na mieste – začať</button>'));
   }else if(key==='devs'){
@@ -3401,9 +3416,10 @@ function showJob(id,step){
       '<div class="modal-row" style="margin-top:12px"><strong>Podpis zákazníka</strong></div><canvas id="sigZ" class="sig-pad" width="900" height="675"></canvas>'+
       '<button class="btn-edit" style="background:#64748b" onclick="clearPad(\'sigZ\')">Vymazať podpis</button>';
   }else{
+    if(jobShort(m))h+='<div class="modal-row" style="color:#64748b">Stačí príchod, fotky a odchod. Podpis ani zariadenia netreba.</div>';
     h+='<label class="fl">📝 Poznámka technika (čo sa robilo, čo treba doriešiť)</label><textarea id="jbNote" class="full-width-input" style="min-height:70px">'+esc(m.poznTech||'')+'</textarea>';
     h+=(miss.length?'<div class="jb-warn">🔴 Ešte chýba: <b>'+esc(miss.join(', '))+'</b></div>':'<div class="jb-ok">✅ Všetko vyplnené</div>')+
-      (m.stav==='Hotová'?'<div class="jb-ok">✅ Zákazka je hotová</div>':'<button class="action-btn" style="background:#16a34a" onclick="saveJob(\''+esc(id)+'\',true)">✔ Dokončiť zákazku</button>')+
+      (m.stav==='Hotová'?'<div class="jb-ok">✅ Zákazka je hotová</div>':'<button class="action-btn" style="background:#16a34a" onclick="saveJob(\''+esc(id)+'\',true)">'+(jobShort(m)?'🚪 Odchod – dokončiť':'✔ Dokončiť zákazku')+'</button>')+
       '<button class="btn-edit" style="background:#475569;margin-top:8px" onclick="showProtocol(\''+esc(id)+'\')">🧾 Protokol / tlač / poslať</button>';
   }
   h+='<div class="modal-actions" style="flex-wrap:wrap;margin-top:14px">'+
@@ -3650,7 +3666,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.131';
+var APP_VERSION='2026-11-11.133';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4176,6 +4192,7 @@ function isMine(m){
   return (m.memberIds||[]).indexOf(me)>-1||(m.memberNames||[]).some(function(n){return norm(n)===norm(mm.name)});
 }
 function missingOf(m){
+  if(jobShort(m))return [];
   var out=[],ds=devicesOf(m);
   if(!ds.length)return ['zariadenie'];
   var sn=false,ch=false;
@@ -4199,7 +4216,7 @@ function renderMyTasks(){
     if(!isMine(m))return;
     var open=m.stav!=='Hotová';
     var e={type:'montaze',id:m.id,time:m.time||'',color:srvColor(m),text:srvIcon(m)+(m.title||'Montáž'),
-      sub:[m.date?fmtD(m.date):'bez dátumu',m.address?'📍 '+m.address:'',m.clientName&&!m.kind?'👤 '+m.clientName:''].filter(Boolean).join(' · '),d:m.date||''};
+      sub:[m.date?fmtD(m.date):'bez dátumu',m.address?'📍 '+m.address:'',m.clientName&&!m.kind?'👤 '+m.clientName:''].filter(Boolean).join(' · '),d:m.date||'',fin:!open};
     if(!m.date){if(m.kind&&open)nodate.push(e)}
     else if(m.date>=today){if(m.date>cl14){later++;return}soon.push(e)}
     else if(open&&m.date>=ymd(new Date(Date.now()-30*86400000)))late.push(e);
@@ -4209,7 +4226,7 @@ function renderMyTasks(){
     soon.push({type:'obhliadky',id:o.id,time:o.time||'',color:'#7c3aed',text:'🔍 Obhliadka: '+onm(o),sub:[fmtD(o.date),o.adresa?'📍 '+o.adresa:(o.obec?'📍 '+o.obec:'')].filter(Boolean).join(' · '),d:o.date});
   });
   var lim=ymd(new Date(Date.now()-90*86400000)),todo=dbData.montaze.filter(function(m){return !m.kind&&isMine(m)&&m.date&&m.date<=today&&m.date>=lim&&missingOf(m).length}).sort(function(a,b){return b.date.localeCompare(a.date)});
-  var by=function(a,b){return (a.d+(a.time||'')).localeCompare(b.d+(b.time||''))};
+  var by=function(a,b){return ((a.fin?1:0)-(b.fin?1:0))||(a.d+(a.time||'')).localeCompare(b.d+(b.time||''))};
   late.sort(by);soon.sort(by);
   var sec=function(t,a){return a.length?'<div class="td-h">'+t+'</div>'+a.map(dayRow).join(''):''};
   var msgs=dbData.spravy.filter(msgForMe).sort(function(a,b){return (b.ts||0)-(a.ts||0)}).slice(0,10);
