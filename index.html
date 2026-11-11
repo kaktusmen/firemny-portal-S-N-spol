@@ -335,6 +335,26 @@ html[data-theme=dark] .ph-lv{background:#164e63;color:#cffafe}
 .menu-card,.btn-edit,.btn-delete,.action-btn,.dr-q a,#tabBar button{transition:transform .12s ease,background .15s}
 .btn-edit:active,.dr-q a:active,.action-btn:active{transform:scale(.96)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+html[data-anim=off] *{animation:none!important;transition:none!important}
+@keyframes sheetUp{from{opacity:0;transform:translateY(40px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes rowIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes popIn{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes barGrow{from{width:0}}
+.fab-menu{animation:sheetUp .22s cubic-bezier(.2,.9,.3,1.1)}
+.fab-menu button{transition:transform .12s ease,box-shadow .12s ease}
+.fab-menu button:active,.menu-card:active,.btn-edit:active,.action-btn:active,.day-row:active,.item-card:active{transform:scale(.97)}
+.menu-card,.btn-edit,.action-btn,.day-row,.item-card{transition:transform .12s ease,box-shadow .15s ease}
+.tl .day-row{animation:rowIn .28s ease both}
+.tl .day-row:nth-child(2){animation-delay:.04s}.tl .day-row:nth-child(3){animation-delay:.08s}.tl .day-row:nth-child(4){animation-delay:.12s}.tl .day-row:nth-child(5){animation-delay:.16s}.tl .day-row:nth-child(n+6){animation-delay:.2s}
+.greet-n{display:flex;align-items:center;gap:12px;margin-top:6px}
+.greet-n .big{font-size:2.4rem;font-weight:800;line-height:1;color:#0d9488;min-width:44px;animation:popIn .4s ease both}
+.greet-n .lbl{flex:1;color:#8e8e93;font-size:.9rem}
+.pbar{height:8px;border-radius:6px;background:#e2e8f0;overflow:hidden;margin-top:5px}
+.pbar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#14b8a6,#16a34a);animation:barGrow .6s ease both;transition:width .4s ease}
+html[data-theme=dark] .pbar{background:#3a3a3c}
+.jb-lbls{display:flex;gap:6px;margin:-4px 0 6px}.jb-lbls span{flex:1;text-align:center;font-size:.68rem;color:#94a3b8;font-weight:600}.jb-lbls span.on{color:#0d9488}
+.celeb .cb{animation:cel 1.3s ease both}
+.celeb .ck{display:block;font-size:3.2rem;animation:popIn .5s .1s ease both}
 .day-row span.pill,.item-card span.pill{display:inline-block;margin-top:0;color:#fff;font-size:.74rem}
 /* tmavý režim */
 html[data-theme=dark]{--bg:#000;--brand:#f5a300}
@@ -802,7 +822,7 @@ var TECHC=['#2563eb','#db2777','#16a34a','#d97706','#7c3aed','#0891b2','#dc2626'
 function techColor(n){var h=0,t=norm(n||'');for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;return TECHC[h%TECHC.length]}
 function techAvs(names){return (names||[]).map(function(n){var p=String(n).trim().split(/\s+/);var ini=((p[0]||'')[0]||'')+((p[1]||'')[0]||'');return '<i class="av" title="'+esc(n)+'" style="background:'+techColor(n)+'">'+esc(ini.toUpperCase())+'</i>'}).join('')}
 function celebrate(){
-  var d=document.createElement('div');d.className='celeb';d.innerHTML='<div class="cb">✅<span>Hotovo!</span></div>'+['🎉','✨','🎉','✨','🎊','✨'].map(function(e,i){return '<em style="left:'+(10+i*15)+'%;animation-delay:'+(i*70)+'ms">'+e+'</em>'}).join('');
+  var d=document.createElement('div');d.className='celeb';d.innerHTML='<div class="cb"><i class="ck" style="font-style:normal">✅</i><span>Hotovo!</span></div>'+['🎉','✨','🎉','✨','🎊','✨'].map(function(e,i){return '<em style="left:'+(10+i*15)+'%;animation-delay:'+(i*70)+'ms">'+e+'</em>'}).join('');
   document.body.appendChild(d);setTimeout(function(){d.remove()},1500);
 }
 function techSub(m){return (m.memberNames&&m.memberNames.length)?'<span class="sub">'+techAvs(m.memberNames)+' '+m.memberNames.map(esc).join(', ')+'</span>':''}
@@ -2641,6 +2661,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['✨ Živší vzhľad a animácie',0,'Na <b>Dnes</b> hore vidíš veľké číslo zákaziek, ktoré ešte čakajú, a zelený pásik, koľko je už hotových. V zákazke je hore pásik postupu s názvami krokov (Príchod, Fotky, Odchod…). Menu <b>+</b> a <b>Nástroje</b> sa plynulo vysunú, tlačidlá sa pri ťuknutí jemne stlačia a po dokončení zákazky vyskočí veľké zelené ✅. Ak sa ti animácie nepáčia alebo je telefón pomalý, vypni ich v <b>Viac → Animácie</b>.'],
 ['✅ Hotové zákazky sú sivé',0,'V zozname na <b>Dnes</b> a v kalendári sú zákazky, ktoré sú už <b>Hotové</b>, zosivené (sivé pozadie a tlmený text), aby bolo hneď jasné, že sú vybavené. Aktívne zákazky ostávajú farebné.'],
 ['🔘 Stav zákazky – jednoducho',0,'Technik už nevidí kopu tlačidiel (Naplánovaná, Prebieha, Hotová, Urgentné). Vidí len <b>Stav</b> a krátky pokyn, čo urobiť. Postup je vždy rovnaký: <b>📋 Otvoriť zákazku → ▶ Som na mieste</b> (stav sa zmení na Prebieha) a na konci <b>✔ Dokončiť zákazku</b> (stav Hotová). Správca môže stav zmeniť ručne v rozbaľovacej časti <b>⚙️ Zmeniť stav ručne</b>.'],
 ['❄️ Multisplit v obhliadke',0,'Keď v obhliadke vyberieš typ zariadenia <b>Multisplit</b>, objaví sa tlačidlo <b>➕ Pridať vnútornú jednotku</b>. Prvá vnútorná jednotka je v poli „Miesto zabudovania“ a výkon hore, ďalšie (2., 3., …) pridáš tlačidlom – každá má miesto (izbu) a výkon v kW. Zbytočnú odstrániš krížikom ×. Jednotky sa zobrazia v detaile obhliadky aj pri zákazke veľkého klienta.'],
@@ -3396,6 +3417,7 @@ function showJob(id,step){
   var nmC=m.clientName||(c?nm(c):'');
   var dots='<div class="jb-steps">'+st.map(function(k,i){return '<span class="'+(i+1===step?'on':(i+1<step?'ok':''))+'" onclick="jobGo(\''+esc(id)+'\','+(i+1)+')">'+(i+1<step?'✓':(i+1))+'</span>'}).join('')+'</div>';
   var h='<div class="modal-row" style="color:#64748b">'+esc(m.title||m.servisType||'Montáž')+' · 👤 '+esc(nmC||'-')+'</div>'+dots+
+    '<div class="jb-lbls">'+st.map(function(k,i){return '<span class="'+(i+1===step?'on':'')+'">'+((jobShort(m)&&JSN_S[k])||JSN[k])+'</span>'}).join('')+'</div><div class="pbar" style="margin:0 0 6px"><i style="width:'+Math.round((step-1)*100/Math.max(1,st.length-1))+'%"></i></div>'+
     '<h3 style="margin:6px 0">Krok '+step+'/'+st.length+' · '+((jobShort(m)&&JSN_S[key])||JSN[key])+'</h3>';
   if(key==='arrive'){
     if(needsAck(m))h+='<button class="action-btn" style="background:#16a34a" onclick="ackJob(\''+esc(id)+'\')">👍 Beriem na vedomie'+(m.chg?' (zmenený termín/tím)':'')+'</button>';
@@ -3685,7 +3707,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.137';
+var APP_VERSION='2026-11-11.138';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4153,11 +4175,14 @@ function evFor(ds){
     return false;
   }).sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99')});
 }
-function greetHtml(n){
+function greetHtml(n,ev){
   var mm=me?findById('members',me):null,h=new Date().getHours();
   var g=h<10?'Dobré ráno ☀️':(h<18?'Dobrý deň 👋':'Dobrý večer 🌙');
   var nm1=mm?String(mm.name||'').split(' ')[0]:'';
-  return '<div class="greet"><b>'+g+(nm1?', '+esc(nm1):'')+'</b><span>'+(n?('Dnes máš '+n+(n===1?' zákazku':(n<5?' zákazky':' zákaziek'))):'Dnes nemáš žiadnu zákazku 🎉')+'</span></div>';
+  var dn=0,tot=0;dayEvents(ev).forEach(function(x){if(x.type!=='montaze')return;var mm2=findById('montaze',x.id);if(!mm2||(!isAdmin()&&!isMine(mm2)))return;tot++;if(mm2.stav==='Hotová')dn++});
+  var rest=tot-dn;
+  var big=(n||tot)?('<div class="greet-n"><div class="big">'+(tot?rest:n)+'</div><div class="lbl">'+(tot?(rest===0?'všetky zákazky sú hotové 🎉':(rest===1?'zákazka ešte čaká':(rest<5?'zákazky ešte čakajú':'zákaziek ešte čaká'))+(dn?' · hotové '+dn+' z '+tot:'')):'udalostí dnes')+(tot?'<div class="pbar"><i style="width:'+Math.round(dn*100/tot)+'%"></i></div>':'')+'</div></div>'):'';
+  return '<div class="greet"><b>'+g+(nm1?', '+esc(nm1):'')+'</b>'+((n||tot)?big:'<span>Dnes nemáš žiadnu zákazku 🎉</span>')+'</div>';
 }
 function waitCmp(a,b){return (a.createdAt||0)-(b.createdAt||0)}
 function showWaitList(){
@@ -4197,7 +4222,7 @@ function renderToday(){
     var ev=evFor(x[1]);if(x[1]===d0)n0=ev.length;
     return '<div class="td-h">📅 '+x[0]+' · '+esc(fmtD(x[1]))+'</div>'+(ev.length?'<div class="tl">'+ev.map(dayRow).join('')+'</div>':'<div class="td-none">Žiadne udalosti</div>');
   }).join('');
-  el.innerHTML=greetHtml(n0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
+  el.innerHTML=greetHtml(n0,d0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
 }
 var me='';try{me=localStorage.getItem('portal_me')||''}catch(e){}
 function fillMe(){
@@ -4281,7 +4306,10 @@ function applyTheme(){
   var b=document.getElementById('themeBtn');if(b)b.textContent='🌓 Vzhľad: '+({auto:'Auto',light:'Svetlý',dark:'Tmavý'})[THEME];
 }
 function cycleTheme(){THEME=THEME==='auto'?'dark':(THEME==='dark'?'light':'auto');try{localStorage.setItem('portal_theme',THEME)}catch(e){}applyTheme();toast('Vzhľad: '+({auto:'automaticky podľa telefónu',light:'svetlý',dark:'tmavý'})[THEME])}
-applyTheme();
+var ANIM='on';try{ANIM=localStorage.getItem('portal_anim')||'on'}catch(e){}
+function applyAnim(){document.documentElement.setAttribute('data-anim',ANIM);var b=document.getElementById('animBtn');if(b)b.textContent='✨ Animácie: '+(ANIM==='off'?'vypnuté':'zapnuté')}
+function toggleAnim(){ANIM=ANIM==='off'?'on':'off';try{localStorage.setItem('portal_anim',ANIM)}catch(e){}applyAnim();toast('Animácie '+(ANIM==='off'?'vypnuté':'zapnuté'))}
+applyTheme();applyAnim();
 try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme)}catch(e){}
 
 /* ---------- Fotky ---------- */
@@ -4615,6 +4643,7 @@ window.onload=function(){
     <div class="menu-list">
       <div class="menu-card" onclick="hardRefresh()">🔄 Aktualizovať aplikáciu</div>
       <div class="menu-card" id="themeBtn" onclick="cycleTheme()">🌓 Vzhľad</div>
+      <div class="menu-card" id="animBtn" onclick="toggleAnim()">✨ Animácie</div>
     </div>
     <details class="admin-only" style="margin:10px 0"><summary style="font-weight:700;padding:10px 4px;cursor:pointer">Pokročilé</summary>
     <div class="menu-list">
