@@ -1442,6 +1442,13 @@ function renderHomeObh(){
     return '<div class="day-row" style="border-left-color:#7c3aed" onclick="'+act+'"><b>'+(x.o.chg?'🔄 Zmenené ':'🆕 ')+x.ic+' '+esc(x.tx)+'</b><span>'+(by&&!x.o.chg?'zadal '+esc(by.name||''):'')+(asg2?(by&&!x.o.chg?' · ':'')+'čaká na tvoje potvrdenie'+(x.o.date?' · '+esc(fmtD(x.o.date))+(x.o.time?' '+esc(x.o.time):''):''):'')+'</span></div>';
   }).join('');
 }
+function dayAck(m){
+  if(!isAdmin()||!m||(!m.createdBy&&!m.chg)||!(m.memberIds||[]).length||m.stav==='Hotová')return '';
+  var as=dbData.members.filter(function(x){return m.memberIds.indexOf(x.id)>-1});if(!as.length)return '';
+  var f=function(arr,key){return as.filter(function(x){return (m[key]||[]).indexOf(x.id)>-1===arr}).map(function(x){return esc(String(x.name||'').split(' ')[0])}).join(', ')};
+  var ok=f(true,'ackBy'),no=f(false,'ackBy'),rd=f(true,'readBy'),nr=f(false,'readBy');
+  return '<span style="font-size:.8rem;margin-top:4px"><span style="display:inline;color:#16a34a">👍 '+(ok||'nikto')+'</span>'+(no?' · <span style="display:inline;color:#dc2626">⏳ nepotvrdil: '+no+'</span>':'')+'<br><span style="display:inline;color:#64748b">👁 čítali: '+(rd||'nikto')+(nr?' · nečítali: '+nr:'')+'</span></span>';
+}
 function readInfo(c,o){
   if(!isAdmin()||(NEWC.indexOf(c)<0&&c!=='volno')||(c!=='obhliadky'&&!o.createdBy&&!o.chg))return '';
   var ids=dbData.members.filter(function(m){if(c==='volno')return (m.rola==='Správca'&&m.id!==o.memberId)||(o.stav!=='Žiadosť'&&m.id===o.memberId);return m.rola==='Správca'||(c==='montaze'&&(o.memberIds||[]).indexOf(m.id)>-1)});
@@ -2661,6 +2668,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['👍 Kto potvrdil a čítal – v zozname',0,'Správca vidí priamo pri každej zákazke v zozname (Dnes, Zajtra) riadok: <b>👍 kto potvrdil</b>, <b>⏳ kto nepotvrdil</b> (červenou) a <b>👁 kto čítal</b>. Tak hneď vidíš, či o zákazke technici vedia, bez otvárania detailu.'],
 ['✨ Živší vzhľad a animácie',0,'Na <b>Dnes</b> hore vidíš veľké číslo zákaziek, ktoré ešte čakajú, a zelený pásik, koľko je už hotových. V zákazke je hore pásik postupu s názvami krokov (Príchod, Fotky, Odchod…). Menu <b>+</b> a <b>Nástroje</b> sa plynulo vysunú, tlačidlá sa pri ťuknutí jemne stlačia a po dokončení zákazky vyskočí veľké zelené ✅. Ak sa ti animácie nepáčia alebo je telefón pomalý, vypni ich v <b>Viac → Animácie</b>.'],
 ['✅ Hotové zákazky sú sivé',0,'V zozname na <b>Dnes</b> a v kalendári sú zákazky, ktoré sú už <b>Hotové</b>, zosivené (sivé pozadie a tlmený text), aby bolo hneď jasné, že sú vybavené. Aktívne zákazky ostávajú farebné.'],
 ['🔘 Stav zákazky – jednoducho',0,'Technik už nevidí kopu tlačidiel (Naplánovaná, Prebieha, Hotová, Urgentné). Vidí len <b>Stav</b> a krátky pokyn, čo urobiť. Postup je vždy rovnaký: <b>📋 Otvoriť zákazku → ▶ Som na mieste</b> (stav sa zmení na Prebieha) a na konci <b>✔ Dokončiť zákazku</b> (stav Hotová). Správca môže stav zmeniť ručne v rozbaľovacej časti <b>⚙️ Zmeniť stav ručne</b>.'],
@@ -3707,7 +3715,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.138';
+var APP_VERSION='2026-11-11.139';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -3925,7 +3933,7 @@ function dayRow(e){
     }
   }
   var dn=e.type==='montaze'&&(findById('montaze',e.id)||{}).stav==='Hotová';
-  return '<div class="day-row'+(dn?' dr-done':'')+'" style="border-left-color:'+(dn?'#94a3b8':e.color)+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+(e.time?'<i class="tm" style="font-style:normal">'+esc(e.time)+'</i>':'')+(e.type==='montaze'&&findById('montaze',e.id)?stavPill(findById('montaze',e.id)):'')+esc(e.text)+(e.type==='montaze'&&findById('montaze',e.id)?'<span class="avs">'+techAvs(findById('montaze',e.id).memberNames)+'</span>':'')+'</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+q+'</div>';
+  return '<div class="day-row'+(dn?' dr-done':'')+'" style="border-left-color:'+(dn?'#94a3b8':e.color)+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+(e.time?'<i class="tm" style="font-style:normal">'+esc(e.time)+'</i>':'')+(e.type==='montaze'&&findById('montaze',e.id)?stavPill(findById('montaze',e.id)):'')+esc(e.text)+(e.type==='montaze'&&findById('montaze',e.id)?'<span class="avs">'+techAvs(findById('montaze',e.id).memberNames)+'</span>':'')+'</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+(e.type==='montaze'?dayAck(findById('montaze',e.id)):'')+q+'</div>';
 }
 function msgForMe(x){
   var mm=me?findById('members',me):null;if(!mm||x.fromId===me)return false;
