@@ -2269,6 +2269,7 @@ function qkGo(w){
   if(w==='my')openSection('myTasksSection','Moje úlohy','');
   else if(w==='rt')openSection('routeSection','Trasa dňa','');
   else if(w==='sr')openSearch();
+  else if(w==='cl')openSection('clientsSection','Klienti','');
   else if(w==='rem')remList();
   else if(w==='map')openMapa();
   else if(w==='lm'||w==='lo'||w==='wait'){fabGo(w)}
@@ -3593,7 +3594,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.126';
+var APP_VERSION='2026-11-11.127';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4442,6 +4443,7 @@ window.onload=function(){
   <button onclick="qkGo('lo')">📋 Obhliadky</button>
   <button class="admin-only" onclick="qkGo('wait')">📦 Čaká na jednotku</button>
   <div class="fab-h">Ďalšie</div>
+  <button class="admin-only" onclick="qkGo('cl')">👥 Klienti</button>
   <button class="admin-only" onclick="qkGo('sr')">🔎 Hľadať</button>
   <button onclick="qkGo('map')">📍 Mapa klientov</button>
   <button onclick="qkGo('vol')">🏖 Voľno</button>
