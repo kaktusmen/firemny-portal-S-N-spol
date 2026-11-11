@@ -820,7 +820,7 @@ function card(c,o,title,body,edit,collapsed,extra){
 var V={
   clients:['clientsList','Žiadni klienti.',function(a,b){return nm(a).localeCompare(nm(b))},function(c){
     return card('clients',c,'👤 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):''),
-      clientBrief(c),true,true)}],
+      clientBrief(c),true,true,'<button class="btn-edit" style="background:#0d9488" onclick="clientCard(\''+esc(c.id)+'\')">📇 Detail</button>')}],
   montaze:['montazList','Žiadne montáže.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')},function(m){
     if(m.kind)return card('montaze',m,stavPill(m)+srvIcon(m)+esc(m.title||'Servis')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')'+techSub(m),
       '<strong>Telefón:</strong> '+telA(m.telefon)+' | <strong>E-mail:</strong> '+mailA(m.email)+'\n'+'<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):'')+oprBody(m),'editServis',true,listBtns(m));
@@ -3593,7 +3593,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.125';
+var APP_VERSION='2026-11-11.126';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
