@@ -335,6 +335,23 @@ html[data-theme=dark] .ph-lv{background:#164e63;color:#cffafe}
 .menu-card,.btn-edit,.btn-delete,.action-btn,.dr-q a,#tabBar button{transition:transform .12s ease,background .15s}
 .btn-edit:active,.dr-q a:active,.action-btn:active{transform:scale(.96)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+#tabBar button[data-n],#layTools{display:none}
+html[data-lay=new] #tabBar button[data-n]{display:flex}
+html[data-lay=new] #tabBar button[data-o]{display:none!important}
+html[data-lay=new] #layTools{display:block}
+html[data-lay=new] .dr-q{display:grid!important;grid-template-columns:1fr 1fr;gap:8px}html[data-lay=new] .dr-q a:last-child{grid-column:1/-1}
+html[data-lay=new] .dr-q a{padding:11px 6px!important;font-size:.9rem!important;text-align:center;min-height:0!important}
+#layTools{position:relative;height:0;z-index:5}#layTools>div{position:absolute;right:56px;top:13px;display:flex;gap:8px}
+#layTools button{width:40px;height:40px;margin:0;padding:0;border-radius:50%;border:none;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:1.2rem}
+html[data-theme=dark] #layTools button{background:#2c2c2e}
+body.is-tech #layTools button.admin-only{display:none!important}
+.seg2{display:flex;background:rgba(118,118,128,.14);border-radius:10px;padding:3px;margin:6px 0 10px}
+.seg2 button{flex:1;margin:0;padding:8px 4px;border:0;border-radius:8px;background:transparent;color:inherit;font-size:.9rem;font-weight:500;width:auto}
+.seg2 button.on{background:#fff;color:#0f172a;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+html[data-theme=dark] .seg2 button.on{background:#48484a;color:#fff}
+.zk-row{background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.zk-row b{display:block;font-size:1rem}.zk-row small{color:#64748b}
+html[data-theme=dark] .zk-row{background:#1c1c1e}html[data-theme=dark] .zk-row small{color:#aeaeb2}
 html[data-anim=off] *{animation:none!important;transition:none!important}
 @keyframes sheetUp{from{opacity:0;transform:translateY(40px) scale(.96)}to{opacity:1;transform:none}}
 @keyframes rowIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -767,10 +784,17 @@ function hideAll(){
   ['mainMenu','todayBox','homeQuick','workMenu','leaveBanner','leakBanner'].forEach(function(i){$(i).style.display='none'});
 }
 function setTab(t){
-  if(t==='work'||(t==='msg'&&isAdmin()))t='more';
+  if(LAY==='new'){if(t==='work')t='zak'}else if(t==='work'||(t==='msg'&&isAdmin()))t='more';
   document.querySelectorAll('#tabBar button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
 }
 function tabFor(id){
+  if(typeof LAY!=='undefined'&&LAY==='new'){
+    if(id==='zakSection'||id==='montazListSection'||id==='obhliadkyListSection'||id==='montazSection'||id==='obhliadkaSection'||id==='calendarSection'||id==='zakazkySection')return id==='zakazkySection'&&isAdmin()?'tim':'zak';
+    if(id==='clientsSection')return 'clients';
+    if(id==='spravySection')return isAdmin()?'tim':'msg';
+    if(id==='timSection'||id==='volnoSection'||id==='teamSection'||id==='statSection'||id==='ponukySection')return isAdmin()?'tim':'home';
+    if(id==='myTasksSection'||id==='routeSection'||id==='searchSection')return 'home';
+  }
   if(navBack==='more')return 'more';
   if(navBack==='work')return 'work';
   var m={spravySection:'msg',volnoSection:isAdmin()?'more':'leave',calendarSection:'cal',searchSection:'home',clientsSection:'more',montazSection:'work',montazListSection:'work',obhliadkyListSection:'work',obhliadkaSection:'work',chladivoSection:'work',myTasksSection:'home',routeSection:'home'};
@@ -804,6 +828,8 @@ function goTab(t){
   else if(t==='clients')openSection('clientsSection','Klienti','');
   else if(t==='leave')openSection('volnoSection','Voľno','');
   else if(t==='msg')openSection('spravySection','Správy','');
+  else if(t==='zak')openSection('zakSection','Zákazky','');
+  else if(t==='tim')openSection('timSection','Tím','');
 }
 function goHome(){
   if(navBack==='more')showMore();else if(navBack==='work')showWork();else showHome();
@@ -958,7 +984,7 @@ function render(){
   fillMontazSelects();
   fillSpravySelects();
   fillServisMembers();
-  renderToday();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();fillMsTech();renderDopyty();renderDue();renderPrehlad();renderZakazky();fillObhMember();renderBig();locClean();applyCustomOpts();renderRoute();renderHelp();fillPonukaSelects();applyRole();
+  renderToday();renderZak();fillMe();renderMyTasks();fillVolno();fillChladivo();updateBackupInfo();fillMsTech();renderDopyty();renderDue();renderPrehlad();renderZakazky();fillObhMember();renderBig();locClean();applyCustomOpts();renderRoute();renderHelp();fillPonukaSelects();applyRole();
 }
 
 // ---------- Klienti ----------
@@ -2722,6 +2748,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['🧪 Nové usporiadanie (test)',0,'V <b>Nastavenia → Nové usporiadanie</b> si môžeš zapnúť skúšobné rozloženie: dole <b>Dnes · Zákazky · + · Klienti · Tím</b> (technik namiesto Tímu vidí Správy). <b>Zákazky</b> majú prepínače Montáže/Servisy/Obhliadky a Aktívne/Čakajú/Hotové. Hore vpravo je <b>🧰</b> (nástroje) a <b>⚙️</b> (Viac, nastavenia). Dnes ukazuje len dnešné a zajtrajšie zákazky. Ak sa ti nepáči, v Nastaveniach ho vypni a všetko je ako predtým.'],
 ['🔧 Zákazka z obhliadky',0,'Keď z obhliadky urobíš klienta (<b>✅ Na klienta</b>), apka sa opýta, či má hneď vytvoriť <b>zákazku z údajov obhliadky</b>. Tlačidlo <b>🔧 Vytvoriť zákazku</b> nájdeš aj v obhliadke, ktorá už má klienta. Do zákazky sa vložia: klient, typ zariadenia, výkon, vnútorné jednotky s miestom (aj ďalšie pri multisplite), technici a veľký klient. Všetky údaje z obhliadky (budova, stena, elektro, odvod, poznámky) sa vložia do poľa <b>📝 Poznámky k zákazke</b>, ktoré môžeš upraviť, a ukážu sa v modrom rámčeku v detaile zákazky. Pri úprave staršej zákazky sa prázdne poznámky doplnia z obhliadky toho istého klienta. Stačí doplniť dátum a uložiť.'],
 ['🧰 Čo si zobrať na montáž',0,'Pri vytváraní alebo úprave montáže je pole <b>🧰 Čo si zobrať na montáž</b>. Napíš voľný text alebo ťukni na rýchle tlačidlá (Konzola 420 / 460 / 550, Gumené a plastové nohy). Tlačidlom <b>➕ Viac</b> pridáš vlastnú položku – pridá sa do zoznamu a zapamätá sa ako nové tlačidlo. Zoznam sa žlto zobrazí v detaile zákazky aj v kroku <b>Príchod</b> a pridá sa do správy cez WhatsApp.'],
 ['👍 Kto potvrdil a čítal – v zozname',0,'Správca vidí priamo pri každej zákazke v zozname (Dnes, Zajtra) riadok: <b>👍 kto potvrdil</b>, <b>⏳ kto nepotvrdil</b> (červenou) a <b>👁 kto čítal</b>. Tak hneď vidíš, či o zákazke technici vedia, bez otvárania detailu.'],
@@ -3771,7 +3798,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-12.146';
+var APP_VERSION='2026-11-12.150';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4286,7 +4313,7 @@ function renderToday(){
     var ev=evFor(x[1]);if(x[1]===d0)n0=ev.length;
     return '<div class="td-h">📅 '+x[0]+' · '+esc(fmtD(x[1]))+'</div>'+(ev.length?'<div class="tl">'+ev.map(dayRow).join('')+'</div>':'<div class="td-none">Žiadne udalosti</div>');
   }).join('');
-  el.innerHTML=greetHtml(n0,d0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
+  el.innerHTML=(LAY==='new')?greetHtml(n0,d0)+remBlock()+burnHome()+days:greetHtml(n0,d0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
 }
 var me='';try{me=localStorage.getItem('portal_me')||''}catch(e){}
 function fillMe(){
@@ -4371,10 +4398,34 @@ function applyTheme(){
 }
 function cycleTheme(){THEME=THEME==='auto'?'dark':(THEME==='dark'?'light':'auto');try{localStorage.setItem('portal_theme',THEME)}catch(e){}applyTheme();toast('Vzhľad: '+({auto:'automaticky podľa telefónu',light:'svetlý',dark:'tmavý'})[THEME])}
 try{takeChips();window.addEventListener('load',takeChips);setTimeout(takeChips,500)}catch(e){}
+var LAY='old';try{LAY=localStorage.getItem('portal_layout')||'old'}catch(e){}
+function applyLay(){document.documentElement.setAttribute('data-lay',LAY);var b=document.getElementById('layBtn');if(b)b.textContent='🧪 Nové usporiadanie (test): '+(LAY==='new'?'zapnuté':'vypnuté')}
+function toggleLay(){LAY=LAY==='new'?'old':'new';try{localStorage.setItem('portal_layout',LAY)}catch(e){}applyLay();showHome();toast('Usporiadanie: '+(LAY==='new'?'nové (test)':'pôvodné'))}
+var zakT='montaze',zakF='act';
+function zakSet(t,f){if(t)zakT=t;if(f)zakF=f;renderZak()}
+function renderZak(){
+  var el=$('zakList');if(!el||LAY!=='new'&&el.offsetParent===null)return;
+  var s1=[['montaze','Montáže'],['servis','Servisy'],['obh','Obhliadky']],s2=zakT==='obh'?[['act','Čakajú na vykonanie'],['done','Vykonané']]:[['act','Aktívne'],['wait','Čakajú'],['done','Hotové']];
+  if(!s2.some(function(x){return x[0]===zakF}))zakF='act';
+  $('zakSeg1').innerHTML=s1.map(function(x){return '<button class="'+(zakT===x[0]?'on':'')+'" onclick="zakSet(\''+x[0]+'\',null)">'+x[1]+'</button>'}).join('');
+  $('zakSeg2').innerHTML=s2.map(function(x){return '<button class="'+(zakF===x[0]?'on':'')+'" onclick="zakSet(null,\''+x[0]+'\')">'+x[1]+'</button>'}).join('');
+  var obh=zakT==='obh',src=obh?dbData.obhliadky:dbData.montaze.filter(function(m){return zakT==='servis'?!!m.kind:!m.kind});
+  if(!isAdmin())src=src.filter(function(m){return obh?(m.memberIds||[]).indexOf(me)>-1:isMine(m)});
+  src=src.filter(function(m){
+    var dn=obh?!!m.vykonana:m.stav==='Hotová',wt=obh?false:m.stav==='Čaká na jednotku';
+    return zakF==='done'?dn:(zakF==='wait'?wt:(!dn&&!wt));
+  });
+  var q=norm($('zakQ').value||'');
+  if(q)src=src.filter(function(m){return norm([m.title,m.clientName,m.name,m.address,m.adresa,m.obec,(m.memberNames||[]).join(' ')].join(' ')).indexOf(q)>=0});
+  src.sort(function(a,b){var c=(a.date||'9999').localeCompare(b.date||'9999');return zakF==='done'?-c:c});
+  el.innerHTML=src.length?src.map(function(m){
+    var t=obh?'obhliadky':'montaze',ti=obh?onm(m):(m.title||m.servisType||'Zákazka'),sub=obh?[m.obec||m.adresa,(m.memberNames||[]).join(', ')]:[m.clientName,(m.memberNames||[]).join(', ')];
+    return '<div class="zk-row" onclick="showEvent(\''+t+'\',\''+esc(m.id)+'\')"><span><b>'+(m.date?esc(fmtD(m.date))+' · ':'')+esc(ti)+'</b><small>'+sub.filter(Boolean).map(esc).join(' · ')+'</small></span>'+(obh?'':stavPill(m))+'</div>'}).join(''):'<div class="td-none">Nič tu nie je</div>';
+}
 var ANIM='on';try{ANIM=localStorage.getItem('portal_anim')||'on'}catch(e){}
 function applyAnim(){document.documentElement.setAttribute('data-anim',ANIM);var b=document.getElementById('animBtn');if(b)b.textContent='✨ Animácie: '+(ANIM==='off'?'vypnuté':'zapnuté')}
 function toggleAnim(){ANIM=ANIM==='off'?'on':'off';try{localStorage.setItem('portal_anim',ANIM)}catch(e){}applyAnim();toast('Animácie '+(ANIM==='off'?'vypnuté':'zapnuté'))}
-applyTheme();applyAnim();
+applyTheme();applyAnim();applyLay();
 try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme)}catch(e){}
 
 /* ---------- Fotky ---------- */
@@ -4618,6 +4669,7 @@ window.onload=function(){
   <button onclick="fabGo('obh')">🔍 Nová obhliadka</button>
   <button onclick="fabGo('chl')">❄️ Chladivo</button>
   <button onclick="fabGo('rem')">⏰ Nová pripomienka</button>
+  <button class="admin-only" onclick="closeSheets();openSection('ponukySection','Cenové ponuky','');showPonukaForm(null)">💶 Nová ponuka</button>
 </div></div>
 <div id="qkSheet" onclick="if(event.target===this)this.style.display='none'"><div class="fab-menu">
   <div class="fab-h">Dnes</div>
@@ -4637,12 +4689,15 @@ window.onload=function(){
 </div></div>
 <nav id="tabBar">
   <button data-t="home" class="on" onclick="goTab('home')"><span>🏠</span>Dnes</button>
-  <button data-t="cal" onclick="goTab('cal')"><span>📅</span>Kalendár</button>
+  <button data-t="zak" data-n="1" onclick="goTab('zak')"><span>🔧</span>Zákazky</button>
+  <button data-t="cal" data-o="1" onclick="goTab('cal')"><span>📅</span>Kalendár</button>
   <button id="tabPlus" onclick="fabToggle()" aria-label="Nové"><b>+</b></button>
-  <button id="tabQk" onclick="qkToggle()"><span>🧰</span>Nástroje</button>
-  <button data-t="leave" class="tech-only" onclick="goTab('leave')"><span>🏖</span>Voľno</button>
+  <button data-t="clients" data-n="1" onclick="goTab('clients')"><span>👤</span>Klienti</button>
+  <button id="tabQk" data-o="1" onclick="qkToggle()"><span>🧰</span>Nástroje</button>
+  <button data-t="leave" data-o="1" class="tech-only" onclick="goTab('leave')"><span>🏖</span>Voľno</button>
+  <button data-t="tim" data-n="1" class="admin-only" onclick="goTab('tim')"><span>👥</span>Tím</button>
   <button data-t="msg" class="tech-only" onclick="goTab('msg')" style="position:relative"><span>💬</span>Správy<i id="tabMsgBadge" style="display:none"></i></button>
-  <button data-t="more" class="admin-only" onclick="goTab('more')" style="position:relative"><span>⋯</span>Viac<i id="tabBadge" style="display:none"></i></button>
+  <button data-t="more" data-o="1" class="admin-only" onclick="goTab('more')" style="position:relative"><span>⋯</span>Viac<i id="tabBadge" style="display:none"></i></button>
 </nav>
 <div id="updBar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:2000;background:#f59e0b;color:#111;padding:10px 14px;text-align:center;font-weight:bold">🔄 Je dostupná nová verzia aplikácie. <button onclick="hardRefresh()" style="width:auto;display:inline-block;margin:0 0 0 8px;padding:6px 12px">Aktualizovať</button></div>
 <div class="container">
@@ -4659,6 +4714,7 @@ window.onload=function(){
     <div id="whoInfo" style="flex-basis:100%;font-size:.8rem;font-weight:600"></div>
   </div>
 
+  <div id="layTools"><div><button onclick="qkToggle()" aria-label="Nástroje">🧰</button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
   <h1 id="pageTitle">Dnes</h1>
   <p id="pageSub" style="display:none"></p>
 
@@ -4709,6 +4765,7 @@ window.onload=function(){
       <div class="menu-card" onclick="hardRefresh()">🔄 Aktualizovať aplikáciu</div>
       <div class="menu-card" id="themeBtn" onclick="cycleTheme()">🌓 Vzhľad</div>
       <div class="menu-card" id="animBtn" onclick="toggleAnim()">✨ Animácie</div>
+      <div class="menu-card" id="layBtn" onclick="toggleLay()">🧪 Nové usporiadanie</div>
     </div>
     <details class="admin-only" style="margin:10px 0"><summary style="font-weight:700;padding:10px 4px;cursor:pointer">Pokročilé</summary>
     <div class="menu-list">
@@ -4997,6 +5054,22 @@ window.onload=function(){
 </section>
   </div>
 
+  <div id="zakSection" class="section-content">
+    <div id="zakSeg1" class="seg2"></div><div id="zakSeg2" class="seg2"></div>
+    <input id="zakQ" placeholder="🔍 Hľadať…" oninput="renderZak()" style="width:100%;box-sizing:border-box;margin-bottom:8px">
+    <div id="zakList"></div>
+    <button class="btn-edit" style="background:#64748b" onclick="goTab('cal')">📅 Kalendár</button>
+  </div>
+  <div id="timSection" class="section-content">
+    <div class="menu-list">
+      <div class="menu-card" onclick="goTab('msg')">💬 Správy</div>
+      <div class="menu-card" onclick="openSection('zakazkySection','Prehľad zákaziek','')">👍 Potvrdenia a chýbajúce údaje</div>
+      <div class="menu-card" onclick="openSection('volnoSection','Voľno','')">🏖 Voľno</div>
+      <div class="menu-card" onclick="openSection('teamSection','Správa tímu','')">🛡️ Členovia tímu</div>
+      <div class="menu-card" onclick="openSection('statSection','Štatistika používania','')">📊 Štatistika používania</div>
+      <div class="menu-card" onclick="openSection('ponukySection','Cenové ponuky','')">💶 Ponuky</div>
+    </div>
+  </div>
   <div id="zakazkySection" class="section-content">
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>📋 Zákazky</h2>
