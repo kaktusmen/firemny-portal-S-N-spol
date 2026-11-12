@@ -1243,7 +1243,7 @@ function mNearUi(){
 }
 function clearMontaz(){
   toggleNewClient(false);if($('mSteps'))mGo(1);
-  ['mTitle','mClient','mDate','mTime','mMember','mDod','mTake'].forEach(function(i){$(i).value=''});takeChips();$('mWait').checked=false;mWaitUi();
+  ['mTitle','mClient','mDate','mTime','mMember','mDod','mTake','mPopis'].forEach(function(i){$(i).value=''});takeChips();$('mWait').checked=false;mWaitUi();
   renderDevices([emptyDev()]);sv('mBig','');
   mTeam=[];renderMontazChips();mObhCur={id:'',text:''};
   $('editingMontazId').value='';$('montazSaveBtn').innerText='Vytvoriť zákazku';$('montazCancelBtn').style.display='none';
@@ -1253,7 +1253,10 @@ function editMontaz(id){
   var m=findById('montaze',id);if(!m)return;
   if(m.kind){editServis(id);return}
   openSection('montazSection','Montáž / Servis');toggleNewClient(false);
-  $('mTitle').value=m.title||'';$('mDate').value=m.date||'';$('mTime').value=m.time||'';sv('mBig',m.big||'');$('mTake').value=m.zobrat||'';takeChips();mObhCur={id:m.obhId||'',text:m.obhText||''};$('mWait').checked=m.stav==='Čaká na jednotku';$('mDod').value=m.dodavka||'';mWaitUi();
+  $('mTitle').value=m.title||'';$('mDate').value=m.date||'';$('mTime').value=m.time||'';sv('mBig',m.big||'');$('mTake').value=m.zobrat||'';takeChips();mObhCur={id:m.obhId||'',text:m.obhText||''};
+  var pp=m.popis||'';
+  if(!pp){var ob0=(m.obhId&&findById('obhliadky',m.obhId))||(m.clientId&&dbData.obhliadky.filter(function(x){return x.klientId===m.clientId}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')})[0])||null;if(ob0){pp=obhText(ob0);if(!mObhCur.id)mObhCur={id:ob0.id,text:pp}}else if(m.obhText)pp=m.obhText}
+  $('mPopis').value=pp;$('mWait').checked=m.stav==='Čaká na jednotku';$('mDod').value=m.dodavka||'';mWaitUi();
   var cid=m.clientId||'';
   if(!cid&&m.clientName){var f=dbData.clients.filter(function(x){return nm(x).toLowerCase()===m.clientName.toLowerCase()})[0];if(f)cid=f.id}
   $('mClient').value=cid;
@@ -1286,7 +1289,7 @@ function saveMontaz(){
   var oldM=eid?findById('montaze',eid):null,stX={};
   if($('mWait').checked){stX={stav:'Čaká na jednotku',dodavka:$('mDod').value||''}}
   else if(oldM&&oldM.stav==='Čaká na jednotku'){stX={stav:$('mDate').value?'Naplánovaná':'Nová',dodavka:''}}
-  put('montaze',Object.assign({title:t,clientId:cid||'',clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,big:gv('mBig'),zobrat:$('mTake').value.trim(),obhId:mObhCur.id||'',obhText:mObhCur.text||'',
+  put('montaze',Object.assign({title:t,clientId:cid||'',clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,big:gv('mBig'),zobrat:$('mTake').value.trim(),popis:$('mPopis').value.trim(),obhId:mObhCur.id||'',obhText:mObhCur.text||'',
     zariadenia:devs,typ:'',system:'',vnutorne:[],vonkajsia:'',zarukaRoky:'',
     memberIds:mTeam.map(function(x){return x.id}),memberNames:mTeam.map(function(x){return x.name})},stX),eid);
   var back=fromCal;
@@ -1495,7 +1498,7 @@ function montazFromObh(id){
   d.vnutorne=places.map(function(){return ''});d.vnutorneTyp=places;
   renderDevices([d]);
   mTeam=(o.memberNames||[]).map(function(n,i){return {id:(o.memberIds&&o.memberIds[i])||'',name:n}});renderMontazChips();
-  mObhCur={id:o.id,text:obhText(o)};
+  mObhCur={id:o.id,text:obhText(o)};$('mPopis').value=mObhCur.text;
   toast('Údaje z obhliadky sú vložené. Doplň dátum a ulož.');
 }
 function convertObhliadka(id){
@@ -1693,14 +1696,30 @@ function deviceSummary(m){
     return (a.length>1?'Zariadenie '+(i+1)+': ':'')+p.join(' · ');
   }).filter(Boolean).join(' | ');
 }
-var TAKE_QUICK=['Rebrík','Vŕtačka + jadrový vrták','Vákuová pumpa','Chladivo','Konzola','Medené rúrky','Izolácia','Elektro kábel','Odvod kondenzátu','Lišty / žľaby'];
+var TAKE_BASE=['Konzola 420','Konzola 460','Konzola 550','Gumené nohy malé','Gumové nohy veľké','Plastové nohy'];
+var TAKE_QUICK=TAKE_BASE.slice();
 function takeAdd(t){var e=$('mTake');if(!e)return;var v=e.value.trim();if(v.toLowerCase().indexOf(t.toLowerCase())>-1)return;e.value=v?(v.replace(/[,;]\s*$/,'')+', '+t):t}
-function takeChips(){var b=$('mTakeChips');if(b)b.innerHTML=TAKE_QUICK.map(function(t,i){return '<button type="button" onclick="takeAdd(TAKE_QUICK['+i+'])" style="width:auto;margin:0;padding:6px 10px;border-radius:14px;font-size:.85rem;background:#e2e8f0;color:#0f172a;border:0">+ '+esc(t)+'</button>'}).join('')}
-function obhRow(m){return m&&m.obhText?'<div class="modal-row" style="background:#eff6ff;border-left:4px solid #2563eb;padding:8px 10px;border-radius:6px;white-space:pre-wrap"><strong>📋 Z obhliadky:</strong>\n'+esc(m.obhText)+'</div>':''}
+function takeChips(){
+  var b=$('mTakeChips');if(!b)return;
+  var ex=(inyDoc().zobrat||[]).filter(function(x){return TAKE_BASE.indexOf(x)<0});
+  TAKE_QUICK=TAKE_BASE.concat(ex);
+  var st='width:auto;margin:0;padding:6px 10px;border-radius:14px;font-size:.85rem;border:0;';
+  b.innerHTML=TAKE_QUICK.map(function(t,i){return '<button type="button" onclick="takeAdd(TAKE_QUICK['+i+'])" style="'+st+'background:#e2e8f0;color:#0f172a">+ '+esc(t)+'</button>'}).join('')+
+    '<button type="button" onclick="takeMore()" style="'+st+'background:#0d9488;color:#fff">➕ Viac</button>';
+}
+function takeMore(){
+  var t=prompt('Čo ďalšie treba zobrať? (napíš názov, pridá sa do zoznamu a zapamätá sa ako tlačidlo)');
+  t=String(t||'').trim();if(!t)return;
+  takeAdd(t);
+  var cur=inyDoc().zobrat||[];
+  if(cur.indexOf(t)<0&&TAKE_BASE.indexOf(t)<0){cur=cur.concat([t]);col('nastavenia').doc('moznosti').set({zobrat:cur},{merge:true}).catch(function(){})}
+  var d=dbData.nastavenia.filter(function(x){return x.id==='moznosti'})[0];if(d)d.zobrat=cur;
+  takeChips();
+}
 function takeRow(m){return m&&m.zobrat?'<div class="modal-row" style="background:#fef3c7;border-left:4px solid #f59e0b;padding:8px 10px;border-radius:6px;white-space:pre-wrap;color:#78350f"><strong>🧰 Zobrať so sebou:</strong> '+esc(m.zobrat)+'</div>':''}
 function deviceRows(m){
   var r=function(l,v){return v?'<div class="modal-row"><strong>'+l+':</strong> '+esc(v)+'</div>':''};
-  var devs=devicesOf(m),out=takeRow(m)+obhRow(m);
+  var devs=devicesOf(m),out=takeRow(m)+(m.popis?'<div class="modal-row" style="background:#eff6ff;border-left:4px solid #2563eb;padding:8px 10px;border-radius:6px;white-space:pre-wrap"><strong>📝 Poznámky:</strong>\n'+esc(m.popis)+'</div>':obhRow(m));
   devs.forEach(function(d,i){
     var ind=indList(d),t=[d.typ,d.system].filter(Boolean).join(' – '),we=devEnd(m,d);
     out+=(devs.length>1?'<div class="modal-row" style="border-top:1px solid #e2e8f0;padding-top:6px"><strong>Zariadenie '+(i+1)+'</strong></div>':'')+
@@ -2702,8 +2721,8 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
-['🔧 Zákazka z obhliadky',0,'Keď z obhliadky urobíš klienta (<b>✅ Na klienta</b>), apka sa opýta, či má hneď vytvoriť <b>zákazku z údajov obhliadky</b>. Tlačidlo <b>🔧 Vytvoriť zákazku</b> nájdeš aj v obhliadke, ktorá už má klienta. Do zákazky sa vložia: klient, typ zariadenia, výkon, vnútorné jednotky s miestom (aj ďalšie pri multisplite), technici a veľký klient. Všetky údaje z obhliadky (budova, stena, elektro, odvod, poznámky) sa ukážu v modrom rámčeku <b>📋 Z obhliadky</b> v detaile zákazky. Stačí doplniť dátum a uložiť.'],
-['🧰 Čo si zobrať na montáž',0,'Pri vytváraní alebo úprave montáže je pole <b>🧰 Čo si zobrať na montáž</b>. Napíš voľný text alebo ťukni na rýchle tlačidlá (Rebrík, Vákuová pumpa, Konzola…). Zoznam sa žlto zobrazí v detaile zákazky aj v kroku <b>Príchod</b> a pridá sa do správy cez WhatsApp.'],
+['🔧 Zákazka z obhliadky',0,'Keď z obhliadky urobíš klienta (<b>✅ Na klienta</b>), apka sa opýta, či má hneď vytvoriť <b>zákazku z údajov obhliadky</b>. Tlačidlo <b>🔧 Vytvoriť zákazku</b> nájdeš aj v obhliadke, ktorá už má klienta. Do zákazky sa vložia: klient, typ zariadenia, výkon, vnútorné jednotky s miestom (aj ďalšie pri multisplite), technici a veľký klient. Všetky údaje z obhliadky (budova, stena, elektro, odvod, poznámky) sa vložia do poľa <b>📝 Poznámky k zákazke</b>, ktoré môžeš upraviť, a ukážu sa v modrom rámčeku v detaile zákazky. Pri úprave staršej zákazky sa prázdne poznámky doplnia z obhliadky toho istého klienta. Stačí doplniť dátum a uložiť.'],
+['🧰 Čo si zobrať na montáž',0,'Pri vytváraní alebo úprave montáže je pole <b>🧰 Čo si zobrať na montáž</b>. Napíš voľný text alebo ťukni na rýchle tlačidlá (Konzola 420 / 460 / 550, Gumené a plastové nohy). Tlačidlom <b>➕ Viac</b> pridáš vlastnú položku – pridá sa do zoznamu a zapamätá sa ako nové tlačidlo. Zoznam sa žlto zobrazí v detaile zákazky aj v kroku <b>Príchod</b> a pridá sa do správy cez WhatsApp.'],
 ['👍 Kto potvrdil a čítal – v zozname',0,'Správca vidí priamo pri každej zákazke v zozname (Dnes, Zajtra) riadok: <b>👍 kto potvrdil</b>, <b>⏳ kto nepotvrdil</b> (červenou) a <b>👁 kto čítal</b>. Tak hneď vidíš, či o zákazke technici vedia, bez otvárania detailu.'],
 ['✨ Živší vzhľad a animácie',0,'Na <b>Dnes</b> hore vidíš veľké číslo zákaziek, ktoré ešte čakajú, a zelený pásik, koľko je už hotových. V zákazke je hore pásik postupu s názvami krokov (Príchod, Fotky, Odchod…). Menu <b>+</b> a <b>Nástroje</b> sa plynulo vysunú, tlačidlá sa pri ťuknutí jemne stlačia a po dokončení zákazky vyskočí veľké zelené ✅. Ak sa ti animácie nepáčia alebo je telefón pomalý, vypni ich v <b>Viac → Animácie</b>.'],
 ['✅ Hotové zákazky sú sivé',0,'V zozname na <b>Dnes</b> a v kalendári sú zákazky, ktoré sú už <b>Hotové</b>, zosivené (sivé pozadie a tlmený text), aby bolo hneď jasné, že sú vybavené. Aktívne zákazky ostávajú farebné.'],
@@ -3470,7 +3489,7 @@ function showJob(id,step){
       (ph?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" href="tel:'+esc(ph)+'">📞 Zavolať</a><a class="btn-edit" style="background:#2563eb;text-decoration:none" href="sms:'+esc(ph)+'">💬 SMS</a>':'')+
       (ad?'<a class="btn-edit" style="background:#0d9488;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(ad)+'">🧭 Navigovať</a>':'')+'</div>'+
       '<div class="modal-row">'+(ph?'📞 '+telA(ph)+'<br>':'')+(ad?'📍 '+esc(ad)+'<br>':'')+'<strong>Dátum:</strong> '+esc(m.date?fmtD(m.date):'-')+(m.time?' o '+esc(m.time):'')+(m.memberNames&&m.memberNames.length?'<br>👷 '+m.memberNames.map(esc).join(', '):'')+'</div>'+
-      (m.popis?'<div class="modal-row"><strong>Popis:</strong> '+esc(m.popis)+'</div>':'')+takeRow(m)+(jobObh(m)?'':obhRow(m))+
+      (m.popis?'<div class="modal-row"><strong>Popis:</strong> '+esc(m.popis)+'</div>':'')+takeRow(m)+(jobObh(m)||m.popis?'':obhRow(m))+
       (function(){var ob=jobObh(m);if(!ob)return jobShort(m)?'<div class="modal-row" style="color:#64748b">ℹ️ Údaje o zákazníkovi sa berú z karty zákazníka.</div>':'';
         return '<div class="modal-row" style="background:#f1f5f9;border-radius:8px;padding:8px">📋 <b>Z obhliadky</b>'+(ob.date?' ('+esc(fmtD(ob.date))+')':'')+'<br>'+[ob.name,ob.telefon,ob.email].filter(Boolean).map(esc).join(' · ')+
           (ob.zariadenie||ob.kw?'<br>❄️ '+esc([ob.zariadenie,ob.kw?ob.kw+' kW':''].filter(Boolean).join(' · ')):'')+(oUnitTxt(ob)?'<br>🏠 Ďalšie vnútorné: '+esc(oUnitTxt(ob)):'')+(ob.poznamky?'<br>📝 '+esc(ob.poznamky):'')+'</div>'})()+
@@ -3751,7 +3770,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-12.142';
+var APP_VERSION='2026-11-12.144';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5115,6 +5134,7 @@ window.onload=function(){
       <div class="full-width-input" id="mTakeBox"><label class="fl">🧰 Čo si zobrať na montáž</label>
         <div id="mTakeChips" style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0"></div>
         <textarea id="mTake" placeholder="Napr. konzola, rebrík, vákuová pumpa, 5 m medi…" style="min-height:70px"></textarea></div>
+      <div class="full-width-input"><label class="fl">📝 Poznámky k zákazke</label><textarea id="mPopis" placeholder="Údaje z obhliadky, dohodnuté veci, prístup, kontakt…" style="min-height:110px"></textarea></div>
       <div id="mNear"></div>
       </div>
       <div class="mStep" data-s="3" style="grid-column:1/-1;display:none;gap:10px">
