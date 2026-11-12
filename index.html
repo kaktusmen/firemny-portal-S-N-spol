@@ -1717,7 +1717,7 @@ function takeMore(){
   takeChips();
 }
 function obhRow(m){return m&&m.obhText?'<div class="modal-row" style="background:#eff6ff;border-left:4px solid #2563eb;padding:8px 10px;border-radius:6px;white-space:pre-wrap"><strong>📋 Z obhliadky:</strong>\n'+esc(m.obhText)+'</div>':''}
-function takeRow(m){return m&&m.zobrat?'<div class="modal-row" style="background:#fef3c7;border-left:4px solid #f59e0b;padding:8px 10px;border-radius:6px;white-space:pre-wrap;color:#78350f"><strong>🧰 Zobrať so sebou:</strong> '+esc(m.zobrat)+'</div>':''}
+function takeRow(m){return m&&m.zobrat?'<div class="modal-row" style="background:#fef3c7;border-left:4px solid #f59e0b;padding:8px 10px;border-radius:6px;white-space:pre-wrap;color:#78350f"><strong style="color:#78350f">🧰 Zobrať so sebou:</strong> '+esc(m.zobrat)+'</div>':''}
 function deviceRows(m){
   var r=function(l,v){return v?'<div class="modal-row"><strong>'+l+':</strong> '+esc(v)+'</div>':''};
   var devs=devicesOf(m),out=takeRow(m)+(m.popis?'<div class="modal-row" style="background:#eff6ff;border-left:4px solid #2563eb;padding:8px 10px;border-radius:6px;white-space:pre-wrap"><strong>📝 Poznámky:</strong>\n'+esc(m.popis)+'</div>':obhRow(m));
@@ -3527,7 +3527,7 @@ function showJob(id,step){
   h+='<div class="modal-actions" style="flex-wrap:wrap;margin-top:14px">'+
     (step>1?'<button class="btn-edit" style="background:#64748b" onclick="jobGo(\''+esc(id)+'\','+(step-1)+')">‹ Späť</button>':'')+
     (step<st.length?'<button class="btn-edit" style="background:#0d9488;flex:1" onclick="jobGo(\''+esc(id)+'\','+(step+1)+')">Ďalej ›</button>':'')+
-    '<button class="btn-delete" style="background:#94a3b8" onclick="jobPersist(findById(\'montaze\',\''+esc(id)+'\'),jobCollect(findById(\'montaze\',\''+esc(id)+'\')));closeEvent()">Zavrieť</button></div>';
+    '<button class="btn-delete" style="background:#64748b;color:#fff!important" onclick="jobPersist(findById(\'montaze\',\''+esc(id)+'\'),jobCollect(findById(\'montaze\',\''+esc(id)+'\')));closeEvent()">Zavrieť</button></div>';
   $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
   try{$('eventModalBody').scrollTop=0;$('eventModalBody').parentNode.scrollTop=0}catch(e){}
   if(key==='devs')initIny($('eventModalBody'));
@@ -3771,7 +3771,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-12.145';
+var APP_VERSION='2026-11-12.146';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
