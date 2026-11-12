@@ -237,6 +237,7 @@ html[data-theme=dark] #updBar{color:#111}
 #mSteps.jb-steps span,#clSteps.jb-steps span,#rpSteps.jb-steps span,#eventModal .jb-steps span{flex:1;text-align:center;padding:6px 0;border-radius:10px;background:#e2e8f0;color:#64748b;font-weight:700;font-size:.85rem;cursor:pointer}
 #mSteps.jb-steps span.on,#clSteps.jb-steps span.on,#rpSteps.jb-steps span.on,#eventModal .jb-steps span.on{background:#0d9488;color:#fff}
 #mSteps.jb-steps span.ok,#clSteps.jb-steps span.ok,#rpSteps.jb-steps span.ok,#eventModal .jb-steps span.ok{background:#ccfbf1;color:#0f766e}
+.sig-big{aspect-ratio:auto!important;height:calc(100vh - 400px)!important;height:calc(100dvh - 400px)!important;min-height:300px!important}
 #eventModal .jb{width:100%;padding:10px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:1rem;background:#fff;color:#111;box-sizing:border-box}
 #eventModal .jb.need{border-color:#dc2626;background:#fef2f2}
 .jb-dev{border:1px solid #e2e8f0;border-radius:14px;padding:10px;margin:8px 0}
@@ -2748,6 +2749,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['✍️ Podpisy po jednom',0,'Krok <b>Podpisy</b> ide za sebou. Najprv sa podpíše <b>technik</b> do veľkého poľa a ťukne <b>✔ Uložiť</b>. Potom sa zobrazí nové pole pre <b>zákazníka</b>, ten sa podpíše a znova <b>✔ Uložiť</b> – apka prejde na ďalší krok. <b>🧹 Vymazať podpis</b> zmaže pole a môžeš podpísať znova. Tlačidlom <b>‹ Podpis technika znova</b> sa vrátiš k podpisu technika.'],
 ['🧪 Nové usporiadanie (test)',0,'V <b>Nastavenia → Nové usporiadanie</b> si môžeš zapnúť skúšobné rozloženie: dole <b>Dnes · Zákazky · + · Klienti · Tím</b> (technik namiesto Tímu vidí Správy). <b>Zákazky</b> majú prepínače Montáže/Servisy/Obhliadky a Aktívne/Čakajú/Hotové. Hore vpravo je <b>🧰</b> (nástroje) a <b>⚙️</b> (Viac, nastavenia). Dnes ukazuje len dnešné a zajtrajšie zákazky. Ak sa ti nepáči, v Nastaveniach ho vypni a všetko je ako predtým.'],
 ['🔧 Zákazka z obhliadky',0,'Keď z obhliadky urobíš klienta (<b>✅ Na klienta</b>), apka sa opýta, či má hneď vytvoriť <b>zákazku z údajov obhliadky</b>. Tlačidlo <b>🔧 Vytvoriť zákazku</b> nájdeš aj v obhliadke, ktorá už má klienta. Do zákazky sa vložia: klient, typ zariadenia, výkon, vnútorné jednotky s miestom (aj ďalšie pri multisplite), technici a veľký klient. Všetky údaje z obhliadky (budova, stena, elektro, odvod, poznámky) sa vložia do poľa <b>📝 Poznámky k zákazke</b>, ktoré môžeš upraviť, a ukážu sa v modrom rámčeku v detaile zákazky. Pri úprave staršej zákazky sa prázdne poznámky doplnia z obhliadky toho istého klienta. Stačí doplniť dátum a uložiť.'],
 ['🧰 Čo si zobrať na montáž',0,'Pri vytváraní alebo úprave montáže je pole <b>🧰 Čo si zobrať na montáž</b>. Napíš voľný text alebo ťukni na rýchle tlačidlá (Konzola 420 / 460 / 550, Gumené a plastové nohy). Tlačidlom <b>➕ Viac</b> pridáš vlastnú položku – pridá sa do zoznamu a zapamätá sa ako nové tlačidlo. Zoznam sa žlto zobrazí v detaile zákazky aj v kroku <b>Príchod</b> a pridá sa do správy cez WhatsApp.'],
@@ -3445,14 +3447,23 @@ function jbN(el){el.classList.toggle('need',!String(el.value).trim())}
 function jbIn(id,val,ph,need,extra){
   return '<input id="'+id+'" class="jb'+(need&&!val?' need':'')+'" value="'+esc(val||'')+'" placeholder="'+esc(ph)+'" oninput="jbN(this)" '+(extra||'')+'>';
 }
-var jobStep=1;
+var jobStep=1,jobSigPh=null;
+function jobSigSave(id){
+  var m=findById('montaze',id);if(!m)return;
+  var pid=jobSigPh==='z'?'sigZ':'sigT',d=padData(pid);
+  if(!d){toast(jobSigPh==='z'?'Zákazník sa ešte nepodpísal':'Najprv sa podpíš');return}
+  var u={podpisAt:Date.now()};u[jobSigPh==='z'?'podpisZ':'podpisT']=d;
+  jobPersist(m,u);
+  if(jobSigPh==='z'){toast('Podpisy uložené ✅');jobSigPh=null;showJob(id,jobStep+1)}
+  else{toast('Podpis technika uložený. Teraz zákazník.');jobSigPh='z';showJob(id,jobStep)}
+}
 function jobSteps(m){return jobShort(m)?['arrive','photos','done']:m.kind?['arrive','photos','sign','done']:['arrive','devs','check','photos','sign','done']}
 var JSN={arrive:'Príchod',devs:'Zariadenia',check:'Kontrola',photos:'Fotky',sign:'Podpisy',done:'Hotovo'};
 var JSN_S={done:'Odchod'};
 function jobCollect(m){
   var u={};
   if($('jbNote'))u.poznTech=$('jbNote').value.trim();
-  if($('sigT')){u.podpisT=padData('sigT');u.podpisZ=padData('sigZ');u.podpisAt=(u.podpisT||u.podpisZ)?Date.now():0}
+  if($('sigT')||$('sigZ')){if($('sigT'))u.podpisT=padData('sigT');if($('sigZ'))u.podpisZ=padData('sigZ');var pt=u.podpisT!==undefined?u.podpisT:m.podpisT,pz=u.podpisZ!==undefined?u.podpisZ:m.podpisZ;u.podpisAt=(pt||pz)?Date.now():0}
   if(!m.kind&&document.querySelector('#eventModalBody .chk'))u.checklist=Array.prototype.filter.call(document.querySelectorAll('#eventModalBody .chk'),function(c){return c.checked}).map(function(c){return CHECK[+c.value]});
   if(!m.kind&&$('jbOut0')){
     var ds=JSON.parse(JSON.stringify(devicesOf(m)));
@@ -3540,10 +3551,13 @@ function showJob(id,step){
   }else if(key==='photos'){
     h+=fotoSection(m);
   }else if(key==='sign'){
-    h+='<div class="modal-row"><strong>Podpis technika</strong></div><canvas id="sigT" class="sig-pad" width="900" height="675"></canvas>'+
-      '<button class="btn-edit" style="background:#64748b" onclick="clearPad(\'sigT\')">Vymazať podpis</button>'+
-      '<div class="modal-row" style="margin-top:12px"><strong>Podpis zákazníka</strong></div><canvas id="sigZ" class="sig-pad" width="900" height="675"></canvas>'+
-      '<button class="btn-edit" style="background:#64748b" onclick="clearPad(\'sigZ\')">Vymazať podpis</button>';
+    if(jobSigPh===null)jobSigPh=(sigOk(m.podpisT)&&!sigOk(m.podpisZ))?'z':'t';
+    var pc=jobSigPh==='z'?'sigZ':'sigT';
+    h+='<div class="modal-row" style="margin:4px 0"><strong>'+(jobSigPh==='z'?'✍️ Podpis zákazníka':'✍️ Podpis technika')+'</strong> <span style="color:#64748b">· '+(jobSigPh==='z'?'zákazník sa podpíše prstom do poľa':'najprv sa podpíše technik')+'</span></div>'+
+      '<canvas id="'+pc+'" class="sig-pad sig-big"></canvas>'+
+      '<div class="modal-actions" style="flex-wrap:nowrap;gap:8px"><button class="btn-edit" style="background:#64748b;flex:1" onclick="clearPad(\''+pc+'\')">🧹 Vymazať podpis</button>'+
+      '<button class="btn-edit" style="background:#16a34a;flex:1" onclick="jobSigSave(\''+esc(id)+'\')">✔ Uložiť</button></div>'+
+      (jobSigPh==='z'?'<button class="back-btn" onclick="jobSigPh=\'t\';showJob(\''+esc(id)+'\','+step+')">‹ Podpis technika znova</button>':'');
   }else{
     if(jobShort(m))h+='<div class="modal-row" style="color:#64748b">Stačí príchod, fotky a odchod. Podpis ani zariadenia netreba.</div>';
     h+='<label class="fl">📝 Poznámka technika (čo sa robilo, čo treba doriešiť)</label><textarea id="jbNote" class="full-width-input" style="min-height:70px">'+esc(m.poznTech||'')+'</textarea>';
@@ -3559,7 +3573,8 @@ function showJob(id,step){
   try{$('eventModalBody').scrollTop=0;$('eventModalBody').parentNode.scrollTop=0}catch(e){}
   if(key==='devs')initIny($('eventModalBody'));
   if(key==='photos')fotoLoad(id);
-  if(key==='sign'){initPad('sigT',m.podpisT);initPad('sigZ',m.podpisZ)}
+  if(key==='sign'){var cv=$(jobSigPh==='z'?'sigZ':'sigT');cv.width=Math.max(300,cv.clientWidth*2);cv.height=Math.max(300,cv.clientHeight*2);initPad(cv.id,jobSigPh==='z'?m.podpisZ:m.podpisT)}
+  else jobSigPh=null;
 }
 function saveJob(id,done){
   var m=findById('montaze',id);if(!m)return;
@@ -3798,7 +3813,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-12.150';
+var APP_VERSION='2026-11-12.151';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
