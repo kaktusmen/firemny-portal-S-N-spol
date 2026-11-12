@@ -1243,7 +1243,7 @@ function mNearUi(){
 }
 function clearMontaz(){
   toggleNewClient(false);if($('mSteps'))mGo(1);
-  ['mTitle','mClient','mDate','mTime','mMember','mDod'].forEach(function(i){$(i).value=''});$('mWait').checked=false;mWaitUi();
+  ['mTitle','mClient','mDate','mTime','mMember','mDod','mTake'].forEach(function(i){$(i).value=''});takeChips();$('mWait').checked=false;mWaitUi();
   renderDevices([emptyDev()]);sv('mBig','');
   mTeam=[];renderMontazChips();
   $('editingMontazId').value='';$('montazSaveBtn').innerText='Vytvoriť zákazku';$('montazCancelBtn').style.display='none';
@@ -1253,7 +1253,7 @@ function editMontaz(id){
   var m=findById('montaze',id);if(!m)return;
   if(m.kind){editServis(id);return}
   openSection('montazSection','Montáž / Servis');toggleNewClient(false);
-  $('mTitle').value=m.title||'';$('mDate').value=m.date||'';$('mTime').value=m.time||'';sv('mBig',m.big||'');$('mWait').checked=m.stav==='Čaká na jednotku';$('mDod').value=m.dodavka||'';mWaitUi();
+  $('mTitle').value=m.title||'';$('mDate').value=m.date||'';$('mTime').value=m.time||'';sv('mBig',m.big||'');$('mTake').value=m.zobrat||'';takeChips();$('mWait').checked=m.stav==='Čaká na jednotku';$('mDod').value=m.dodavka||'';mWaitUi();
   var cid=m.clientId||'';
   if(!cid&&m.clientName){var f=dbData.clients.filter(function(x){return nm(x).toLowerCase()===m.clientName.toLowerCase()})[0];if(f)cid=f.id}
   $('mClient').value=cid;
@@ -1286,11 +1286,11 @@ function saveMontaz(){
   var oldM=eid?findById('montaze',eid):null,stX={};
   if($('mWait').checked){stX={stav:'Čaká na jednotku',dodavka:$('mDod').value||''}}
   else if(oldM&&oldM.stav==='Čaká na jednotku'){stX={stav:$('mDate').value?'Naplánovaná':'Nová',dodavka:''}}
-  put('montaze',Object.assign({title:t,clientId:cid||'',clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,big:gv('mBig'),
+  put('montaze',Object.assign({title:t,clientId:cid||'',clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,big:gv('mBig'),zobrat:$('mTake').value.trim(),
     zariadenia:devs,typ:'',system:'',vnutorne:[],vonkajsia:'',zarukaRoky:'',
     memberIds:mTeam.map(function(x){return x.id}),memberNames:mTeam.map(function(x){return x.name})},stX),eid);
   var back=fromCal;
-  var waO={title:t,clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,address:(cl?clientAddr(cl):(typeof nc!=='undefined'&&nc?nc.adresa:''))||'',memberIds:mTeam.map(function(x){return x.id})};
+  var waO={zobrat:$('mTake').value.trim(),title:t,clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,address:(cl?clientAddr(cl):(typeof nc!=='undefined'&&nc?nc.adresa:''))||'',memberIds:mTeam.map(function(x){return x.id})};
   clearMontaz();toast(eid?'Zákazka aktualizovaná!':'Zákazka vytvorená!');
   if(back)backToCalendar();else openSection('montazListSection','Zoznam montáží a servisov','work');
   waAfterSave(waO,!!eid);
@@ -1664,9 +1664,13 @@ function deviceSummary(m){
     return (a.length>1?'Zariadenie '+(i+1)+': ':'')+p.join(' · ');
   }).filter(Boolean).join(' | ');
 }
+var TAKE_QUICK=['Rebrík','Vŕtačka + jadrový vrták','Vákuová pumpa','Chladivo','Konzola','Medené rúrky','Izolácia','Elektro kábel','Odvod kondenzátu','Lišty / žľaby'];
+function takeAdd(t){var e=$('mTake');if(!e)return;var v=e.value.trim();if(v.toLowerCase().indexOf(t.toLowerCase())>-1)return;e.value=v?(v.replace(/[,;]\s*$/,'')+', '+t):t}
+function takeChips(){var b=$('mTakeChips');if(b)b.innerHTML=TAKE_QUICK.map(function(t,i){return '<button type="button" onclick="takeAdd(TAKE_QUICK['+i+'])" style="width:auto;margin:0;padding:6px 10px;border-radius:14px;font-size:.85rem;background:#e2e8f0;color:#0f172a;border:0">+ '+esc(t)+'</button>'}).join('')}
+function takeRow(m){return m&&m.zobrat?'<div class="modal-row" style="background:#fef3c7;border-left:4px solid #f59e0b;padding:8px 10px;border-radius:6px;white-space:pre-wrap;color:#78350f"><strong>🧰 Zobrať so sebou:</strong> '+esc(m.zobrat)+'</div>':''}
 function deviceRows(m){
   var r=function(l,v){return v?'<div class="modal-row"><strong>'+l+':</strong> '+esc(v)+'</div>':''};
-  var devs=devicesOf(m),out='';
+  var devs=devicesOf(m),out=takeRow(m);
   devs.forEach(function(d,i){
     var ind=indList(d),t=[d.typ,d.system].filter(Boolean).join(' – '),we=devEnd(m,d);
     out+=(devs.length>1?'<div class="modal-row" style="border-top:1px solid #e2e8f0;padding-top:6px"><strong>Zariadenie '+(i+1)+'</strong></div>':'')+
@@ -2668,6 +2672,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['🧰 Čo si zobrať na montáž',0,'Pri vytváraní alebo úprave montáže je pole <b>🧰 Čo si zobrať na montáž</b>. Napíš voľný text alebo ťukni na rýchle tlačidlá (Rebrík, Vákuová pumpa, Konzola…). Zoznam sa žlto zobrazí v detaile zákazky aj v kroku <b>Príchod</b> a pridá sa do správy cez WhatsApp.'],
 ['👍 Kto potvrdil a čítal – v zozname',0,'Správca vidí priamo pri každej zákazke v zozname (Dnes, Zajtra) riadok: <b>👍 kto potvrdil</b>, <b>⏳ kto nepotvrdil</b> (červenou) a <b>👁 kto čítal</b>. Tak hneď vidíš, či o zákazke technici vedia, bez otvárania detailu.'],
 ['✨ Živší vzhľad a animácie',0,'Na <b>Dnes</b> hore vidíš veľké číslo zákaziek, ktoré ešte čakajú, a zelený pásik, koľko je už hotových. V zákazke je hore pásik postupu s názvami krokov (Príchod, Fotky, Odchod…). Menu <b>+</b> a <b>Nástroje</b> sa plynulo vysunú, tlačidlá sa pri ťuknutí jemne stlačia a po dokončení zákazky vyskočí veľké zelené ✅. Ak sa ti animácie nepáčia alebo je telefón pomalý, vypni ich v <b>Viac → Animácie</b>.'],
 ['✅ Hotové zákazky sú sivé',0,'V zozname na <b>Dnes</b> a v kalendári sú zákazky, ktoré sú už <b>Hotové</b>, zosivené (sivé pozadie a tlmený text), aby bolo hneď jasné, že sú vybavené. Aktívne zákazky ostávajú farebné.'],
@@ -3434,7 +3439,7 @@ function showJob(id,step){
       (ph?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" href="tel:'+esc(ph)+'">📞 Zavolať</a><a class="btn-edit" style="background:#2563eb;text-decoration:none" href="sms:'+esc(ph)+'">💬 SMS</a>':'')+
       (ad?'<a class="btn-edit" style="background:#0d9488;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(ad)+'">🧭 Navigovať</a>':'')+'</div>'+
       '<div class="modal-row">'+(ph?'📞 '+telA(ph)+'<br>':'')+(ad?'📍 '+esc(ad)+'<br>':'')+'<strong>Dátum:</strong> '+esc(m.date?fmtD(m.date):'-')+(m.time?' o '+esc(m.time):'')+(m.memberNames&&m.memberNames.length?'<br>👷 '+m.memberNames.map(esc).join(', '):'')+'</div>'+
-      (m.popis?'<div class="modal-row"><strong>Popis:</strong> '+esc(m.popis)+'</div>':'')+
+      (m.popis?'<div class="modal-row"><strong>Popis:</strong> '+esc(m.popis)+'</div>':'')+takeRow(m)+
       (function(){var ob=jobObh(m);if(!ob)return jobShort(m)?'<div class="modal-row" style="color:#64748b">ℹ️ Údaje o zákazníkovi sa berú z karty zákazníka.</div>':'';
         return '<div class="modal-row" style="background:#f1f5f9;border-radius:8px;padding:8px">📋 <b>Z obhliadky</b>'+(ob.date?' ('+esc(fmtD(ob.date))+')':'')+'<br>'+[ob.name,ob.telefon,ob.email].filter(Boolean).map(esc).join(' · ')+
           (ob.zariadenie||ob.kw?'<br>❄️ '+esc([ob.zariadenie,ob.kw?ob.kw+' kW':''].filter(Boolean).join(' · ')):'')+(oUnitTxt(ob)?'<br>🏠 Ďalšie vnútorné: '+esc(oUnitTxt(ob)):'')+(ob.poznamky?'<br>📝 '+esc(ob.poznamky):'')+'</div>'})()+
@@ -3715,7 +3720,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-12.140';
+var APP_VERSION='2026-11-12.141';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4056,7 +4061,7 @@ function waMsgBtns(x){
 }
 function waJobBtns(o){
   var ids=o.memberIds||[];if(!ids.length)return '';
-  var txt='Zákazka: '+(o.title||o.servisType||'')+(o.clientName?'\nKlient: '+o.clientName:'')+(o.date?'\nTermín: '+fmtD(o.date)+(o.time?' o '+o.time:''):'')+((o.address||'')?'\nAdresa: '+o.address:'');
+  var txt='Zákazka: '+(o.title||o.servisType||'')+(o.clientName?'\nKlient: '+o.clientName:'')+(o.date?'\nTermín: '+fmtD(o.date)+(o.time?' o '+o.time:''):'')+((o.address||'')?'\nAdresa: '+o.address:'')+(o.zobrat?'\nZobrať: '+o.zobrat:'');
   var mem=dbData.members.filter(function(m){return ids.indexOf(m.id)>-1&&m.id!==me});
   var l=waAllBtn(mem.filter(function(m){return waNum(m.telefon)}).length,txt)+mem.map(function(m){return waBtn(m,txt)}).join('');
   return l?'<div class="modal-row"><strong>Poslať tímu cez WhatsApp:</strong></div><div class="modal-actions" style="flex-wrap:wrap">'+l+'</div>':'';
@@ -4314,6 +4319,7 @@ function applyTheme(){
   var b=document.getElementById('themeBtn');if(b)b.textContent='🌓 Vzhľad: '+({auto:'Auto',light:'Svetlý',dark:'Tmavý'})[THEME];
 }
 function cycleTheme(){THEME=THEME==='auto'?'dark':(THEME==='dark'?'light':'auto');try{localStorage.setItem('portal_theme',THEME)}catch(e){}applyTheme();toast('Vzhľad: '+({auto:'automaticky podľa telefónu',light:'svetlý',dark:'tmavý'})[THEME])}
+try{takeChips();window.addEventListener('load',takeChips);setTimeout(takeChips,500)}catch(e){}
 var ANIM='on';try{ANIM=localStorage.getItem('portal_anim')||'on'}catch(e){}
 function applyAnim(){document.documentElement.setAttribute('data-anim',ANIM);var b=document.getElementById('animBtn');if(b)b.textContent='✨ Animácie: '+(ANIM==='off'?'vypnuté':'zapnuté')}
 function toggleAnim(){ANIM=ANIM==='off'?'on':'off';try{localStorage.setItem('portal_anim',ANIM)}catch(e){}applyAnim();toast('Animácie '+(ANIM==='off'?'vypnuté':'zapnuté'))}
@@ -5075,6 +5081,9 @@ window.onload=function(){
       <label class="fl">Čas<input type="time" id="mTime"></label>
       <label class="fl" style="display:flex;flex-direction:row;align-items:center;gap:10px;padding:6px 2px"><input type="checkbox" id="mWait" onchange="mWaitUi()" style="width:24px;height:24px;min-height:0;flex:none;padding:0;margin:0;-webkit-appearance:checkbox;appearance:auto"> 📦 Čaká na jednotku (termín je len orientačný)</label>
       <label class="fl" id="mDodBox" style="display:none">Očakávaná dodávka jednotky<input type="date" id="mDod"></label>
+      <div class="full-width-input" id="mTakeBox"><label class="fl">🧰 Čo si zobrať na montáž</label>
+        <div id="mTakeChips" style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0"></div>
+        <textarea id="mTake" placeholder="Napr. konzola, rebrík, vákuová pumpa, 5 m medi…" style="min-height:70px"></textarea></div>
       <div id="mNear"></div>
       </div>
       <div class="mStep" data-s="3" style="grid-column:1/-1;display:none;gap:10px">
