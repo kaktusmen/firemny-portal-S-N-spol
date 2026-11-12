@@ -2750,7 +2750,7 @@ function showLeave(id){
 }
 var HELP=[
 ['✍️ Podpisy po jednom',0,'Krok <b>Podpisy</b> ide za sebou. Najprv sa podpíše <b>technik</b> do veľkého poľa a ťukne <b>✔ Uložiť</b>. Potom sa zobrazí nové pole pre <b>zákazníka</b>, ten sa podpíše a znova <b>✔ Uložiť</b> – apka prejde na ďalší krok. <b>🧹 Vymazať podpis</b> zmaže pole a môžeš podpísať znova. Tlačidlom <b>‹ Podpis technika znova</b> sa vrátiš k podpisu technika.'],
-['🧪 Nové usporiadanie (test)',0,'V <b>Nastavenia → Nové usporiadanie</b> si môžeš zapnúť skúšobné rozloženie: dole <b>Dnes · Zákazky · + · Klienti · Tím</b> (technik namiesto Tímu vidí Správy). <b>Zákazky</b> majú prepínače Montáže/Servisy/Obhliadky a Aktívne/Čakajú/Hotové. Hore vpravo je <b>🧰</b> (nástroje) a <b>⚙️</b> (Viac, nastavenia). Dnes ukazuje len dnešné a zajtrajšie zákazky. Ak sa ti nepáči, v Nastaveniach ho vypni a všetko je ako predtým.'],
+['🧭 Nové usporiadanie apky',0,'Apka má nové rozloženie: dole <b>Dnes · Zákazky · + · Klienti · Tím</b> (technik namiesto Tímu vidí Správy). <b>Zákazky</b> majú prepínače Montáže/Servisy/Obhliadky a Aktívne/Čakajú/Hotové. Hore vpravo je <b>🧰</b> (nástroje) a <b>⚙️</b> (Viac, nastavenia). Dnes ukazuje len dnešné a zajtrajšie zákazky. Ak by ti niečo chýbalo, v <b>Nastavenia → Usporiadanie</b> sa dá prepnúť späť na pôvodné.'],
 ['🔧 Zákazka z obhliadky',0,'Keď z obhliadky urobíš klienta (<b>✅ Na klienta</b>), apka sa opýta, či má hneď vytvoriť <b>zákazku z údajov obhliadky</b>. Tlačidlo <b>🔧 Vytvoriť zákazku</b> nájdeš aj v obhliadke, ktorá už má klienta. Do zákazky sa vložia: klient, typ zariadenia, výkon, vnútorné jednotky s miestom (aj ďalšie pri multisplite), technici a veľký klient. Všetky údaje z obhliadky (budova, stena, elektro, odvod, poznámky) sa vložia do poľa <b>📝 Poznámky k zákazke</b>, ktoré môžeš upraviť, a ukážu sa v modrom rámčeku v detaile zákazky. Pri úprave staršej zákazky sa prázdne poznámky doplnia z obhliadky toho istého klienta. Stačí doplniť dátum a uložiť.'],
 ['🧰 Čo si zobrať na montáž',0,'Pri vytváraní alebo úprave montáže je pole <b>🧰 Čo si zobrať na montáž</b>. Napíš voľný text alebo ťukni na rýchle tlačidlá (Konzola 420 / 460 / 550, Gumené a plastové nohy). Tlačidlom <b>➕ Viac</b> pridáš vlastnú položku – pridá sa do zoznamu a zapamätá sa ako nové tlačidlo. Zoznam sa žlto zobrazí v detaile zákazky aj v kroku <b>Príchod</b> a pridá sa do správy cez WhatsApp.'],
 ['👍 Kto potvrdil a čítal – v zozname',0,'Správca vidí priamo pri každej zákazke v zozname (Dnes, Zajtra) riadok: <b>👍 kto potvrdil</b>, <b>⏳ kto nepotvrdil</b> (červenou) a <b>👁 kto čítal</b>. Tak hneď vidíš, či o zákazke technici vedia, bez otvárania detailu.'],
@@ -2761,7 +2761,7 @@ var HELP=[
 ['🏢 Zákazka veľkého klienta (VSE)',0,'Zákazka, pri ktorej je vyplnený <b>Veľký klient</b>, má iba 3 kroky: <b>Príchod → Fotky → Odchod</b>. Nevyplňuje sa podpis, zariadenia ani kontrola. Kontakt, adresa a údaje o zariadení sa zobrazia automaticky <b>z obhliadky</b> (hľadá sa podľa adresy alebo mena) a z karty zákazníka. Tlačidlom <b>Odchod – dokončiť</b> sa zákazka uzavrie; povinné sú len fotky.'],
 ['💬 Okno novej správy',0,'Keď ti príde nová správa a máš apku otvorenú, vyskočí okno s textom správy a tlačidlami <b>✓ Prečítané</b> a <b>Otvoriť</b>. Správa sa pri ťuknutí na Prečítané označí ako prečítaná (odosielateľ to uvidí). Ak okno zavrieš, správa ostane nečítaná. Ak apku práve nemáš otvorenú, správy uvidíš pri jej otvorení v okne „Nové pre teba“.'],
 ['⏰ Pripomienky',0,'Pripomienku vytvoríš cez <b>+ → Nová pripomienka</b>, v <b>Nástroje → Pripomienky</b> alebo v <b>zákazníckej karte → ⏰ Pripomeň mi</b>. Napíš, čo treba urobiť (napr. zavolať), vyber dátum (Dnes / Zajtra / Za týždeň) a podľa potreby čas a klienta. Správca môže pripomienku nastaviť aj inému členovi. V deň pripomienky sa ukáže v bloku <b>Dnes</b> a v <b>Moje úlohy</b> s tlačidlami <b>✓ Hotovo</b>, <b>📞 Zavolať</b> a <b>⏱ Zajtra</b>. Keď pripomienka nastane (v zadaný čas, alebo ráno pri otvorení apky, ak čas nemá), vyskočí v apke okno s tlačidlami <b>✓ Hotovo</b>, <b>⏱ +1 hod</b>, <b>⏱ Zajtra</b>. Okno sa ukáže len keď máš apku otvorenú; na zamknutej obrazovke apka nezvoní.'],
-['🧭 Kde čo nájdem',0,'Dole sú tlačidlá: <b>Dnes</b>, <b>Kalendár</b>, <b>+</b> (vytvoriť: montáž/servis, obhliadka, chladivo), <b>Nástroje</b> (Moje úlohy, Trasa dňa, zoznamy montáží, obhliadok a čakajúcich jednotiek, Hľadať, Mapa klientov, Voľno, Nová správa) a <b>Viac</b> (Správy, Dopyty, Zákazky, Ponuky, Prehľad, Servisné termíny, Klienti, Tím, Návod, Správa, Nastavenia). Zálohu a ďalšie zriedkavé veci nájdeš v <b>Nastavenia → Pokročilé</b>.'],
+['🧭 Kde čo nájdem',0,'Dole sú tlačidlá: <b>Dnes</b> (dnešné a zajtrajšie zákazky), <b>Zákazky</b> (montáže, servisy, obhliadky; aktívne, čakajúce, hotové; Kalendár je tlačidlom na konci), <b>+</b> (vytvoriť: montáž/servis, obhliadka, ponuka, pripomienka, chladivo), <b>Klienti</b> a <b>Tím</b> (správca: Správy, Potvrdenia, Voľno, Členovia, Štatistika, Ponuky; technik vidí namiesto Tímu Správy). Hore pri logu je <b>🧰 Nástroje</b> (Moje úlohy, Trasa dňa, Hľadať, Mapa klientov, Voľno…) a <b>⚙️ Viac</b> (správca: Dopyty, Prehľad, Servisné termíny, Návod, Správa, Nastavenia). Zálohu a zriedkavé veci nájdeš v <b>Nastavenia → Pokročilé</b>.'],
 ['📇 Zákaznícka karta',0,'V <b>Klientoch</b> ťukni na klienta a potom na <b>📇 Zákaznícka karta</b> (nájdeš ju aj v detaile zákazky). Hore je kontakt a záruka, potom <b>Namontované zariadenia</b> (značka, typ, výrobné čísla, chladivo, záruka) a pod tým <b>História práce</b> od najnovšej. Ťuknutím na záznam v histórii uvidíš podrobnosti, napríklad vykonanú prácu a podpisy.'],
 ['✍️ Podpis',0,'Políčka na podpis sú väčšie, aby sa dalo pohodlne podpísať prstom. Tlačidlo <b>Vymazať podpis</b> pod políčkom ho zmaže a môžeš podpísať znova.'],
 ['📊 Štatistika používania',0,'<b>Viac → Štatistika používania</b> (len správca) ukáže pri každom členovi, kedy naposledy otvoril apku, v koľkých dňoch z posledných 7 a 30 ju použil a koľko noviniek (zákazky, obhliadky, správy) potvrdil alebo ešte nepotvrdil. Technik, ktorý apku 3 a viac dní neotvoril, je označený ⚠️. Počíta sa od nainštalovania tejto verzie.'],
@@ -3813,7 +3813,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-12.151';
+var APP_VERSION='2026-11-12.152';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4413,9 +4413,9 @@ function applyTheme(){
 }
 function cycleTheme(){THEME=THEME==='auto'?'dark':(THEME==='dark'?'light':'auto');try{localStorage.setItem('portal_theme',THEME)}catch(e){}applyTheme();toast('Vzhľad: '+({auto:'automaticky podľa telefónu',light:'svetlý',dark:'tmavý'})[THEME])}
 try{takeChips();window.addEventListener('load',takeChips);setTimeout(takeChips,500)}catch(e){}
-var LAY='old';try{LAY=localStorage.getItem('portal_layout')||'old'}catch(e){}
-function applyLay(){document.documentElement.setAttribute('data-lay',LAY);var b=document.getElementById('layBtn');if(b)b.textContent='🧪 Nové usporiadanie (test): '+(LAY==='new'?'zapnuté':'vypnuté')}
-function toggleLay(){LAY=LAY==='new'?'old':'new';try{localStorage.setItem('portal_layout',LAY)}catch(e){}applyLay();showHome();toast('Usporiadanie: '+(LAY==='new'?'nové (test)':'pôvodné'))}
+var LAY='new';try{LAY=localStorage.getItem('portal_layout')||'new'}catch(e){}
+function applyLay(){document.documentElement.setAttribute('data-lay',LAY);var b=document.getElementById('layBtn');if(b)b.textContent='🧭 Usporiadanie: '+(LAY==='new'?'nové':'pôvodné')}
+function toggleLay(){LAY=LAY==='new'?'old':'new';try{localStorage.setItem('portal_layout',LAY)}catch(e){}applyLay();showHome();toast('Usporiadanie: '+(LAY==='new'?'nové':'pôvodné'))}
 var zakT='montaze',zakF='act';
 function zakSet(t,f){if(t)zakT=t;if(f)zakF=f;renderZak()}
 function renderZak(){
@@ -4780,7 +4780,7 @@ window.onload=function(){
       <div class="menu-card" onclick="hardRefresh()">🔄 Aktualizovať aplikáciu</div>
       <div class="menu-card" id="themeBtn" onclick="cycleTheme()">🌓 Vzhľad</div>
       <div class="menu-card" id="animBtn" onclick="toggleAnim()">✨ Animácie</div>
-      <div class="menu-card" id="layBtn" onclick="toggleLay()">🧪 Nové usporiadanie</div>
+      <div class="menu-card" id="layBtn" onclick="toggleLay()">🧭 Usporiadanie</div>
     </div>
     <details class="admin-only" style="margin:10px 0"><summary style="font-weight:700;padding:10px 4px;cursor:pointer">Pokročilé</summary>
     <div class="menu-list">
