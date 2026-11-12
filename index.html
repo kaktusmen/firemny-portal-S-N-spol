@@ -1341,7 +1341,7 @@ function oUnitsUi(){
   b.style.display=multi?'block':'none';
   if(!multi)return;
   $('oJednotky').innerHTML=oUnits.map(function(u,i){
-    return '<div style="display:flex;gap:6px;margin:6px 0;align-items:center"><b style="min-width:26px">'+(i+2)+'.</b><input type="text" list="oRoomList" placeholder="Miesto (izba)" value="'+esc(u.miesto||'')+'" oninput="oUnits['+i+'].miesto=this.value" style="flex:2;min-width:0"><input type="text" inputmode="decimal" placeholder="kW" value="'+esc(u.kw||'')+'" oninput="oUnits['+i+'].kw=this.value" style="flex:1;min-width:0"><button type="button" onclick="oUnitDel('+i+')" style="color:#dc2626;font-weight:700;background:none;border:0;font-size:20px">×</button></div>'}).join('');
+    return '<div style="display:flex;width:100%;gap:6px;margin:6px 0;align-items:center"><b style="flex:0 0 24px">'+(i+2)+'.</b><input type="text" list="oRoomList" placeholder="Miesto (izba)" value="'+esc(u.miesto||'')+'" oninput="oUnits['+i+'].miesto=this.value" style="flex:1 1 0;width:auto;min-width:0;margin:0"><input type="text" inputmode="decimal" placeholder="kW" value="'+esc(u.kw||'')+'" oninput="oUnits['+i+'].kw=this.value" style="flex:0 0 76px;width:76px;min-width:0;margin:0"><button type="button" onclick="oUnitDel('+i+')" style="flex:0 0 36px;width:36px;padding:4px;margin:0;color:#dc2626;font-weight:700;background:none;border:0;font-size:22px">×</button></div>'}).join('');
 }
 function oUnitAdd(){oUnits.push({miesto:'',kw:''});oUnitsUi()}
 function oUnitDel(i){oUnits.splice(i,1);oUnitsUi()}
@@ -3715,7 +3715,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-11.139';
+var APP_VERSION='2026-11-12.140';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
