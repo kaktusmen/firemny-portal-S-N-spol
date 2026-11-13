@@ -963,6 +963,7 @@ function render(){
     if(c==='spravy'&&!isAdmin())arr=arr.filter(function(x){return x.fromId===me||msgForMe(x)});
     if(c==='chladivo'){arr=chFiltered()}
     if(c==='clients'){
+      clSortUi();
       var q=norm($('clientSearch')?$('clientSearch').value:'');
       if(q){
         var qd=q.replace(/\s+/g,'');
@@ -979,7 +980,9 @@ function render(){
       else if(c==='obhliadky')emp=emptyBlock('Zatiaľ tu nie je žiadna obhliadka.','➕ Nová obhliadka',"openSection('obhliadkaSection','Nová obhliadka','work')");
       else if(c==='clients')emp=emptyBlock('Zatiaľ tu nie sú žiadni klienti.','',''); 
     }
-    el.innerHTML=arr.sort(v[2]).map(v[3]).join('')||emp;
+    if(c==='clients'&&clSort==='new'){var kk={};arr.forEach(function(x){kk[x.id]=clNewKey(x)});arr.sort(function(a,b){return (kk[b.id]-kk[a.id])||nm(a).localeCompare(nm(b))})}
+    else arr.sort(v[2]);
+    el.innerHTML=arr.map(v[3]).join('')||emp;
   });
   renderCalendar();
   fillMontazSelects();
@@ -2749,6 +2752,7 @@ function showLeave(id){
   $('eventModal').style.display='flex';
 }
 var HELP=[
+['🔤 Zoradenie klientov',0,'V zozname <b>Klienti</b> je pod hľadaním prepínač <b>🔤 Abecedne</b> / <b>🆕 Najnovšie</b>. Najnovšie ukáže hore naposledy pridaných klientov (u starších klientov sa použije dátum ich poslednej zákazky alebo obhliadky). Voľba sa zapamätá.'],
 ['✍️ Podpisy po jednom',0,'Krok <b>Podpisy</b> ide za sebou. Najprv sa podpíše <b>technik</b> do veľkého poľa a ťukne <b>✔ Uložiť</b>. Potom sa zobrazí nové pole pre <b>zákazníka</b>, ten sa podpíše a znova <b>✔ Uložiť</b> – apka prejde na ďalší krok. <b>🧹 Vymazať podpis</b> zmaže pole a môžeš podpísať znova. Tlačidlom <b>‹ Podpis technika znova</b> sa vrátiš k podpisu technika.'],
 ['🧭 Nové usporiadanie apky',0,'Apka má nové rozloženie: dole <b>Dnes · Zákazky · + · Klienti · Tím</b> (technik namiesto Tímu vidí Správy). <b>Zákazky</b> majú prepínače Montáže/Servisy/Obhliadky a Aktívne/Čakajú/Hotové. Hore vpravo je <b>🧰</b> (nástroje) a <b>⚙️</b> (Viac, nastavenia). Dnes ukazuje len dnešné a zajtrajšie zákazky. Ak by ti niečo chýbalo, v <b>Nastavenia → Usporiadanie</b> sa dá prepnúť späť na pôvodné.'],
 ['🔧 Zákazka z obhliadky',0,'Keď z obhliadky urobíš klienta (<b>✅ Na klienta</b>), apka sa opýta, či má hneď vytvoriť <b>zákazku z údajov obhliadky</b>. Tlačidlo <b>🔧 Vytvoriť zákazku</b> nájdeš aj v obhliadke, ktorá už má klienta. Do zákazky sa vložia: klient, typ zariadenia, výkon, vnútorné jednotky s miestom (aj ďalšie pri multisplite), technici a veľký klient. Všetky údaje z obhliadky (budova, stena, elektro, odvod, poznámky) sa vložia do poľa <b>📝 Poznámky k zákazke</b>, ktoré môžeš upraviť, a ukážu sa v modrom rámčeku v detaile zákazky. Pri úprave staršej zákazky sa prázdne poznámky doplnia z obhliadky toho istého klienta. Stačí doplniť dátum a uložiť.'],
@@ -3813,7 +3817,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-12.152';
+var APP_VERSION='2026-11-13.153';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4416,6 +4420,14 @@ try{takeChips();window.addEventListener('load',takeChips);setTimeout(takeChips,5
 var LAY='new';try{LAY=localStorage.getItem('portal_layout')||'new'}catch(e){}
 function applyLay(){document.documentElement.setAttribute('data-lay',LAY);var b=document.getElementById('layBtn');if(b)b.textContent='🧭 Usporiadanie: '+(LAY==='new'?'nové':'pôvodné')}
 function toggleLay(){LAY=LAY==='new'?'old':'new';try{localStorage.setItem('portal_layout',LAY)}catch(e){}applyLay();showHome();toast('Usporiadanie: '+(LAY==='new'?'nové':'pôvodné'))}
+var clSort='abc';try{clSort=localStorage.getItem('portal_clsort')||'abc'}catch(e){}
+function clNewKey(c){
+  if(c.createdAt)return c.createdAt;
+  var t=0;dbData.montaze.concat(dbData.obhliadky).forEach(function(m){if(m.clientId===c.id||m.klientId===c.id){var d=Date.parse(m.date||'')||0;if(d>t)t=d}});
+  return t;
+}
+function clSortUi(){var b=document.getElementById('clSortSeg');if(!b)return;b.innerHTML=[['abc','🔤 Abecedne'],['new','🆕 Najnovšie']].map(function(x){return '<button class="'+(clSort===x[0]?'on':'')+'" onclick="clSortSet(\''+x[0]+'\')">'+x[1]+'</button>'}).join('')}
+function clSortSet(k){clSort=k;try{localStorage.setItem('portal_clsort',k)}catch(e){}render()}
 var zakT='montaze',zakF='act';
 function zakSet(t,f){if(t)zakT=t;if(f)zakF=f;renderZak()}
 function renderZak(){
@@ -4812,6 +4824,7 @@ window.onload=function(){
     <button class="back-btn" onclick="hideClientForm()">✖ Zrušiť</button>
     </div>
     <input type="search" id="clientSearch" placeholder="🔍 Hľadať klienta (meno, adresa, telefón…)" oninput="render()" autocomplete="off">
+    <div id="clSortSeg" class="seg2"></div>
     <div id="clientsList">Načítavam...</div>
   </div>
 
