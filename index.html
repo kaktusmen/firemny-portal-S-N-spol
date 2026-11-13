@@ -703,7 +703,7 @@ function put(c,o,id,forceNew){
   return col(c).doc(id).set(o,{merge:true}).catch(function(){toast('Uloženie zlyhalo!')});
 }
 function delItem(c,id){
-  if(!confirm('Naozaj zmazať túto položku? Presunie sa do koša, odkiaľ ju správca môže obnoviť.'))return;
+  if(!confirm('Naozaj zmazať túto položku? Presunie sa do koša, odkiaľ ju správca môže obnoviť.'))return false;
   var o=findById(c,id);
   if(o){
     var data=JSON.parse(JSON.stringify(o));delete data.id;
@@ -715,7 +715,9 @@ function delItem(c,id){
   if(c==='clients'&&$('editingClientId').value===id)hideClientForm();
   if(c==='obhliadky'&&$('editingObhliadkaId').value===id)clearObhliadka();
   if(c==='montaze'&&$('editingMontazId').value===id)clearMontaz();
+  return true;
 }
+function evDel(c,id){if(!isAdmin())return;if(delItem(c,id)){closeEvent();toast('Zmazané – je v koši');setTimeout(function(){try{renderZak()}catch(e){}},400)}}
 
 // ---------- Odkaz pre kolegu ----------
 function shareLink(){
@@ -3133,6 +3135,7 @@ function showEvent(type,id){
   var h=((type==='montaze'||type==='obhliadky')&&needsAck(o)?'<button class="action-btn" style="background:#16a34a" onclick="ackItem(\''+type+'\',\''+esc(o.id)+'\')">👍 Beriem na vedomie'+(o.chg?' (zmenený termín/tím)':'')+'</button>':'')+info+readInfo(type,o)+((type==='montaze')?waJobBtns(o):'')+(typeof stB!=='undefined'?stB:'')+(type==='montaze'?fotoSection(o):'')+(info?'<div class="modal-sep"></div>':'')+
     (c?clientDetail(c):(type==='obhliadky'?'':'<div class="modal-row">Karta klienta sa nenašla.</div>'))+
     (type==='obhliadky'?fotoSection(o):'')+'<div class="modal-actions">'+(lastDay?'<button class="btn-delete" style="background:#0d9488" onclick="openDay(\''+lastDay+'\')">⬅ Späť na deň</button>':'')+(typeof edO!=='undefined'?edO:'')+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
+    ((isAdmin()&&(type==='montaze'||type==='obhliadky'))?'<button class="btn-delete" style="background:#dc2626;color:#fff" onclick="evDel(\''+type+'\',\''+esc(o.id)+'\')">🗑 Zmazať</button>':'')+
     '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
   if(type==='montaze'||type==='obhliadky')fotoLoad(o.id);
@@ -3817,7 +3820,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-13.153';
+var APP_VERSION='2026-11-13.154';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
