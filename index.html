@@ -437,6 +437,22 @@ html[data-theme=dark] .nfy-c{background:#1c1c1e;color:#f2f2f7}
 @media (prefers-color-scheme:dark){html[data-theme=auto] #splash{background:#000}}
 html[data-theme=dark] #splash{background:#000}html[data-theme=dark] #splash b{color:#f2f2f7}
 @media (prefers-reduced-motion:reduce){#splash,.celeb em{display:none}}
+
+/* v.154 test – vizuál */
+html[data-lay=new] #layTools button:first-child{display:none}
+html[data-lay=new] .day-row{border-left-width:6px}
+html[data-lay=new] .dr-q a:last-child{grid-column:auto}
+html[data-lay=new] .dr-q a .miss{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;background:#dc2626;color:#fff;font-size:.72rem;font-weight:700;margin-left:6px;padding:0 5px}
+html[data-lay=new] #timSection .menu-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:transparent;box-shadow:none;overflow:visible}
+html[data-lay=new] #timSection .menu-card{flex-direction:column;justify-content:center;gap:8px;min-height:104px;border-radius:20px;border-bottom:none;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.06);text-align:center;font-size:.92rem;line-height:1.2}
+html[data-lay=new] #timSection .menu-card::after{display:none}
+html[data-lay=new] #timSection .tq{font-size:2rem;line-height:1}
+html[data-theme=dark][data-lay=new] #timSection .menu-card{background:#1c1c1e;box-shadow:none}
+html[data-lay=new] #syncDot{display:none;position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:50;background:#dc2626;color:#fff;border-radius:999px;font-size:.78rem;font-weight:700;padding:5px 12px}
+html[data-lay=new] #syncDot.on{display:block}
+html[data-lay=new] #statusBar{display:none!important}
+html[data-lay=new] #timSection #statusBar{display:flex!important;margin:0 0 14px}
+html[data-lay=new] #pageTitle{margin-bottom:14px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -703,7 +719,7 @@ function put(c,o,id,forceNew){
   return col(c).doc(id).set(o,{merge:true}).catch(function(){toast('Uloženie zlyhalo!')});
 }
 function delItem(c,id){
-  if(!confirm('Naozaj zmazať túto položku? Presunie sa do koša, odkiaľ ju správca môže obnoviť.'))return false;
+  if(!confirm('Naozaj zmazať túto položku? Presunie sa do koša, odkiaľ ju správca môže obnoviť.'))return;
   var o=findById(c,id);
   if(o){
     var data=JSON.parse(JSON.stringify(o));delete data.id;
@@ -715,18 +731,78 @@ function delItem(c,id){
   if(c==='clients'&&$('editingClientId').value===id)hideClientForm();
   if(c==='obhliadky'&&$('editingObhliadkaId').value===id)clearObhliadka();
   if(c==='montaze'&&$('editingMontazId').value===id)clearMontaz();
-  return true;
 }
-function evDel(c,id){if(!isAdmin())return;if(delItem(c,id)){closeEvent();toast('Zmazané – je v koši');setTimeout(function(){try{renderZak()}catch(e){}},400)}}
 
 // ---------- Odkaz pre kolegu ----------
 function shareLink(){
+  if(!isAdmin()){toast('Odkaz môže zobraziť len správca');return}
   if(!KEY){toast('Kľúč nie je k dispozícii');return}
   var url=location.origin+location.pathname+'#k='+KEY;
   if(navigator.share){navigator.share({title:'Firemný Portál',url:url}).catch(function(){});return}
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(url).then(function(){toast('Odkaz skopírovaný')}).catch(function(){prompt('Skopírujte odkaz:',url)});
   }else prompt('Skopírujte odkaz:',url);
+}
+
+
+// ---------- Zmena kľúča firmy ----------
+var ROT_COLS=ALLC.concat(['fotky','historia','kos']);
+function newKeyStr(){var c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789',a=new Uint8Array(24),o='';try{crypto.getRandomValues(a)}catch(e){for(var i=0;i<24;i++)a[i]=Math.floor(Math.random()*256)}for(var j=0;j<24;j++)o+=c.charAt(a[j]%c.length);return o}
+function rotCol(k,c){return fs.collection('portals').doc(k).collection(c)}
+function rotMsg(t){var e=document.getElementById('rotMsg');if(e)e.innerHTML=t}
+function rotBatches(items,fn){
+  var chain=Promise.resolve(),cur=[],bytes=0,parts=[];
+  items.forEach(function(it){var sz=JSON.stringify(it.d||'').length;if(cur.length&&(cur.length>=400||bytes+sz>5000000)){parts.push(cur);cur=[];bytes=0}cur.push(it);bytes+=sz});
+  if(cur.length)parts.push(cur);
+  parts.forEach(function(part){chain=chain.then(function(){var b=fs.batch();part.forEach(function(it){fn(b,it)});return b.commit()})});
+  return chain;
+}
+function rotateKey(){
+  if(!isAdmin()){toast('Kľúč môže zmeniť len správca');return}
+  if(navigator.onLine===false){toast('Na zmenu kľúča treba pripojenie na internet');return}
+  if(!confirm('Zmeniť kľúč firmy?\n\nVšetky dáta sa presunú pod nový kľúč a vznikne nový odkaz. Starý odkaz prestane fungovať. Ostatní členovia tímu sa budú musieť pripojiť cez nový odkaz.\n\nPočas zmeny nech nikto v apke nepracuje. Ako prvé sa stiahne záloha.'))return;
+  var old=KEY,nk=newKeyStr();
+  $('eventModalBody').innerHTML='<h3>🔑 Zmena kľúča</h3><div class="modal-row" id="rotMsg">Sťahujem zálohu…</div>';
+  $('eventModal').style.display='flex';
+  try{exportData()}catch(e){}
+  var counts={};
+  var chain=Promise.resolve();
+  ROT_COLS.forEach(function(c){
+    chain=chain.then(function(){
+      rotMsg('Kopírujem: '+esc(c)+'…');
+      return rotCol(old,c).get().then(function(sn){
+        var items=sn.docs.map(function(d){return {id:d.id,d:d.data()}});counts[c]=items.length;
+        return rotBatches(items,function(b,it){b.set(rotCol(nk,c).doc(it.id),it.d)});
+      });
+    });
+  });
+  chain=chain.then(function(){
+    rotMsg('Kontrolujem…');
+    return Promise.all(ROT_COLS.map(function(c){return rotCol(nk,c).get().then(function(sn){if(sn.docs.length!==counts[c])throw new Error(c)})}));
+  }).then(function(){
+    try{localStorage.setItem('portal_oldkey',old);localStorage.setItem('portal_key',nk)}catch(e){}
+    var url=location.origin+location.pathname+'#k='+nk;
+    $('eventModalBody').innerHTML='<h3>🔑 Kľúč zmenený ✅</h3><div class="modal-row">Dáta sú presunuté. <b>Pošli novým odkazom kolegov</b> (len tým, ktorí majú mať prístup). Tento telefón je už pripojený novým kľúčom.</div>'+
+      '<div class="modal-actions" style="flex-wrap:wrap"><button class="btn-edit" onclick="rotShare(\''+nk+'\')">🔗 Poslať nový odkaz</button><button class="btn-delete" style="background:#dc2626" onclick="rotDelOld()">🧹 Zmazať staré dáta</button><button class="btn-delete" style="background:#64748b" onclick="location.reload()">Hotovo</button></div>'+
+      '<div class="modal-row" style="font-size:.8rem;color:#64748b">Staré dáta zmaž až keď všetci dostali nový odkaz. Kým sú nezmazané, starým odkazom sa dá stále čítať.</div>';
+  }).catch(function(e){
+    $('eventModalBody').innerHTML='<h3>🔑 Zmena kľúča zlyhala</h3><div class="modal-row">Kopírovanie sa nepodarilo dokončiť ('+esc(String(e&&e.message||e))+'). Nič sa nezmenilo, ďalej používaš starý kľúč. Skús to znova s lepším pripojením.</div><div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
+  });
+}
+function rotShare(k){
+  var url=location.origin+location.pathname+'#k='+k;
+  if(navigator.share){navigator.share({title:'Firemný Portál',url:url}).catch(function(){});return}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){toast('Odkaz skopírovaný')}).catch(function(){prompt('Skopírujte odkaz:',url)})}else prompt('Skopírujte odkaz:',url);
+}
+function rotDelOld(){
+  if(!isAdmin()){toast('Len správca');return}
+  var old='',cur='';try{old=localStorage.getItem('portal_oldkey')||'';cur=localStorage.getItem('portal_key')||''}catch(e){}
+  if(!old||old===cur){toast('Nie sú staré dáta na zmazanie');return}
+  if(!confirm('Naozaj zmazať staré dáta pod predchádzajúcim kľúčom? Nový kľúč a jeho dáta ostanú. Toto sa nedá vrátiť.'))return;
+  toast('Mažem staré dáta…');
+  var chain=Promise.resolve();
+  ROT_COLS.forEach(function(c){chain=chain.then(function(){return rotCol(old,c).get().then(function(sn){return rotBatches(sn.docs.map(function(d){return {id:d.id,ref:d.ref||rotCol(old,c).doc(d.id)}}),function(b,it){b.delete(it.ref)})})})});
+  chain.then(function(){try{localStorage.removeItem('portal_oldkey')}catch(e){}toast('Staré dáta zmazané');var b=document.getElementById('oldKeyBtn');if(b)b.style.display='none'}).catch(function(){toast('Mazanie zlyhalo, skús znova')});
 }
 
 // ---------- Záloha ----------
@@ -1582,9 +1658,10 @@ function addSpravaTo(auto){
 }
 function removeSpravaTo(i){sTo.splice(i,1);renderSpravaChips()}
 var SMS_TPL=[['🚗 Sme na ceste','Dobrý deň, sme na ceste k Vám, budeme u Vás približne o 20 minút.'],['⏰ Meškáme','Dobrý deň, ospravedlňujeme sa, meškáme asi o 30 minút. Ďakujeme za pochopenie.'],['📅 Prídeme o…','Dobrý deň, prídeme k Vám dnes o __:__. Prosíme o potvrdenie.'],['📞 Zavolajte nám','Dobrý deň, prosíme, zavolajte nám späť, ďakujeme.'],['✅ Hotovo','Dobrý deň, práce sú dokončené. Ďakujeme za dôveru a ak budete mať otázky, ozvite sa nám.']];
+function reviewText(){var g=(firmaData().google||'').trim();return g?'Dobrý deň, ďakujeme, že ste si vybrali '+(firmaData().nazov||'Úsporné klímy S&N')+'. Ak ste boli s našou prácou spokojní, potešíme sa krátkemu hodnoteniu na Google: '+g+' Ďakujeme!':''}
 function smsTplDlg(tel){
   tel=String(tel||'').replace(/\s+/g,'');
-  $('eventModalBody').innerHTML='<h3>💬 Šablóny SMS</h3>'+SMS_TPL.map(function(t){return '<a class="action-btn" style="display:block;text-align:center;text-decoration:none;margin:6px 0" href="sms:'+esc(tel)+'?&body='+encodeURIComponent(t[1])+'" onclick="closeEvent()">'+esc(t[0])+'</a>'}).join('')+'<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
+  $('eventModalBody').innerHTML='<h3>💬 Šablóny SMS</h3>'+SMS_TPL.concat(reviewText()?[['⭐ Žiadosť o hodnotenie na Google',reviewText()]]:[]).map(function(t){return '<a class="action-btn" style="display:block;text-align:center;text-decoration:none;margin:6px 0" href="sms:'+esc(tel)+'?&body='+encodeURIComponent(t[1])+'" onclick="closeEvent()">'+esc(t[0])+'</a>'}).join('')+'<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModal').style.display='flex';
 }
 function tplToSprava(i){if(i==='')return;$('sText').value=SMS_TPL[+i][1];$('sTpl').value=''}
@@ -2889,7 +2966,7 @@ function cennikData(){var d=dbData.nastavenia.filter(function(x){return x.id==='
 function admShow(v){
   if(v==='firma')admFirma();else if(v==='cennik')admCennik();else if(v==='stats')admStats();else if(v==='kos')admKos();else if(v==='hist')admHist();
 }
-var FIRMA_F=[['nazov','Názov firmy'],['ico','IČO'],['dic','DIČ'],['icdph','IČ DPH'],['adresa','Adresa sídla'],['tel','Telefón'],['email','E-mail'],['web','Web'],['iban','IBAN']];
+var FIRMA_F=[['nazov','Názov firmy'],['ico','IČO'],['dic','DIČ'],['icdph','IČ DPH'],['adresa','Adresa sídla'],['tel','Telefón'],['email','E-mail'],['web','Web'],['iban','IBAN'],['google','Odkaz na Google hodnotenie (pre SMS zákazníkom)']];
 function admFirma(){
   var f=firmaData();
   $('admView').innerHTML='<h3>🏢 Údaje o firme</h3><p style="color:#64748b;font-size:.9rem;margin-top:0">Zobrazia sa v hlavičke protokolov a cenových ponúk.</p>'+
@@ -3135,7 +3212,6 @@ function showEvent(type,id){
   var h=((type==='montaze'||type==='obhliadky')&&needsAck(o)?'<button class="action-btn" style="background:#16a34a" onclick="ackItem(\''+type+'\',\''+esc(o.id)+'\')">👍 Beriem na vedomie'+(o.chg?' (zmenený termín/tím)':'')+'</button>':'')+info+readInfo(type,o)+((type==='montaze')?waJobBtns(o):'')+(typeof stB!=='undefined'?stB:'')+(type==='montaze'?fotoSection(o):'')+(info?'<div class="modal-sep"></div>':'')+
     (c?clientDetail(c):(type==='obhliadky'?'':'<div class="modal-row">Karta klienta sa nenašla.</div>'))+
     (type==='obhliadky'?fotoSection(o):'')+'<div class="modal-actions">'+(lastDay?'<button class="btn-delete" style="background:#0d9488" onclick="openDay(\''+lastDay+'\')">⬅ Späť na deň</button>':'')+(typeof edO!=='undefined'?edO:'')+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
-    ((isAdmin()&&(type==='montaze'||type==='obhliadky'))?'<button class="btn-delete" style="background:#dc2626;color:#fff" onclick="evDel(\''+type+'\',\''+esc(o.id)+'\')">🗑 Zmazať</button>':'')+
     '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
   if(type==='montaze'||type==='obhliadky')fotoLoad(o.id);
@@ -3820,7 +3896,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-13.154';
+var APP_VERSION='2026-11-14.156';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4034,7 +4110,7 @@ function dayRow(e){
       var st0=!m.stav||m.stav==='Nová',stel=smsTel(m);
       q='<div class="dr-q" onclick="event.stopPropagation()">'+(needsAck(m)?'<a href="#" style="background:#16a34a;color:#fff" onclick="ackJob(\''+esc(e.id)+'\');return false">👍 Beriem na vedomie</a>':'')+(ph?'<a href="tel:'+esc(ph)+'">📞 Zavolať</a>':'')+
         (stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(smsText(m))+'" onclick="markRem(\''+smsKey(m)+'\')">💬 Odoslať SMS</a>':'')+(stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(SMS_TPL[1][1])+'">⏰ Meškáme</a>':'')+
-        navBtn(m)+'<a href="#" onclick="showJob(\''+esc(e.id)+'\');return false">📋 '+(st0?'Vytvoriť zákazku':'Zákazka')+(mi.length?' · <span style="color:#dc2626">chýba '+mi.length+'</span>':'')+'</a></div>';
+        (stel&&m.stav==='Hotová'&&reviewText()?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(reviewText())+'">⭐ Požiadať o hodnotenie</a>':'')+navBtn(m)+'<a href="#" onclick="showJob(\''+esc(e.id)+'\');return false">📋 Zákazka'+(mi.length?' <span class="miss">'+mi.length+'</span>':'')+'</a></div>';
     }
   }
   var dn=e.type==='montaze'&&(findById('montaze',e.id)||{}).stav==='Hotová';
@@ -4544,6 +4620,7 @@ function fotoView(mid,id){
 }
 function backupPrompt(){
   try{
+    if(LAY==='new')return;
     if(!isAdmin()||$('eventModal').style.display==='flex')return;
     var t=lastBackup();if(t&&Date.now()-t<=7*86400000)return;
     if(localStorage.getItem('bk_snooze')===ymd(new Date()))return;
@@ -4687,6 +4764,13 @@ window.onload=function(){
   setTimeout(function(){var seen='';try{seen=localStorage.getItem('portal_welcome2')}catch(e){}if(!seen&&$('app').style.display!=='none')showWelcome()},1800);
   setTimeout(backupPrompt,4500);
 };
+
+(function(){function mv(){var sb=document.getElementById('statusBar'),t=document.getElementById('timSection'),h=document.getElementById('pageTitle');if(!sb||!t)return;
+ if(LAY==='new'){if(sb.parentNode!==t)t.insertBefore(sb,t.firstChild)}else if(h&&sb.parentNode===t){h.parentNode.insertBefore(sb,document.getElementById('layTools'))}
+ var ob=document.getElementById('oldKeyBtn');if(ob){var ok='';try{ok=localStorage.getItem('portal_oldkey')||''}catch(e){}ob.style.display=ok&&ok!==KEY?'':'none'}
+ var d=document.getElementById('syncDot');if(!d){d=document.createElement('div');d.id='syncDot';document.body.appendChild(d)}
+ var bad=sb.className.indexOf('bad')>-1,st=document.getElementById('st').textContent;d.textContent=st.indexOf('Offline')>-1?'📴 Offline':'🔴 Bez spojenia';d.className=bad||st.indexOf('Offline')>-1?'on':''}
+ setInterval(mv,700);mv()})();
 </script>
 </head>
 <body>
@@ -4801,6 +4885,8 @@ window.onload=function(){
     <div class="menu-list">
       <div class="menu-card admin-only" id="awakeBtn" onclick="toggleAwake()">📱 Nezhasínať obrazovku</div>
       <div class="menu-card admin-only" onclick="shareLink()">🔗 Odkaz pre kolegu</div>
+      <div class="menu-card admin-only" onclick="rotateKey()">🔑 Zmeniť kľúč firmy</div>
+      <div class="menu-card admin-only" id="oldKeyBtn" onclick="rotDelOld()" style="display:none">🧹 Zmazať staré dáta po zmene kľúča</div>
       <div class="menu-card admin-only" onclick="exportClientsCsv()">📊 Klienti (CSV)</div>
       <div class="menu-card admin-only" onclick="exportData()">💾 Stiahnuť zálohu</div>
       <div class="menu-card admin-only" onclick="document.getElementById('importFile').click()">📂 Nahrať dáta zo zálohy<input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)"></div>
@@ -5093,12 +5179,12 @@ window.onload=function(){
   </div>
   <div id="timSection" class="section-content">
     <div class="menu-list">
-      <div class="menu-card" onclick="goTab('msg')">💬 Správy</div>
-      <div class="menu-card" onclick="openSection('zakazkySection','Prehľad zákaziek','')">👍 Potvrdenia a chýbajúce údaje</div>
-      <div class="menu-card" onclick="openSection('volnoSection','Voľno','')">🏖 Voľno</div>
-      <div class="menu-card" onclick="openSection('teamSection','Správa tímu','')">🛡️ Členovia tímu</div>
-      <div class="menu-card" onclick="openSection('statSection','Štatistika používania','')">📊 Štatistika používania</div>
-      <div class="menu-card" onclick="openSection('ponukySection','Cenové ponuky','')">💶 Ponuky</div>
+      <div class="menu-card" onclick="goTab('msg')"><span class="tq">💬</span><span class="tt">Správy</span></div>
+      <div class="menu-card" onclick="openSection('zakazkySection','Prehľad zákaziek','')"><span class="tq">👍</span><span class="tt">Potvrdenia a chýbajúce údaje</span></div>
+      <div class="menu-card" onclick="openSection('volnoSection','Voľno','')"><span class="tq">🏖</span><span class="tt">Voľno</span></div>
+      <div class="menu-card" onclick="openSection('teamSection','Správa tímu','')"><span class="tq">🛡️</span><span class="tt">Členovia tímu</span></div>
+      <div class="menu-card" onclick="openSection('statSection','Štatistika používania','')"><span class="tq">📊</span><span class="tt">Štatistika používania</span></div>
+      <div class="menu-card" onclick="openSection('ponukySection','Cenové ponuky','')"><span class="tq">💶</span><span class="tt">Ponuky</span></div>
     </div>
   </div>
   <div id="zakazkySection" class="section-content">
