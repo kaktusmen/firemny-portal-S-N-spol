@@ -453,6 +453,7 @@ html[data-lay=new] #syncDot.on{display:block}
 html[data-lay=new] #statusBar{display:none!important}
 html[data-lay=new] #timSection #statusBar{display:flex!important;margin:0 0 14px}
 html[data-lay=new] #pageTitle{margin-bottom:14px}
+.rev-btn{flex:none;margin-left:auto;margin-right:8px;background:#f59e0b;color:#111!important;font-weight:700;font-size:.8rem;padding:6px 10px;border-radius:999px;text-decoration:none;white-space:nowrap}.rev-btn.sent{background:#e5e7eb;color:#6b7280!important;font-weight:600}html[data-theme=dark] .rev-btn.sent{background:#3a3a3c;color:#aeaeb2!important}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -3884,6 +3885,9 @@ function stavButtons(o){
     '<button class="btn-edit" style="background:#b91c1c" onclick="toggleUrgent(\''+id+'\')">'+(o.urgent?'Zrušiť urgentné':'🚨 Urgentné')+'</button>';
   var hint={'Nová':'Zákazka čaká. Keď prídeš na miesto, ťukni <b>📋 Otvoriť zákazku</b> a potom <b>▶ Som na mieste</b>.','Naplánovaná':'Zákazka čaká. Keď prídeš na miesto, ťukni <b>📋 Otvoriť zákazku</b> a potom <b>▶ Som na mieste</b>.','Prebieha':'Zákazka práve prebieha. Na konci ťukni <b>📋 Otvoriť zákazku</b> a <b>✔ Dokončiť zákazku</b>.','Hotová':'Zákazka je hotová.'}[st]||'';
   var head='<div class="modal-row" style="font-size:17px"><strong>Stav:</strong> '+chip+(o.urgent&&st!=='Hotová'?'':'')+'</div>'+(hint?'<div class="modal-row" style="color:#64748b">'+hint+'</div>':'');
+  if(st==='Hotová'){var rt=jobPhone(o)||smsTel(o);
+    if(rt&&reviewText())head+='<div class="modal-actions"><a class="btn-edit" style="background:#f59e0b;color:#111;text-decoration:none" href="sms:'+esc(rt)+'?&body='+encodeURIComponent(reviewText())+'" onclick="reviewSent(\''+id+'\')">⭐ Požiadať o hodnotenie (SMS)</a></div>';
+    else if(rt&&isAdmin())head+='<div class="modal-row" style="color:#64748b;font-size:.85rem">⭐ Pre SMS s hodnotením vlož odkaz v Údajoch o firme.</div>'}
   if(!isAdmin())return head+'<div class="modal-actions" style="flex-wrap:wrap">'+smsBtn(o)+'</div>';
   return head+'<details style="margin:6px 0"><summary style="cursor:pointer;color:#64748b;padding:6px 0">⚙️ Zmeniť stav ručne (správca)</summary><div class="modal-actions" style="flex-wrap:wrap">'+btns+'</div></details><div class="modal-actions" style="flex-wrap:wrap">'+smsBtn(o)+'</div>';
 }
@@ -3896,7 +3900,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-14.156';
+var APP_VERSION='2026-11-14.158';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4509,6 +4513,13 @@ function clSortUi(){var b=document.getElementById('clSortSeg');if(!b)return;b.in
 function clSortSet(k){clSort=k;try{localStorage.setItem('portal_clsort',k)}catch(e){}render()}
 var zakT='montaze',zakF='act';
 function zakSet(t,f){if(t)zakT=t;if(f)zakF=f;renderZak()}
+function revBtn(m){
+  if(m.stav!=='Hotová'||!reviewText())return '';
+  var tel=jobPhone(m)||smsTel(m);if(!tel)return '';
+  var sent=!!m.reviewAt;
+  return '<a class="rev-btn'+(sent?' sent':'')+'" href="sms:'+esc(tel)+'?&body='+encodeURIComponent(reviewText())+'" onclick="event.stopPropagation();reviewSent(\''+esc(m.id)+'\')">'+(sent?'✓ ⭐':'⭐ Hodnotenie')+'</a>';
+}
+function reviewSent(id){var m=findById('montaze',id);if(m)m.reviewAt=Date.now();col('montaze').doc(id).update({reviewAt:Date.now()}).catch(function(){});setTimeout(renderZak,300)}
 function renderZak(){
   var el=$('zakList');if(!el||LAY!=='new'&&el.offsetParent===null)return;
   var s1=[['montaze','Montáže'],['servis','Servisy'],['obh','Obhliadky']],s2=zakT==='obh'?[['act','Čakajú na vykonanie'],['done','Vykonané']]:[['act','Aktívne'],['wait','Čakajú'],['done','Hotové']];
@@ -4526,7 +4537,7 @@ function renderZak(){
   src.sort(function(a,b){var c=(a.date||'9999').localeCompare(b.date||'9999');return zakF==='done'?-c:c});
   el.innerHTML=src.length?src.map(function(m){
     var t=obh?'obhliadky':'montaze',ti=obh?onm(m):(m.title||m.servisType||'Zákazka'),sub=obh?[m.obec||m.adresa,(m.memberNames||[]).join(', ')]:[m.clientName,(m.memberNames||[]).join(', ')];
-    return '<div class="zk-row" onclick="showEvent(\''+t+'\',\''+esc(m.id)+'\')"><span><b>'+(m.date?esc(fmtD(m.date))+' · ':'')+esc(ti)+'</b><small>'+sub.filter(Boolean).map(esc).join(' · ')+'</small></span>'+(obh?'':stavPill(m))+'</div>'}).join(''):'<div class="td-none">Nič tu nie je</div>';
+    return '<div class="zk-row" onclick="showEvent(\''+t+'\',\''+esc(m.id)+'\')"><span><b>'+(m.date?esc(fmtD(m.date))+' · ':'')+esc(ti)+'</b><small>'+sub.filter(Boolean).map(esc).join(' · ')+'</small></span>'+(obh?'':revBtn(m)+stavPill(m))+'</div>'}).join(''):'<div class="td-none">Nič tu nie je</div>';
 }
 var ANIM='on';try{ANIM=localStorage.getItem('portal_anim')||'on'}catch(e){}
 function applyAnim(){document.documentElement.setAttribute('data-anim',ANIM);var b=document.getElementById('animBtn');if(b)b.textContent='✨ Animácie: '+(ANIM==='off'?'vypnuté':'zapnuté')}
