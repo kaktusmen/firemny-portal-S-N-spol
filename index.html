@@ -439,7 +439,7 @@ html[data-theme=dark] #splash{background:#000}html[data-theme=dark] #splash b{co
 @media (prefers-reduced-motion:reduce){#splash,.celeb em{display:none}}
 
 /* v.154 test – vizuál */
-html[data-lay=new] #layTools button:first-child{display:none}
+#remHdrBadge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:9px;background:#dc2626;color:#fff;font-size:.7rem;font-weight:700;font-style:normal;line-height:18px;text-align:center;padding:0 4px}
 html[data-lay=new] .day-row{border-left-width:6px}
 html[data-lay=new] .dr-q a:last-child{grid-column:auto}
 html[data-lay=new] .dr-q a .miss{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;background:#dc2626;color:#fff;font-size:.72rem;font-weight:700;margin-left:6px;padding:0 5px}
@@ -3900,7 +3900,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-14.158';
+var APP_VERSION='2026-11-14.159';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4778,6 +4778,7 @@ window.onload=function(){
 
 (function(){function mv(){var sb=document.getElementById('statusBar'),t=document.getElementById('timSection'),h=document.getElementById('pageTitle');if(!sb||!t)return;
  if(LAY==='new'){if(sb.parentNode!==t)t.insertBefore(sb,t.firstChild)}else if(h&&sb.parentNode===t){h.parentNode.insertBefore(sb,document.getElementById('layTools'))}
+ var rb=document.getElementById('remHdrBadge');if(rb){var n=0;try{var t0=ymd(new Date());n=me?remMineAll().filter(function(r){return !r.done&&r.date<=t0}).length:0}catch(e){}rb.style.display=n?'block':'none';rb.textContent=n}
  var ob=document.getElementById('oldKeyBtn');if(ob){var ok='';try{ok=localStorage.getItem('portal_oldkey')||''}catch(e){}ob.style.display=ok&&ok!==KEY?'':'none'}
  var d=document.getElementById('syncDot');if(!d){d=document.createElement('div');d.id='syncDot';document.body.appendChild(d)}
  var bad=sb.className.indexOf('bad')>-1,st=document.getElementById('st').textContent;d.textContent=st.indexOf('Offline')>-1?'📴 Offline':'🔴 Bez spojenia';d.className=bad||st.indexOf('Offline')>-1?'on':''}
@@ -4839,7 +4840,7 @@ window.onload=function(){
     <div id="whoInfo" style="flex-basis:100%;font-size:.8rem;font-weight:600"></div>
   </div>
 
-  <div id="layTools"><div><button onclick="qkToggle()" aria-label="Nástroje">🧰</button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
+  <div id="layTools"><div><button id="remHdrBtn" onclick="qkGo('rem')" aria-label="Pripomienky" style="position:relative">⏰<i id="remHdrBadge" style="display:none"></i></button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
   <h1 id="pageTitle">Dnes</h1>
   <p id="pageSub" style="display:none"></p>
 
