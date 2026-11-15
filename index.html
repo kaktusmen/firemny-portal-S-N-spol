@@ -1013,7 +1013,7 @@ var V={
     var w=warrantyInfo(c),p=String(nm(c)).trim().split(/\s+/),ini=((p[0]||'')[0]||'')+((p.length>1?p[p.length-1][0]:'')||''),tel=String(c.telefon||'').replace(/[^\d+]/g,'');
     var nd=0;clientInstalls(c).forEach(function(m){nd+=Math.max(devicesOf(m).length,m.title?1:0)});
     var bg=clBig(c),sub=[c.obec||'',c.telefon||'',nd?'🔧 '+nd:''].filter(Boolean).map(esc).join(' · ');
-    return '<div class="cl-row" onclick="clientCard(\''+esc(c.id)+'\')"><i class="cl-av" style="background:'+(w.c||'#64748b')+'">'+esc(ini.toUpperCase())+'</i><div class="cl-tx"><b>'+(isNewFor('clients',c)?'🆕 ':'')+esc(nm(c))+'</b>'+(bg?'<i class="cl-tag cl-big">🏢 '+esc(bg)+'</i>':'<i class="cl-tag cl-klima">❄️ Klimatizácia</i>')+'<span>'+(sub||'&nbsp;')+'</span></div>'+(tel?'<a class="cl-call" href="tel:'+esc(tel)+'" onclick="event.stopPropagation()" aria-label="Zavolať">📞</a>':'')+'<em class="cl-go">›</em></div>'}],
+    return '<div class="cl-row" onclick="clientCard(\''+esc(c.id)+'\')"><i class="cl-av" style="background:'+(w.c||'#64748b')+'">'+esc(ini.toUpperCase())+'</i><div class="cl-tx"><b>'+(isNewFor('clients',c)?'🆕 ':'')+esc(nm(c))+'</b>'+(bg?'<i class="cl-tag cl-big">🏢 '+esc(bg)+'</i>':'')+'<span>'+(sub||'&nbsp;')+'</span></div>'+(tel?'<a class="cl-call" href="tel:'+esc(tel)+'" onclick="event.stopPropagation()" aria-label="Zavolať">📞</a>':'')+'<em class="cl-go">›</em></div>'}],
   montaze:['montazList','Žiadne montáže.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')},function(m){
     if(m.kind)return card('montaze',m,stavPill(m)+srvIcon(m)+esc(m.title||'Servis')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')'+techSub(m),
       '<strong>Telefón:</strong> '+telA(m.telefon)+' | <strong>E-mail:</strong> '+mailA(m.email)+'\n'+'<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):'')+oprBody(m),'editServis',true,listBtns(m));
@@ -4314,7 +4314,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-15.174';
+var APP_VERSION='2026-11-15.175';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4938,7 +4938,7 @@ function clBig(c){
   });
   return r;
 }
-function clTypeUi(){var b=document.getElementById('clTypeSeg');if(!b)return;b.innerHTML=[['all','Všetci'],['klima','❄️ Klimatizácie'],['big','🏢 VSE a veľkí']].map(function(x){return '<button class="'+(clType===x[0]?'on':'')+'" onclick="clTypeSet(\''+x[0]+'\')">'+x[1]+'</button>'}).join('')}
+function clTypeUi(){var b=document.getElementById('clTypeSeg');if(!b)return;b.innerHTML=[['all','Všetci'],['klima','👤 Naši klienti'],['big','🏢 VSE a veľkí']].map(function(x){return '<button class="'+(clType===x[0]?'on':'')+'" onclick="clTypeSet(\''+x[0]+'\')">'+x[1]+'</button>'}).join('')}
 function clTypeSet(k){clType=k;try{localStorage.setItem('portal_cltype',k)}catch(e){}render()}
 function clSortSet(k){clSort=k;try{localStorage.setItem('portal_clsort',k)}catch(e){}render()}
 var zakT='montaze',zakF='act';
