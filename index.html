@@ -458,6 +458,48 @@ html[data-lay=new] #pageTitle{margin-bottom:14px}
 .qe-team{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.qe-chk{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:999px;font-size:.9rem;cursor:pointer}.qe-chk input{width:auto!important;margin:0}.zq-btn{flex:none;width:auto!important;border:none;border-radius:999px;padding:6px 10px;font-weight:700;font-size:.8rem;margin-left:6px;background:#dbeafe;color:#1d4ed8}.zq-btn.ok{background:#dcfce7;color:#15803d}html[data-theme=dark] .zq-btn{background:#1e3a5f;color:#93c5fd}html[data-theme=dark] .zq-btn.ok{background:#14532d;color:#86efac}
 .v-box input[type=time],.v-box input[type=date]{min-width:0}.v-box{margin-top:12px;padding:10px;border:1px dashed #94a3b8;border-radius:12px}#vMic{width:auto}
 .ws-t{width:100%;border-collapse:collapse;font-size:.8rem;margin:10px 0}.ws-t th,.ws-t td{padding:6px 4px;border-bottom:1px solid #e2e8f0;text-align:right}.ws-t th:first-child,.ws-t td:first-child{text-align:left}.ws-sum td{font-weight:700;border-top:2px solid #94a3b8}html[data-theme=dark] .ws-t th,html[data-theme=dark] .ws-t td{border-color:#3a3a3c}
+
+/* v.166 test – dizajn */
+/* 1: jedna hlavná farba */
+html[data-lay=new] [style*="background:#2563eb"],html[data-lay=new] [style*="background:#7c3aed"],html[data-lay=new] [style*="background:#0ea5e9"],html[data-lay=new] [style*="background:#475569"]{background:#0d9488!important}
+html[data-lay=new] .btn-edit:not([style*="background"]){background:#0d9488}
+/* 3: tlačidlá v okne – jedno hlavné, ostatné menšie */
+html[data-lay=new] .modal-actions{display:flex;flex-wrap:wrap;gap:8px}
+html[data-lay=new] .modal-actions>button,html[data-lay=new] .modal-actions>a{display:flex;align-items:center;justify-content:center;text-align:center;flex:1 1 auto;min-height:44px;border-radius:14px;font-weight:700;width:auto!important}
+html[data-lay=new] .modal-actions>button:first-child,html[data-lay=new] .modal-actions>a:first-child{flex:1 1 100%;min-height:50px;font-size:1.02rem}
+html[data-lay=new] .modal-actions>button:not(:first-child):not([style*="background:#dc2626"]):not([style*="background:#16a34a"]),html[data-lay=new] .modal-actions>a:not(:first-child){font-size:.88rem;opacity:.95}
+/* 4: jednotné rohy a medzery */
+html[data-lay=new] .day-row,html[data-lay=new] .zk-row,html[data-lay=new] .menu-card,html[data-lay=new] .v-box{border-radius:16px}
+html[data-lay=new] .day-row,html[data-lay=new] .zk-row{margin-bottom:10px}
+html[data-lay=new] #eventModalBody{border-radius:22px}
+/* 5: väčšie písmo a kontrast */
+html[data-fs=big]{zoom:1.12}
+html[data-lay=new][data-theme=light] [style*="color:#64748b"],html[data-lay=new][data-theme=light] .zk-row small{color:#475569!important}
+/* 6: stavy farbou */
+.zk-row{border-left:5px solid #0d9488}
+.zk-row.st-Nová{border-left-color:#94a3b8}.zk-row.st-Naplánovaná{border-left-color:#d97706}.zk-row.st-Prebieha{border-left-color:#2563eb}.zk-row.st-Hotová{border-left-color:#16a34a}.zk-row.st-late{border-left-color:#dc2626}.zk-row.st-Čaká_na_jednotku{border-left-color:#eab308}
+/* 7: prázdne stavy */
+.td-none{text-align:center;padding:18px 10px;color:#94a3b8}.td-none::before{content:'🌿';display:block;font-size:1.7rem;margin-bottom:4px}
+/* 10: zjednotené animácie */
+html[data-anim=on] .section-content,html[data-anim=on] #eventModalBody{animation-duration:.22s}
+
+/* v.167 – prihlasovacia obrazovka a profil */
+#loginGate{display:none;position:fixed;inset:0;z-index:900;overflow-y:auto;background:linear-gradient(160deg,#f2f2f7 0%,#d9f2ef 100%);padding:max(28px,env(safe-area-inset-top)) 18px 28px}
+html[data-theme=dark] #loginGate{background:linear-gradient(160deg,#000 0%,#0b2a28 100%)}
+.lg-card{max-width:420px;margin:0 auto;text-align:center}
+.lg-logo{display:block;width:96px;height:96px;margin:18px auto 10px;border-radius:50%;box-shadow:0 4px 18px rgba(0,0,0,.18);background:#fff;object-fit:cover}
+.lg-card h1,#keyBox h1{margin:6px 0 2px;font-size:1.7rem}
+.lg-sub{color:#0d9488;font-weight:700;margin-bottom:18px}
+.lg-q{font-size:1.05rem;font-weight:700;margin:6px 0 12px;color:#475569}
+html[data-theme=dark] .lg-q{color:#aeaeb2}
+#lgList button{display:flex;flex-direction:column;align-items:center;width:100%;margin:0 0 10px;padding:14px;border:none;border-radius:18px;background:#fff;color:#111;font-size:1.1rem;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+#lgList button small{font-weight:500;color:#64748b;font-size:.8rem;margin-top:2px}
+html[data-theme=dark] #lgList button{background:#1c1c1e;color:#f2f2f7;box-shadow:none}
+.lg-ver{margin-top:20px;font-size:.75rem;color:#94a3b8}
+#keyBox{max-width:420px;margin:max(30px,env(safe-area-inset-top)) auto 0;padding:0 8px}
+#keyBox p{text-align:center;color:#64748b}
+#profBtn{opacity:1}
+#layTools{overflow:visible}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -4250,7 +4292,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-15.166';
+var APP_VERSION='2026-11-15.168';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4758,16 +4800,6 @@ function weekStrip(){
   if(wkSel){var ev=evFor(wkSel);h+='<div class="td-h">'+esc(fmtD(wkSel))+'</div>'+(ev.length?'<div class="tl">'+ev.map(dayRow).join('')+'</div>':'<div class="td-none">Žiadne udalosti</div>')}
   return h;
 }
-function loginCard(){
-  var mm=me?findById('members',me):null;
-  if(!mm){
-    return '<div class="td-h">👤 Prihlásenie</div><div style="margin:0 0 6px;font-size:.9rem;color:#475569">Vyber svoje meno:</div><select id="homeMe" onchange="setMeHome(this.value)" style="margin-bottom:14px"><option value="">-- Vyberte, kto ste --</option>'+
-      dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('')+'</select>';
-  }
-  if(needsLogin())return '<button class="action-btn" style="margin-bottom:14px;background:#b91c1c" onclick="askPassword(\''+esc(me)+'\')">🔒 Zadať heslo správcu ('+esc(mm.name||'')+')</button>';
-  if(needsPin())return '<button class="action-btn" style="margin-bottom:14px;background:#b91c1c" onclick="askPin(\''+esc(me)+'\')">🔢 Zadať PIN ('+esc(mm.name||'')+')</button>';
-  return '';
-}
 function renderToday(){
   var el=$('todayBox');if(!el)return;renderWho();
   var t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1)),n0=0;
@@ -4775,7 +4807,7 @@ function renderToday(){
     var ev=evFor(x[1]);if(x[1]===d0)n0=ev.length;
     return '<div class="td-h">📅 '+x[0]+' · '+esc(fmtD(x[1]))+'</div>'+(ev.length?'<div class="tl">'+ev.map(dayRow).join('')+'</div>':'<div class="td-none">Žiadne udalosti</div>');
   }).join('');
-  el.innerHTML=(LAY==='new')?loginCard()+greetHtml(n0,d0)+remBlock()+burnHome()+days:greetHtml(n0,d0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
+  el.innerHTML=(LAY==='new')?greetHtml(n0,d0)+remBlock()+burnHome()+days:greetHtml(n0,d0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
 }
 var me='';try{me=localStorage.getItem('portal_me')||''}catch(e){}
 function fillMe(){
@@ -4858,6 +4890,9 @@ function applyTheme(){
   var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',dark?'#000000':'#f2f2f7');
   var b=document.getElementById('themeBtn');if(b)b.textContent='🌓 Vzhľad: '+({auto:'Auto',light:'Svetlý',dark:'Tmavý'})[THEME];
 }
+var FS='';try{FS=localStorage.getItem('portal_fs')||''}catch(e){}
+function applyFs(){if(FS)document.documentElement.setAttribute('data-fs',FS);else document.documentElement.removeAttribute('data-fs');var b=document.getElementById('fsBtn');if(b)b.textContent='🔠 Veľké písmo: '+(FS?'zapnuté':'vypnuté');var t=document.getElementById('fsTile');if(t)t.querySelector('.tt').textContent='Veľké písmo: '+(FS?'zap.':'vyp.')}
+function toggleFs(){FS=FS?'':'big';try{localStorage.setItem('portal_fs',FS)}catch(e){}applyFs();toast(FS?'Veľké písmo zapnuté':'Veľké písmo vypnuté')}
 function cycleTheme(){THEME=THEME==='auto'?'dark':(THEME==='dark'?'light':'auto');try{localStorage.setItem('portal_theme',THEME)}catch(e){}applyTheme();toast('Vzhľad: '+({auto:'automaticky podľa telefónu',light:'svetlý',dark:'tmavý'})[THEME])}
 try{takeChips();window.addEventListener('load',takeChips);setTimeout(takeChips,500)}catch(e){}
 var LAY='new';try{LAY=localStorage.getItem('portal_layout')||'new'}catch(e){}
@@ -4898,12 +4933,12 @@ function renderZak(){
   src.sort(function(a,b){var c=(a.date||'9999').localeCompare(b.date||'9999');return zakF==='done'?-c:c});
   el.innerHTML=src.length?src.map(function(m){
     var t=obh?'obhliadky':'montaze',ti=obh?onm(m):(m.title||m.servisType||'Zákazka'),sub=obh?[m.obec||m.adresa,(m.memberNames||[]).join(', ')]:[m.clientName,(m.memberNames||[]).join(', ')];
-    return '<div class="zk-row" onclick="showEvent(\''+t+'\',\''+esc(m.id)+'\')"><span><b>'+(m.date?esc(fmtD(m.date))+' · ':'')+esc(ti)+'</b><small>'+sub.filter(Boolean).map(esc).join(' · ')+'</small></span>'+(obh?obhQ(m):revBtn(m)+stavPill(m))+'</div>'}).join(''):'<div class="td-none">Nič tu nie je</div>';
+    return '<div class="zk-row st-'+(obh?(m.vykonana?'Hotová':'Nová'):stavKey(m)).replace(/\s+/g,'_')+'" onclick="showEvent(\''+t+'\',\''+esc(m.id)+'\')"><span><b>'+(m.date?esc(fmtD(m.date))+' · ':'')+esc(ti)+'</b><small>'+sub.filter(Boolean).map(esc).join(' · ')+'</small></span>'+(obh?obhQ(m):revBtn(m)+stavPill(m))+'</div>'}).join(''):'<div class="td-none">Nič tu nie je</div>';
 }
 var ANIM='on';try{ANIM=localStorage.getItem('portal_anim')||'on'}catch(e){}
 function applyAnim(){document.documentElement.setAttribute('data-anim',ANIM);var b=document.getElementById('animBtn');if(b)b.textContent='✨ Animácie: '+(ANIM==='off'?'vypnuté':'zapnuté')}
 function toggleAnim(){ANIM=ANIM==='off'?'on':'off';try{localStorage.setItem('portal_anim',ANIM)}catch(e){}applyAnim();toast('Animácie '+(ANIM==='off'?'vypnuté':'zapnuté'))}
-applyTheme();applyAnim();applyLay();
+applyTheme();applyAnim();applyLay();applyFs();
 try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme)}catch(e){}
 
 /* ---------- Fotky ---------- */
@@ -5144,6 +5179,37 @@ window.onload=function(){
  var d=document.getElementById('syncDot');if(!d){d=document.createElement('div');d.id='syncDot';document.body.appendChild(d)}
  var bad=sb.className.indexOf('bad')>-1,st=document.getElementById('st').textContent;d.textContent=st.indexOf('Offline')>-1?'📴 Offline':'🔴 Bez spojenia';d.className=bad||st.indexOf('Offline')>-1?'on':''}
  setInterval(mv,700);mv()})();
+
+/* ===== Prihlasovacia obrazovka a profil ===== */
+function gateShould(){
+  try{
+    if(!KEY||($('app')&&$('app').style.display==='none'))return false;
+    if(!dbData.members.length)return false;
+    return !me||!findById('members',me)||needsLogin()||needsPin();
+  }catch(e){return false}
+}
+function gateUpdate(){
+  var g=$('loginGate');if(!g)return;
+  var on=gateShould();
+  if(on&&g.style.display!=='block'){
+    $('lgList').innerHTML=dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(m){
+      return '<button onclick="gatePick(\''+esc(m.id)+'\')">'+esc(m.name||'')+(m.rola?'<small>'+(m.rola==='Správca'?'🛡 Správca':esc(m.rola))+'</small>':'')+'</button>'}).join('');
+    $('lgVer').textContent='Verzia '+APP_VERSION.split('.').pop();
+  }
+  g.style.display=on?'block':'none';
+  document.body.style.overflow=on?'hidden':'';
+}
+function gatePick(id){setMeHome(id,true)}
+function openProfile(){
+  var mm=me?findById('members',me):null;
+  var b=function(c,l,f){return '<button class="btn-edit" style="background:'+c+';width:100%;margin:0 0 8px" onclick="'+f+'">'+l+'</button>'};
+  $('eventModalBody').innerHTML='<h3>👤 '+esc(mm?mm.name:'Profil')+'</h3><div class="modal-row" style="color:#64748b">'+(mm&&mm.rola==='Správca'?'🛡 Správca':esc((mm&&mm.rola)||''))+' · verzia '+esc(APP_VERSION.split('.').pop())+'</div>'+
+    b('#0d9488','💬 Pošli ohlas','openFeedback()')+b('#0d9488','🔄 Aktualizovať aplikáciu','hardRefresh()')+b('#0d9488','🔠 Veľké písmo: '+(FS?'zapnuté':'vypnuté'),'toggleFs();openProfile()')+b('#0d9488','🌓 Vzhľad: svetlý / tmavý / auto','cycleTheme();openProfile()')+
+    b('#dc2626','🚪 Odhlásiť sa','doLogout()')+'<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
+  $('eventModal').style.display='flex';
+}
+function doLogout(){if(!confirm('Odhlásiť sa? Pri ďalšom otvorení vyberieš svoje meno a zadáš PIN alebo heslo.'))return;try{setPinOk('');setAuth('')}catch(e){}closeEvent();setMeHome('',true);gateUpdate()}
+setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
 </script>
 </head>
 <body>
@@ -5190,19 +5256,20 @@ window.onload=function(){
 <div id="updBar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:2000;background:#f59e0b;color:#111;padding:10px 14px;text-align:center;font-weight:bold">🔄 Je dostupná nová verzia aplikácie. <button onclick="hardRefresh()" style="width:auto;display:inline-block;margin:0 0 0 8px;padding:6px 12px">Aktualizovať</button></div>
 <div class="container">
   <div id="keyBox" style="display:none">
-    <h1>Firemný Portál</h1>
+    <img src="icon-180.png" alt="" class="lg-logo"><h1 style="text-align:center">Firemný Portál</h1><div class="lg-sub">Úsporné klímy S&amp;N</div>
     <p>Otvorte portál cez odkaz, ktorý ste dostali od správcu, alebo sem vložte kľúč z odkazu.</p>
     <input type="text" id="keyInput" placeholder="Kľúč (časť odkazu za #k=)" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false">
     <button class="action-btn" onclick="setKey()">Pripojiť</button>
   </div>
 
+  <div id="loginGate"><div class="lg-card"><img src="icon-180.png" alt="" class="lg-logo"><h1>Firemný Portál</h1><div class="lg-sub">Úsporné klímy S&amp;N</div><div class="lg-q">Kto si?</div><div id="lgList"></div><div class="lg-ver" id="lgVer"></div></div></div>
   <div id="app">
   <div class="status-bar" id="statusBar">
     <span id="st">🟡 Pripájam sa k databáze…</span><div id="bkInfo" class="admin-only" style="font-size:.75rem;margin-top:2px"></div>
     <div id="whoInfo" style="flex-basis:100%;font-size:.8rem;font-weight:600"></div>
   </div>
 
-  <div id="layTools"><div><button onclick="voiceOpen()" aria-label="Hlasový príkaz">🎤</button><button id="remHdrBtn" onclick="qkGo('rem')" aria-label="Pripomienky" style="position:relative">⏰<i id="remHdrBadge" style="display:none"></i></button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
+  <div id="layTools"><div><button id="profBtn" onclick="openProfile()" aria-label="Profil">👤</button><button onclick="voiceOpen()" aria-label="Hlasový príkaz">🎤</button><button id="remHdrBtn" onclick="qkGo('rem')" aria-label="Pripomienky" style="position:relative">⏰<i id="remHdrBadge" style="display:none"></i></button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
   <h1 id="pageTitle">Dnes</h1>
   <p id="pageSub" style="display:none"></p>
 
@@ -5252,6 +5319,7 @@ window.onload=function(){
     <div class="menu-list">
       <div class="menu-card" onclick="hardRefresh()">🔄 Aktualizovať aplikáciu</div>
       <div class="menu-card" id="themeBtn" onclick="cycleTheme()">🌓 Vzhľad</div>
+      <div class="menu-card" id="fsBtn" onclick="toggleFs()">🔠 Veľké písmo</div>
       <div class="menu-card" id="animBtn" onclick="toggleAnim()">✨ Animácie</div>
       <div class="menu-card" id="layBtn" onclick="toggleLay()">🧭 Usporiadanie</div>
     </div>
@@ -5563,6 +5631,7 @@ window.onload=function(){
       <div class="menu-card admin-only" onclick="openWorkStat()"><span class="tq">📈</span><span class="tt">Zákazky a hodiny</span></div>
       <div class="menu-card admin-only" onclick="openOhlasy()"><span class="tq">📨</span><span class="tt">Ohlasy od tímu</span></div>
       <div class="menu-card" onclick="openFeedback()"><span class="tq">💬</span><span class="tt">Pošli ohlas</span></div>
+      <div class="menu-card" id="fsTile" onclick="toggleFs()"><span class="tq">🔠</span><span class="tt">Veľké písmo</span></div>
       <div class="menu-card" onclick="hardRefresh()"><span class="tq">🔄</span><span class="tt">Aktualizovať aplikáciu</span></div>
     </div>
   </div>
