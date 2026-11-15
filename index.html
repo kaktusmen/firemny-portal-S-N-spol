@@ -2140,20 +2140,28 @@ function voiceOpen(){
     '<div class="modal-row" style="color:#64748b;font-size:.85rem">Povedz napríklad:<br>• „Nová montáž, Novák, Nitra, zajtra o 8, ide Stano a Peter“<br>• „Nové čistenie Kováč v piatok o 10“<br>• „Presuň Nováka na štvrtok o 9“<br>• „Pridaj Petra k zákazke u Nováka“<br>• „Pripomeň mi zajtra o 9 zavolať Novákovi“</div>'+
     '<textarea id="vTxt" rows="3" style="width:100%" placeholder="Ťukni na 🎤 a hovor, alebo napíš (či nadiktuj mikrofónom na klávesnici)…"></textarea>'+
     '<div class="modal-actions" style="flex-wrap:wrap"><button class="btn-edit" id="vMic" style="background:#dc2626" onclick="voiceMic()">🎤 Hovoriť</button><button class="btn-edit" style="background:#2563eb" onclick="voiceParse()">➡️ Spracovať</button><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zrušiť</button></div>'+
-    '<div id="vOut"></div>';
+    '<div id="vSt" style="font-size:.82rem;margin-top:6px;color:#64748b"></div><div id="vOut"></div>';
   $('eventModal').style.display='flex';
 }
+var vLangI=0,V_LANGS=['sk-SK','cs-CZ'];
+function vSt(t,bad){var e=$('vSt');if(e){e.textContent=t;e.style.color=bad?'#b91c1c':'#64748b'}}
 function voiceMic(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition,b=$('vMic'),ta=$('vTxt');
   if(vRec){try{vRec.stop()}catch(e){}return}
-  if(!SR){toast('Tento prehliadač nemá hlasové diktovanie. Ťukni do poľa a použi 🎤 na klávesnici telefónu.');if(ta)ta.focus();return}
-  var r=new SR();vRec=r;r.lang='sk-SK';r.interimResults=true;r.continuous=false;
+  if(!SR){vSt('Tento prehliadač nemá hlasové diktovanie. Ťukni do poľa nad tlačidlami a použi 🎤 na klávesnici telefónu.',1);if(ta)ta.focus();return}
+  var r=new SR(),got=false,errd=false;vRec=r;r.lang=V_LANGS[vLangI];r.interimResults=true;r.continuous=false;
   var base=ta.value?ta.value+' ':'';
-  r.onresult=function(e){var s='';for(var i=0;i<e.results.length;i++)s+=e.results[i][0].transcript;if($('vTxt'))$('vTxt').value=base+s};
-  r.onerror=function(e){toast(e.error==='not-allowed'||e.error==='service-not-allowed'?'Povoľ mikrofón pre prehliadač':'Nerozumel som, skús znova')};
-  r.onend=function(){vRec=null;var bb=$('vMic');if(bb)bb.textContent='🎤 Hovoriť';if($('vTxt')&&$('vTxt').value.trim())voiceParse()};
+  r.onstart=function(){vSt('🎙 Počúvam ('+r.lang+')… hovor a potom ťukni na ⏹ Hotovo')};
+  r.onresult=function(e){got=true;var s='';for(var i=0;i<e.results.length;i++)s+=e.results[i][0].transcript;if($('vTxt'))$('vTxt').value=base+s};
+  r.onerror=function(e){errd=true;var c=e.error||'?';
+    var m={'not-allowed':'Mikrofón alebo diktovanie je zakázané. Povoľ mikrofón pre Safari (Mac: Nastavenia → Ochrana a bezpečnosť → Mikrofón; iPhone: Nastavenia → Safari → Mikrofón) a zapni Diktovanie (Nastavenia → Klávesnica → Diktovanie).','service-not-allowed':'Diktovanie nie je zapnuté. Zapni ho: Mac Nastavenia → Klávesnica → Diktovanie; iPhone Nastavenia → Všeobecné → Klávesnica → Povoliť diktovanie.','no-speech':'Nič som nepočul. Skús znova, bližšie k mikrofónu.','audio-capture':'Nenašiel som mikrofón.','network':'Diktovanie potrebuje internet.','language-not-supported':'Slovenčina nie je v diktovaní dostupná.'}[c];
+    if(c==='language-not-supported'&&vLangI<V_LANGS.length-1){vLangI++;vSt('Slovenčina nie je dostupná, skúšam '+V_LANGS[vLangI]+'… ťukni znova na 🎤',1);return}
+    if(c!=='aborted')vSt((m||'Chyba diktovania: '+c)+' (kód: '+c+')',1)};
+  r.onend=function(){vRec=null;var bb=$('vMic');if(bb)bb.textContent='🎤 Hovoriť';
+    if($('vTxt')&&$('vTxt').value.trim()&&got)voiceParse();else if(!errd&&!got)vSt('Nič sa nenahralo. Skús znova alebo použi 🎤 na klávesnici.',1)};
   if(b)b.textContent='⏹ Hotovo';
-  try{r.start()}catch(e){vRec=null}
+  vSt('Spúšťam mikrofón… ak sa opýta, povoľ ho');
+  try{r.start()}catch(e){vRec=null;if(b)b.textContent='🎤 Hovoriť';vSt('Mikrofón sa nepodarilo spustiť: '+(e&&e.message||e),1)}
 }
 function vClName(c){return nm(c)+(c.obec?' – '+c.obec:'')}
 function voiceParse(){
@@ -4242,7 +4250,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-15.164';
+var APP_VERSION='2026-11-15.165';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
