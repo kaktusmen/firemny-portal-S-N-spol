@@ -454,6 +454,7 @@ html[data-lay=new] #statusBar{display:none!important}
 html[data-lay=new] #timSection #statusBar{display:flex!important;margin:0 0 14px}
 html[data-lay=new] #pageTitle{margin-bottom:14px}
 .rev-btn{flex:none;margin-left:auto;margin-right:8px;background:#f59e0b;color:#111!important;font-weight:700;font-size:.8rem;padding:6px 10px;border-radius:999px;text-decoration:none;white-space:nowrap}.rev-btn.sent{background:#e5e7eb;color:#6b7280!important;font-weight:600}html[data-theme=dark] .rev-btn.sent{background:#3a3a3c;color:#aeaeb2!important}
+.devDlg .dev-h .dev-x{display:none}.devDlg .dev-box{border:none;padding:0;background:transparent}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -1907,6 +1908,31 @@ function indList(d){
   return o;
 }
 function unitStr(sn,tp){return sn?(sn+(tp?' ('+tp+')':'')):(tp||'')}
+var DEVBOX='mDevices';
+function devBoxId(){if(!$(DEVBOX))DEVBOX='mDevices';return DEVBOX}
+var devEditCtx=null;
+function devEdit(mid,idx,cid){
+  var m=findById('montaze',mid);if(!m)return;
+  var L=devicesOf(m),d=L[idx]||{znacka:idx===0&&!L.length?(m.title||''):''};
+  devEditCtx={mid:mid,idx:idx,cid:cid||m.clientId||''};
+  var f=$('mDevices');if(f)f.innerHTML='';
+  DEVBOX='mDevicesDlg';
+  $('eventModalBody').innerHTML='<h3>✏️ Upraviť zariadenie</h3><div class="modal-row" style="color:#64748b">Namontované '+esc(m.date?fmtD(m.date):'')+'</div><div id="mDevicesDlg" class="full-width-input devDlg"></div>'+
+    '<div class="modal-actions"><button class="btn-edit" style="background:#16a34a" onclick="devEditSave()">💾 Uložiť</button><button class="btn-delete" style="background:#64748b" onclick="devEditCancel()">Zrušiť</button></div>';
+  $('eventModal').style.display='flex';
+  renderDevices([{typ:d.typ||'',znacka:d.znacka||'',kw:d.kw||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vnutorneTyp:(d.vnutorneTyp&&d.vnutorneTyp.length)?d.vnutorneTyp.slice():[''],vonkajsia:d.vonkajsia||'',vonkajsiaTyp:d.vonkajsiaTyp||'',zarukaRoky:d.zarukaRoky||'',chlTyp:d.chlTyp||'',chlKg:d.chlKg||''}]);
+}
+function devEditCancel(){DEVBOX='mDevices';var c=devEditCtx;devEditCtx=null;if(c&&c.cid&&findById('clients',c.cid))clientCard(c.cid);else closeEvent()}
+function devEditSave(){
+  var c=devEditCtx,m=c&&findById('montaze',c.mid);if(!m)return;
+  var e=readDevices()[0];if(!e)return;var il=indList(e);
+  var L=devicesOf(m).map(function(x){return Object.assign({},x)});
+  var nd={typ:e.typ,znacka:e.znacka,kw:e.kw||'',system:e.system,vnutorne:il.map(function(x){return x.sn}),vnutorneTyp:il.map(function(x){return x.tp}),vonkajsia:e.vonkajsia,vonkajsiaTyp:e.vonkajsiaTyp,zarukaRoky:e.zarukaRoky,chlTyp:e.chlTyp||'',chlKg:e.chlKg||''};
+  L[c.idx]=Object.assign({},L[c.idx]||{},nd);
+  put('montaze',{zariadenia:L,typ:'',system:'',vnutorne:[],vonkajsia:'',zarukaRoky:''},c.mid);
+  toast('Zariadenie uložené');
+  setTimeout(devEditCancel,50);
+}
 function emptyDev(){return {typ:'',znacka:'',kw:'',system:'',vnutorne:[''],vnutorneTyp:[''],vonkajsia:'',vonkajsiaTyp:'',zarukaRoky:'',chlTyp:'',chlKg:''}}
 function deviceBlock(d,i,total){
   var multi=norm(d.system||'').indexOf('multi')>-1;
@@ -1930,8 +1956,8 @@ function readDevices(){
   var out=[],i=0;
   while($('dTyp'+i)){
     out.push({typ:gv('dTyp'+i),znacka:($('dZn'+i)?$('dZn'+i).value.trim():''),kw:($('dKw'+i)?$('dKw'+i).value.trim():''),system:gv('dSys'+i),
-      vnutorne:Array.prototype.map.call(document.querySelectorAll('#mDevices input.dInd[data-d="'+i+'"]'),function(x){return x.value.trim()}),
-      vnutorneTyp:Array.prototype.map.call(document.querySelectorAll('#mDevices input.dIndT[data-d="'+i+'"]'),function(x){return x.value.trim()}),
+      vnutorne:Array.prototype.map.call(document.querySelectorAll('#'+devBoxId()+' input.dInd[data-d="'+i+'"]'),function(x){return x.value.trim()}),
+      vnutorneTyp:Array.prototype.map.call(document.querySelectorAll('#'+devBoxId()+' input.dIndT[data-d="'+i+'"]'),function(x){return x.value.trim()}),
       vonkajsia:$('dOut'+i).value.trim(),vonkajsiaTyp:$('dOutT'+i).value.trim(),zarukaRoky:gv('dZar'+i),chlTyp:gv('dChT'+i),chlKg:$('dChK'+i).value.trim()});
     i++;
   }
@@ -1939,7 +1965,7 @@ function readDevices(){
 }
 function renderDevices(list){
   if(!list||!list.length)list=[emptyDev()];
-  var box=$('mDevices');
+  var box=$(devBoxId());
   box.innerHTML=list.map(function(d,i){return deviceBlock(d,i,list.length)}).join('');
   initIny(box);
   list.forEach(function(d,i){sv('dTyp'+i,d.typ||'');sv('dSys'+i,d.system||'');sv('dZar'+i,d.zarukaRoky||'');sv('dChT'+i,d.chlTyp||'')});
@@ -3140,7 +3166,7 @@ function clientCard(id){
   clientInstalls(c).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')}).forEach(function(m){
     var dl=devicesOf(m);
     if(!dl.length&&m.title)dl=[{znacka:m.title}];
-    dl.forEach(function(d){
+    dl.forEach(function(d,di){
       var t=[d.typ,d.system].filter(Boolean).join(' – '),ind=indList(d),we=devEnd(m,d),today=ymd(new Date());
       var ln=function(l,v){return v?'<div style="margin:2px 0"><span style="color:#64748b">'+l+':</span> '+esc(v)+'</div>':''};
       devs+='<div style="border:1px solid #e2e8f0;border-left:5px solid #0d9488;border-radius:10px;padding:10px 12px;margin:8px 0;background:#f8fafc">'+
@@ -3150,7 +3176,8 @@ function clientCard(id){
         ind.map(function(x,j){return ln('Vnútorná'+(ind.length>1?' '+(j+1):''),[x.tp,x.sn&&'S/N '+x.sn].filter(Boolean).join(' · '))}).join('')+
         ((d.vonkajsia||d.vonkajsiaTyp)?ln('Vonkajšia',[d.vonkajsiaTyp,d.vonkajsia&&'S/N '+d.vonkajsia].filter(Boolean).join(' · ')):'')+
         (chlText(d)?ln('❄️ Chladivo',chlText(d)):'')+
-        (we?'<div style="margin-top:4px;font-weight:600;color:'+(we>=today?'#15803d':'#b91c1c')+'">🛡 '+(we>=today?'V záruke do ':'Záruka skončila ')+esc(fmtD(we))+'</div>':'')+
+        (we?'<div style="margin-top:4px;font-weight:600;color:'+(we>=today?'#15803d':'#b91c1c')+'">🛡 '+(we>=today?'V záruke do ':'Záruka skončila ')+esc(fmtD(we))+'</div>':(d.zarukaRoky?'':'<div style="margin-top:4px;color:#64748b">🛡 Záruka nie je zadaná</div>'))+
+        '<div style="margin-top:8px"><button class="btn-edit" style="background:#2563eb;padding:6px 14px;width:auto" onclick="devEdit(\''+esc(m.id)+'\','+di+',\''+esc(c.id)+'\')">✏️ Upraviť zariadenie</button></div>'+
         '</div>';
     });
   });
@@ -3362,7 +3389,7 @@ function remOpenToast(){
   if(!dbData.pripomienky.length&&!nfyLoaded.pripomienky)return;
   remOpenToast.done=true;if(n)toast('⏰ Pripomienky na dnes: '+n);
 }
-function closeEvent(){lastDay=null;try{$('eventModalBody').removeAttribute('data-rem');$('eventModalBody').removeAttribute('data-msgq')}catch(e){}$('eventModal').style.display='none'}
+function closeEvent(){lastDay=null;DEVBOX='mDevices';try{$('eventModalBody').removeAttribute('data-rem');$('eventModalBody').removeAttribute('data-msgq')}catch(e){}$('eventModal').style.display='none'}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEvent()});
 function srvIcon(m){if(m.stav==='Hotová')return '✅ ';if(m.urgent)return '🚨 ';if(!m.kind)return '🔧 ';return m.servisType==='Oprava'?'🔨 ':'🧹 '}
 function srvColor(m){if(m.stav==='Hotová')return '#94a3b8';if(m.urgent)return '#b91c1c';if(m.stav==='Prebieha')return '#ca8a04';if(!m.kind)return '#0d9488';return '#2563eb'}
@@ -3900,7 +3927,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-14.159';
+var APP_VERSION='2026-11-15.160';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
