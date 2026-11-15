@@ -4292,7 +4292,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-15.170';
+var APP_VERSION='2026-11-15.171';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4805,7 +4805,7 @@ function renderToday(){
   var t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1)),n0=0;
   var days=[['Dnes',d0],['Zajtra',d1]].map(function(x){
     var ev=evFor(x[1]);if(x[1]===d0)n0=ev.length;
-    var lv=leaveOn(x[1]).filter(function(v){return isAdmin()||v.memberId===me}).map(function(v){var ok=v.stav==='Schválené';
+    var lv=leaveOn(x[1]).filter(function(v){return v.memberId===me}).map(function(v){var ok=v.stav==='Schválené';
       return dayRow({type:'volno',id:v.id,color:ok?'#0891b2':'#67b7c9',text:(ok?'🏖 Voľno: ':'⏳ Žiadosť o voľno: ')+(v.memberName||''),sub:volnoWhen(v),time:v.casOd||''})}).join('');
     return '<div class="td-h">📅 '+x[0]+' · '+esc(fmtD(x[1]))+'</div>'+((ev.length||lv)?'<div class="tl">'+ev.map(dayRow).join('')+lv+'</div>':'<div class="td-none">Žiadne udalosti</div>');
   }).join('');
