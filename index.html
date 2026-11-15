@@ -500,6 +500,17 @@ html[data-theme=dark] #lgList button{background:#1c1c1e;color:#f2f2f7;box-shadow
 #keyBox p{text-align:center;color:#64748b}
 #profBtn{opacity:1}
 #layTools{overflow:visible}
+
+.cl-top{display:flex;gap:8px;margin:4px 0 8px}.cl-top button{margin:0;height:46px;padding:0 12px}.cl-top .action-btn{flex:1;width:auto}.cl-top .btn-edit{flex:0 0 auto;width:auto;background:#0d9488;border-radius:12px}
+#clientSearch{position:sticky;top:0;z-index:3}
+#clientsList{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+html[data-theme=dark] #clientsList{background:#1c1c1e}
+.cl-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid rgba(120,120,128,.18);cursor:pointer;min-height:64px}
+.cl-row:last-child{border-bottom:0}.cl-row:active{background:rgba(120,120,128,.12)}
+.cl-av{flex:0 0 42px;width:42px;height:42px;border-radius:50%;color:#fff;font-style:normal;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:.95rem}
+.cl-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.cl-tx b{font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cl-tx span{font-size:.84rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl-call{flex:0 0 40px;width:40px;height:40px;border-radius:50%;background:rgba(13,148,136,.12);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem}
+.cl-go{color:#94a3b8;font-style:normal;font-size:1.4rem}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -991,8 +1002,10 @@ function card(c,o,title,body,edit,collapsed,extra){
 }
 var V={
   clients:['clientsList','Žiadni klienti.',function(a,b){return nm(a).localeCompare(nm(b))},function(c){
-    return card('clients',c,'👤 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):''),
-      clientBrief(c),true,true,'<button class="btn-edit" style="background:#0d9488" onclick="clientCard(\''+esc(c.id)+'\')">📇 Detail</button>')}],
+    var w=warrantyInfo(c),p=String(nm(c)).trim().split(/\s+/),ini=((p[0]||'')[0]||'')+((p.length>1?p[p.length-1][0]:'')||''),tel=String(c.telefon||'').replace(/[^\d+]/g,'');
+    var nd=0;clientInstalls(c).forEach(function(m){nd+=Math.max(devicesOf(m).length,m.title?1:0)});
+    var sub=[c.obec||'',c.telefon||'',nd?'🔧 '+nd:''].filter(Boolean).map(esc).join(' · ');
+    return '<div class="cl-row" onclick="clientCard(\''+esc(c.id)+'\')"><i class="cl-av" style="background:'+(w.c||'#64748b')+'">'+esc(ini.toUpperCase())+'</i><div class="cl-tx"><b>'+(isNewFor('clients',c)?'🆕 ':'')+esc(nm(c))+'</b><span>'+(sub||'&nbsp;')+'</span></div>'+(tel?'<a class="cl-call" href="tel:'+esc(tel)+'" onclick="event.stopPropagation()" aria-label="Zavolať">📞</a>':'')+'<em class="cl-go">›</em></div>'}],
   montaze:['montazList','Žiadne montáže.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')},function(m){
     if(m.kind)return card('montaze',m,stavPill(m)+srvIcon(m)+esc(m.title||'Servis')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')'+techSub(m),
       '<strong>Telefón:</strong> '+telA(m.telefon)+' | <strong>E-mail:</strong> '+mailA(m.email)+'\n'+'<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):'')+oprBody(m),'editServis',true,listBtns(m));
@@ -3542,7 +3555,7 @@ function clientCard(id){
     '<div class="modal-row"><button class="btn-edit" style="background:#2563eb;padding:6px 14px;width:auto" onclick="quickClient(\''+esc(c.id)+'\')">✏️ Upraviť kontakt a poznámky</button></div>'+
     '<div class="td-h" style="margin-top:12px">🔧 Namontované zariadenia</div>'+(devs||'<div class="td-none">Zatiaľ nič namontované.</div>')+
     eventRows(c,true).replace('📋 Udalosti u klienta','🕘 História práce u klienta')+
-    '<div class="modal-actions"><button class="btn-edit" style="background:#d97706" onclick="remForm({clientId:\''+esc(c.id)+'\'})">⏰ Pripomeň mi</button><button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>'+
+    '<div class="modal-actions"><button class="btn-edit" style="background:#d97706" onclick="remForm({clientId:\''+esc(c.id)+'\'})">⏰ Pripomeň mi</button><button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button><button class="btn-delete" onclick="closeEvent();delItem(\'clients\',\''+esc(c.id)+'\')">Zmazať</button>'+
     '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
 }
@@ -4292,7 +4305,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-15.171';
+var APP_VERSION='2026-11-15.172';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5342,8 +5355,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   <div id="clientsSection" class="section-content">
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Správa klientov</h2>
-    <button class="action-btn" id="clientAddBtn" onclick="showClientForm()">➕ Pridať klienta</button>
-    <button class="btn-edit admin-only" style="background:#0d9488;width:100%;margin:6px 0" onclick="openMapa()">🗺 Mapa klientov</button>
+    <div class="cl-top"><button class="action-btn" id="clientAddBtn" onclick="showClientForm()">➕ Pridať klienta</button><button class="btn-edit admin-only" onclick="openMapa()">🗺 Mapa</button></div>
     <div id="clientFormBox" style="display:none">
     <input type="hidden" id="editingClientId" value="">
     <div class="form-grid">
