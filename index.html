@@ -4250,7 +4250,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-15.165';
+var APP_VERSION='2026-11-15.166';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4758,6 +4758,16 @@ function weekStrip(){
   if(wkSel){var ev=evFor(wkSel);h+='<div class="td-h">'+esc(fmtD(wkSel))+'</div>'+(ev.length?'<div class="tl">'+ev.map(dayRow).join('')+'</div>':'<div class="td-none">Žiadne udalosti</div>')}
   return h;
 }
+function loginCard(){
+  var mm=me?findById('members',me):null;
+  if(!mm){
+    return '<div class="td-h">👤 Prihlásenie</div><div style="margin:0 0 6px;font-size:.9rem;color:#475569">Vyber svoje meno:</div><select id="homeMe" onchange="setMeHome(this.value)" style="margin-bottom:14px"><option value="">-- Vyberte, kto ste --</option>'+
+      dbData.members.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'')}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.name||'')+'</option>'}).join('')+'</select>';
+  }
+  if(needsLogin())return '<button class="action-btn" style="margin-bottom:14px;background:#b91c1c" onclick="askPassword(\''+esc(me)+'\')">🔒 Zadať heslo správcu ('+esc(mm.name||'')+')</button>';
+  if(needsPin())return '<button class="action-btn" style="margin-bottom:14px;background:#b91c1c" onclick="askPin(\''+esc(me)+'\')">🔢 Zadať PIN ('+esc(mm.name||'')+')</button>';
+  return '';
+}
 function renderToday(){
   var el=$('todayBox');if(!el)return;renderWho();
   var t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1)),n0=0;
@@ -4765,7 +4775,7 @@ function renderToday(){
     var ev=evFor(x[1]);if(x[1]===d0)n0=ev.length;
     return '<div class="td-h">📅 '+x[0]+' · '+esc(fmtD(x[1]))+'</div>'+(ev.length?'<div class="tl">'+ev.map(dayRow).join('')+'</div>':'<div class="td-none">Žiadne udalosti</div>');
   }).join('');
-  el.innerHTML=(LAY==='new')?greetHtml(n0,d0)+remBlock()+burnHome()+days:greetHtml(n0,d0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
+  el.innerHTML=(LAY==='new')?loginCard()+greetHtml(n0,d0)+remBlock()+burnHome()+days:greetHtml(n0,d0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
 }
 var me='';try{me=localStorage.getItem('portal_me')||''}catch(e){}
 function fillMe(){
