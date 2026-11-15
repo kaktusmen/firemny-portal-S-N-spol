@@ -514,6 +514,10 @@ html[data-theme=dark] #clientsList{background:#1c1c1e}
 .cl-av{flex:0 0 42px;width:42px;height:42px;border-radius:50%;color:#fff;font-style:normal;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:.95rem}
 .cl-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.cl-tx b{font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cl-tx span{font-size:.84rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cl-call{flex:0 0 40px;width:40px;height:40px;border-radius:50%;background:rgba(13,148,136,.12);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem}
+.cl-tag{font-style:normal;font-size:.72rem;font-weight:700;border-radius:8px;padding:1px 7px;align-self:flex-start}
+.cl-big{background:rgba(37,99,235,.14);color:#1d4ed8}.cl-klima{background:rgba(13,148,136,.14);color:#0f766e}
+html[data-theme=dark] .cl-big{color:#93c5fd}html[data-theme=dark] .cl-klima{color:#5eead4}
+.cl-av{position:relative}
 .cl-go{color:#94a3b8;font-style:normal;font-size:1.4rem}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1008,8 +1012,8 @@ var V={
   clients:['clientsList','Žiadni klienti.',function(a,b){return nm(a).localeCompare(nm(b))},function(c){
     var w=warrantyInfo(c),p=String(nm(c)).trim().split(/\s+/),ini=((p[0]||'')[0]||'')+((p.length>1?p[p.length-1][0]:'')||''),tel=String(c.telefon||'').replace(/[^\d+]/g,'');
     var nd=0;clientInstalls(c).forEach(function(m){nd+=Math.max(devicesOf(m).length,m.title?1:0)});
-    var sub=[c.obec||'',c.telefon||'',nd?'🔧 '+nd:''].filter(Boolean).map(esc).join(' · ');
-    return '<div class="cl-row" onclick="clientCard(\''+esc(c.id)+'\')"><i class="cl-av" style="background:'+(w.c||'#64748b')+'">'+esc(ini.toUpperCase())+'</i><div class="cl-tx"><b>'+(isNewFor('clients',c)?'🆕 ':'')+esc(nm(c))+'</b><span>'+(sub||'&nbsp;')+'</span></div>'+(tel?'<a class="cl-call" href="tel:'+esc(tel)+'" onclick="event.stopPropagation()" aria-label="Zavolať">📞</a>':'')+'<em class="cl-go">›</em></div>'}],
+    var bg=clBig(c),sub=[c.obec||'',c.telefon||'',nd?'🔧 '+nd:''].filter(Boolean).map(esc).join(' · ');
+    return '<div class="cl-row" onclick="clientCard(\''+esc(c.id)+'\')"><i class="cl-av" style="background:'+(w.c||'#64748b')+'">'+esc(ini.toUpperCase())+'</i><div class="cl-tx"><b>'+(isNewFor('clients',c)?'🆕 ':'')+esc(nm(c))+'</b>'+(bg?'<i class="cl-tag cl-big">🏢 '+esc(bg)+'</i>':'<i class="cl-tag cl-klima">❄️ Klimatizácia</i>')+'<span>'+(sub||'&nbsp;')+'</span></div>'+(tel?'<a class="cl-call" href="tel:'+esc(tel)+'" onclick="event.stopPropagation()" aria-label="Zavolať">📞</a>':'')+'<em class="cl-go">›</em></div>'}],
   montaze:['montazList','Žiadne montáže.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')},function(m){
     if(m.kind)return card('montaze',m,stavPill(m)+srvIcon(m)+esc(m.title||'Servis')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')'+techSub(m),
       '<strong>Telefón:</strong> '+telA(m.telefon)+' | <strong>E-mail:</strong> '+mailA(m.email)+'\n'+'<strong>Adresa:</strong> '+mapA({adresa:m.address})+(m.zariadenie?'\n<strong>Zariadenie:</strong> '+esc(m.zariadenie):'')+(m.popis?'\n<strong>Popis poruchy:</strong> '+esc(m.popis):'')+oprBody(m),'editServis',true,listBtns(m));
@@ -1105,7 +1109,7 @@ function render(){
     if(c==='spravy'&&!isAdmin())arr=arr.filter(function(x){return x.fromId===me||msgForMe(x)});
     if(c==='chladivo'){arr=chFiltered()}
     if(c==='clients'){
-      clSortUi();
+      clSortUi();clTypeUi();
       var q=norm($('clientSearch')?$('clientSearch').value:'');
       if(q){
         var qd=q.replace(/\s+/g,'');
@@ -1122,6 +1126,7 @@ function render(){
       else if(c==='obhliadky')emp=emptyBlock('Zatiaľ tu nie je žiadna obhliadka.','➕ Nová obhliadka',"openSection('obhliadkaSection','Nová obhliadka','work')");
       else if(c==='clients')emp=emptyBlock('Zatiaľ tu nie sú žiadni klienti.','',''); 
     }
+    if(c==='clients'&&clType!=='all')arr=arr.filter(function(x){return clType==='big'?!!clBig(x):!clBig(x)});
     if(c==='clients'&&clSort==='new'){var kk={};arr.forEach(function(x){kk[x.id]=clNewKey(x)});arr.sort(function(a,b){return (kk[b.id]-kk[a.id])||nm(a).localeCompare(nm(b))})}
     else arr.sort(v[2]);
     el.innerHTML=arr.map(v[3]).join('')||emp;
@@ -4309,7 +4314,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-15.173';
+var APP_VERSION='2026-11-15.174';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4924,6 +4929,17 @@ function clNewKey(c){
   return t;
 }
 function clSortUi(){var b=document.getElementById('clSortSeg');if(!b)return;b.innerHTML=[['abc','🔤 Abecedne'],['new','🆕 Najnovšie']].map(function(x){return '<button class="'+(clSort===x[0]?'on':'')+'" onclick="clSortSet(\''+x[0]+'\')">'+x[1]+'</button>'}).join('')}
+var clType='all';try{clType=localStorage.getItem('portal_cltype')||'all'}catch(e){}
+function clBig(c){
+  var n=norm(nm(c)),r='';
+  dbData.montaze.concat(dbData.obhliadky||[]).forEach(function(m){
+    if(r||!String(m.big||'').trim())return;
+    if(m.clientId===c.id||m.klientId===c.id||(!m.clientId&&!m.klientId&&norm(m.clientName||'')===n))r=String(m.big).trim();
+  });
+  return r;
+}
+function clTypeUi(){var b=document.getElementById('clTypeSeg');if(!b)return;b.innerHTML=[['all','Všetci'],['klima','❄️ Klimatizácie'],['big','🏢 VSE a veľkí']].map(function(x){return '<button class="'+(clType===x[0]?'on':'')+'" onclick="clTypeSet(\''+x[0]+'\')">'+x[1]+'</button>'}).join('')}
+function clTypeSet(k){clType=k;try{localStorage.setItem('portal_cltype',k)}catch(e){}render()}
 function clSortSet(k){clSort=k;try{localStorage.setItem('portal_clsort',k)}catch(e){}render()}
 var zakT='montaze',zakF='act';
 function zakSet(t,f){if(t)zakT=t;if(f)zakF=f;renderZak()}
@@ -5388,6 +5404,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <button class="back-btn" onclick="hideClientForm()">✖ Zrušiť</button>
     </div>
     <input type="search" id="clientSearch" placeholder="🔍 Hľadať klienta (meno, adresa, telefón…)" oninput="render()" autocomplete="off">
+    <div id="clTypeSeg" class="seg2"></div>
     <div id="clSortSeg" class="seg2"></div>
     <div id="clientsList">Načítavam...</div>
   </div>
