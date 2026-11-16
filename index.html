@@ -1486,9 +1486,10 @@ function saveTeam(){
   var id=eid||col('members').doc().id;
   var o={name:n,telefon:$('tTel').value.trim(),rola:rola};
   if(rola==='Správca'&&!pw&&!(old&&old.pwHash)){toast('Zadajte heslo pre správcu');return}
-  if(pw&&pw.length<4){toast('Heslo musí mať aspoň 4 znaky');return}
+  if(pw){var pwp=pwProblem(pw,n);if(pwp){toast(pwp);return}}
   var pin=($('tPin').value||'').trim(),pinClr=$('tPinClear').checked;
   if(pin&&!/^\d{4}$/.test(pin)){toast('PIN musí mať presne 4 čísla');return}
+  if(pin&&rola!=='Správca'&&pinWeak(pin)){toast('PIN je príliš jednoduchý (napr. 1234, 0000, 1212, rok). Zvoľ iný.');return}
   var finish=function(hash,pinH){
     if(hash)o.pwHash=hash;
     if(pinH)o.pinHash=pinH;
@@ -4314,7 +4315,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-15.175';
+var APP_VERSION='2026-11-16.176';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4325,7 +4326,68 @@ function sha256(str){
   var h=5381;for(var i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;
   return Promise.resolve('d'+h);
 }
-function pwHashOf(id,pw){return sha256('sn:'+id+':'+pw)}
+// ---------- Bezpečnosť prihlásenia (2026-11-16) ----------
+var KDF_IT=150000;
+function kdfHex(str,salt){
+  try{
+    if(window.crypto&&crypto.subtle&&window.TextEncoder){
+      var te=new TextEncoder();
+      return crypto.subtle.importKey('raw',te.encode(str),'PBKDF2',false,['deriveBits']).then(function(k){
+        return crypto.subtle.deriveBits({name:'PBKDF2',salt:te.encode(salt),iterations:KDF_IT,hash:'SHA-256'},k,256);
+      }).then(function(b){return 'k2$'+Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2)}).join('')});
+    }
+  }catch(e){}
+  return sha256(salt+str);
+}
+function pwHashOld(id,pw){return sha256('sn:'+id+':'+pw)}
+function pwHashOf(id,pw){return kdfHex(pw,'sn-pw:'+id)}
+function pinHashOld(id,p){return sha256('pin:'+id+':'+p)}
+function pinHashOf(id,p){return kdfHex(p,'sn-pin:'+id)}
+// overí zadanú hodnotu voči uloženému hashu (nový aj starý formát); vráti {ok, h, upgrade}
+function verifyHash(stored,newFn,oldFn,id,val){
+  if(!stored)return Promise.resolve({ok:false});
+  if(stored.indexOf('k2$')===0)return newFn(id,val).then(function(h){return {ok:h===stored,h:h}});
+  return oldFn(id,val).then(function(h){
+    if(h!==stored)return {ok:false};
+    return newFn(id,val).then(function(nh){return {ok:true,h:nh,upgrade:nh}});
+  });
+}
+// limit pokusov: po 5 zlých pokusoch zámok 5 min, každý ďalší zlý pokus zámok zdvojnásobí (max 60 min)
+var FAIL_MAX=5;
+function failGet(){try{return JSON.parse(localStorage.getItem('portal_fails')||'{}')||{}}catch(e){return {}}}
+function failSet(o){try{localStorage.setItem('portal_fails',JSON.stringify(o))}catch(e){}}
+function failLeft(id){var f=failGet()[id];return f&&f.until&&f.until>Date.now()?f.until-Date.now():0}
+function failAdd(id){
+  var o=failGet(),f=o[id]||{n:0,until:0};f.n=(f.n||0)+1;
+  if(f.n>=FAIL_MAX){var mins=Math.min(60,5*Math.pow(2,f.n-FAIL_MAX));f.until=Date.now()+mins*60000}
+  o[id]=f;failSet(o);return f;
+}
+function failClear(id){var o=failGet();if(o[id]){delete o[id];failSet(o)}}
+function failMsg(id){var ms=failLeft(id);if(!ms)return '';var m=Math.ceil(ms/60000);return '🔒 Priveľa nesprávnych pokusov. Skús znova o '+m+' min.'}
+function failText(id,base){
+  var f=failGet()[id]||{n:0};var lm=failMsg(id);if(lm)return lm;
+  var left=FAIL_MAX-(f.n||0);return base+(left>0&&left<FAIL_MAX?' (zostáva '+left+' '+(left===1?'pokus':(left<5?'pokusy':'pokusov'))+')':'');
+}
+// sila hesla správcu
+function pwProblem(pw,name){
+  if(!pw||pw.length<8)return 'Heslo musí mať aspoň 8 znakov';
+  if(!/[A-Za-zÀ-ž]/.test(pw)||!/\d/.test(pw))return 'Heslo musí obsahovať písmená aj číslice';
+  var low=pw.toLowerCase();
+  if(/^(.)\1+$/.test(pw)||/^(heslo|password|qwerty|asdf|12345|abc123|admin|spravca|sanspol|snspol|klima|klimy)/.test(low))return 'Heslo je príliš jednoduché';
+  var parts=(name||'').toLowerCase().split(/\s+/).filter(function(x){return x.length>=3});
+  for(var i=0;i<parts.length;i++)if(low.indexOf(parts[i])>-1)return 'Heslo nesmie obsahovať tvoje meno';
+  return '';
+}
+// slabé PIN-y (rovnaké číslice, postupnosti, opakovania, roky)
+function pinWeak(p){
+  if(!/^\d{4}$/.test(p))return true;
+  if(/^(\d)\1{3}$/.test(p))return true;
+  if('0123456789'.indexOf(p)>-1||'9876543210'.indexOf(p)>-1)return true;
+  if(p[0]===p[2]&&p[1]===p[3])return true;
+  if(p[0]===p[1]&&p[2]===p[3])return true;
+  if(/^(19|20)\d\d$/.test(p))return true;
+  return ['2580','0852','1004','6969','1478','3698','1397','7931'].indexOf(p)>-1;
+}
 function authStored(){try{return localStorage.getItem('portal_auth')||''}catch(e){return ''}}
 function setAuth(h){try{localStorage.setItem('portal_auth',h||'')}catch(e){}}
 function isAdmin(){
@@ -4379,7 +4441,6 @@ function statRender(){
       '<span>Potvrdil: '+pd[0]+' · <b style="color:'+(pd[1]?'#b91c1c':'inherit')+'">Nepotvrdené: '+pd[1]+'</b></span></div>';
   }).join('')+'<p style="font-size:.78rem;color:#64748b;margin-top:10px">⚠️ = technik apku neotvoril 3 a viac dní. „Potvrdil/Nepotvrdené“ zahŕňa nové či zmenené zákazky a obhliadky a správy za posledných 30 dní.</p>';
 }
-function pinHashOf(id,p){return sha256('pin:'+id+':'+p)}
 function pinStored(){try{return localStorage.getItem('portal_pin')||''}catch(e){return ''}}
 function setPinOk(h){try{localStorage.setItem('portal_pin',h||'')}catch(e){}}
 function needsPin(){
@@ -4405,12 +4466,17 @@ function askPin(id,target){
 }
 function submitPin(id){
   var mm=findById('members',id);if(!mm)return;
-  pinHashOf(id,$('pinInput').value.trim()).then(function(h){
-    if(h===mm.pinHash){
+  var lm=failMsg(id);if(lm){$('pinErr').textContent=lm;return}
+  var btn=document.querySelector('#eventModalBody .btn-edit');if(btn)btn.disabled=true;
+  verifyHash(mm.pinHash,pinHashOf,pinHashOld,id,$('pinInput').value.trim()).then(function(r){
+    if(btn)btn.disabled=false;
+    if(r.ok){
+      var h=r.h;failClear(id);
+      if(r.upgrade){mm.pinHash=r.upgrade;col('members').doc(id).update({pinHash:r.upgrade}).catch(function(){})}
       setPinOk(h);var t=pinTarget;pinTarget='';closeEvent();
       if(t&&t!==id){setMeHome(t,true)}
       else{render();toast('✅ PIN v poriadku');nfyTry()}
-    }else $('pinErr').textContent='Nesprávny PIN';
+    }else{failAdd(id);$('pinErr').textContent=failText(id,'Nesprávny PIN');$('pinInput').value=''}
   });
 }
 function cancelPin(){
@@ -4435,9 +4501,17 @@ function askPassword(id){
 }
 function submitPw(id){
   var mm=findById('members',id);if(!mm)return;
-  pwHashOf(id,$('pwInput').value).then(function(h){
-    if(h===mm.pwHash){setAuth(h);closeEvent();render();toast('✅ Prihlásený ako správca');nfyTry()}
-    else $('pwErr').textContent='Nesprávne heslo';
+  var lm=failMsg(id);if(lm){$('pwErr').textContent=lm;return}
+  var pw=$('pwInput').value;
+  var btn=document.querySelector('#eventModalBody .btn-edit');if(btn)btn.disabled=true;
+  verifyHash(mm.pwHash,pwHashOf,pwHashOld,id,pw).then(function(r){
+    if(btn)btn.disabled=false;
+    if(r.ok){
+      failClear(id);
+      if(r.upgrade){mm.pwHash=r.upgrade;col('members').doc(id).update({pwHash:r.upgrade}).catch(function(){})}
+      setAuth(r.h);closeEvent();render();toast('✅ Prihlásený ako správca');nfyTry();
+      if(pwProblem(pw,mm.name))setTimeout(function(){alert('⚠️ Tvoje heslo je slabé.\n\nZmeň ho v Tím → upraviť člena (pole Heslo správcu): aspoň 8 znakov, písmená aj číslice.')},400);
+    }else{failAdd(id);$('pwErr').textContent=failText(id,'Nesprávne heslo');$('pwInput').value=''}
   });
 }
 function cancelPw(){closeEvent();setMeHome('')}
@@ -5780,7 +5854,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
     <h2>Správa tímu</h2>
     <input type="hidden" id="editingMemberId" value="">
-    <div class="form-grid admin-only"><input type="text" id="tName" placeholder="Meno a priezvisko člena"><input type="text" id="tTel" placeholder="Telefón"><select id="tRola" class="full-width-input"><option value="Technik">Rola: Technik</option><option value="Správca">Rola: Správca</option></select><input type="text" id="tPin" class="full-width-input" inputmode="numeric" maxlength="4" placeholder="PIN technika – 4 čísla (pri úprave prázdne = bez zmeny)" autocomplete="off"><label class="full-width-input" style="display:flex;gap:8px;align-items:center;font-size:.85rem"><input type="checkbox" id="tPinClear" style="width:18px;height:18px;flex:none"> Zrušiť PIN tohto technika</label><input type="password" id="tHeslo" class="full-width-input" placeholder="Heslo správcu (pri úprave nechajte prázdne = bez zmeny)" autocomplete="new-password"></div>
+    <div class="form-grid admin-only"><input type="text" id="tName" placeholder="Meno a priezvisko člena"><input type="text" id="tTel" placeholder="Telefón"><select id="tRola" class="full-width-input"><option value="Technik">Rola: Technik</option><option value="Správca">Rola: Správca</option></select><input type="text" id="tPin" class="full-width-input" inputmode="numeric" maxlength="4" placeholder="PIN technika – 4 čísla (pri úprave prázdne = bez zmeny)" autocomplete="off"><label class="full-width-input" style="display:flex;gap:8px;align-items:center;font-size:.85rem"><input type="checkbox" id="tPinClear" style="width:18px;height:18px;flex:none"> Zrušiť PIN tohto technika</label><input type="password" id="tHeslo" class="full-width-input" placeholder="Heslo správcu – min. 8 znakov, písmená aj číslice (prázdne = bez zmeny)" autocomplete="new-password"></div>
     <button class="action-btn admin-only" id="memberSaveBtn" onclick="saveTeam()">Uložiť člena</button>
     <button class="back-btn admin-only" id="memberCancelBtn" style="display:none" onclick="clearMember()">✖ Zrušiť úpravu</button>
     <h3>Zoznam členov</h3><div id="teamList">Načítavam...</div>
