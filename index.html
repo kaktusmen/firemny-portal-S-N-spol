@@ -4287,7 +4287,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-16.167';
+var APP_VERSION='2026-11-16.169';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4432,6 +4432,10 @@ function updSafe(){
   try{
     if($('eventModal').style.display==='flex')return false;
     var ae=document.activeElement;if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return false;
+    /* rozpracovaný formulár: nikdy neobnovuj, kým je otvorený (aj keď zatiaľ nič nevyplnil) */
+    var vis=function(id){var x=$(id);return !!(x&&x.style.display!=='none'&&x.offsetParent!==null)};
+    if(['msMontaz','msServis','msClean','msRepair','obhliadkaSection','chladivoSection','ponukaFormBox','clientFormBox','volnoSection','spravySection'].some(vis))return false;
+    if(document.querySelector('#remModal,.sig-pad.on'))return false;
     var ed=document.querySelectorAll('input[id^="editing"]');
     for(var i=0;i<ed.length;i++)if(ed[i].value)return false;
     var f=document.querySelectorAll('#app input[type=text],#app input[type=date],#app input[type=time],#app textarea');
@@ -5193,7 +5197,7 @@ window.onload=function(){
   <button onclick="fabGo('obh')">🔍 Nová obhliadka</button>
   <button onclick="fabGo('chl')">❄️ Chladivo</button>
   <button onclick="closeSheets();voiceOpen()">🎤 Hlasom (zákazka, presun)</button>
-  <button onclick="fabGo('rem')">⏰ Nová pripomienka</button>
+  <button onclick="fabGo('rem')">⏰ Pripomienka</button>
   <button class="admin-only" onclick="closeSheets();openSection('ponukySection','Cenové ponuky','');showPonukaForm(null)">💶 Nová ponuka</button>
 </div></div>
 <div id="qkSheet" onclick="if(event.target===this)this.style.display='none'"><div class="fab-menu">
@@ -5239,7 +5243,7 @@ window.onload=function(){
     <div id="whoInfo" style="flex-basis:100%;font-size:.8rem;font-weight:600"></div>
   </div>
 
-  <div id="layTools"><div><button onclick="voiceOpen()" aria-label="Hlasový príkaz">🎤</button><button id="remHdrBtn" onclick="qkGo('rem')" aria-label="Pripomienky" style="position:relative">⏰<i id="remHdrBadge" style="display:none"></i></button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
+  <div id="layTools"><div><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
   <h1 id="pageTitle">Dnes</h1>
   <p id="pageSub" style="display:none"></p>
 
