@@ -626,6 +626,7 @@ var CF=['Meno','Priezvisko','Adresa','Telefon','Email','Firma','Ico','Dic','Icdp
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function lf(n){return n.charAt(0).toLowerCase()+n.slice(1)}
+function clHay(c){return norm([nm(c),c.firma,c.meno,c.priezvisko,c.ico,c.dic,c.icdph,c.obec,c.adresa,c.email,c.telefon||c.tel,c.zariadenie,c.znacka].filter(Boolean).join(' '))}
 function nm(c){return c.name||((c.meno||'')+' '+(c.priezvisko||'')).trim()||'Klient'}
 var SERVIS_PRVY=340,SERVIS_INTERVAL=365;
 function pad2(x){return String(x).padStart(2,'0')}
@@ -1146,7 +1147,7 @@ function render(){
       if(q){
         var qd=q.replace(/\s+/g,'');
         arr=arr.filter(function(x){
-          var hay=norm([nm(x),x.obec,x.adresa,x.email,x.zariadenie,x.znacka].join(' '));
+          var hay=clHay(x);
           return hay.indexOf(q)>-1||norm(x.telefon).replace(/\s+/g,'').indexOf(qd)>-1;
         });
         empty='Žiadny klient nezodpovedá hľadaniu.';
@@ -1237,10 +1238,10 @@ function cpFind(id){
   var w=$(id+'_cp'),q=norm(w.querySelector('input').value).split(/\s+/).filter(Boolean),res=w.querySelector('.cp-res');
   if(!q.length){res.innerHTML='';return}
   var arr=dbData.clients.filter(function(c){
-    var t=norm(nm(c)+' '+(c.obec||'')+' '+(c.adresa||'')+' '+(c.telefon||c.tel||''));
+    var t=clHay(c);
     return q.every(function(x){return t.indexOf(x)>-1});
   }).sort(function(a,b){return nm(a).localeCompare(nm(b))}).slice(0,30);
-  res.innerHTML=arr.length?arr.map(function(c){return '<div class="cp-r" onclick="cpPick(\''+id+'\',\''+esc(c.id)+'\')"><b>'+esc(nm(c))+'</b><small>'+esc([c.obec,c.adresa].filter(Boolean).join(', '))+'</small></div>'}).join(''):'<div class="cp-r"><small>Nenašiel sa. Skús iné meno alebo obec.</small></div>';
+  res.innerHTML=arr.length?arr.map(function(c){return '<div class="cp-r" onclick="cpPick(\''+id+'\',\''+esc(c.id)+'\')"><b>'+esc(nm(c))+'</b><small>'+esc([c.firma&&((c.meno||'')+' '+(c.priezvisko||'')).trim()?'Kontakt: '+((c.meno||'')+' '+(c.priezvisko||'')).trim():'',c.obec,c.adresa].filter(Boolean).join(', '))+'</small></div>'}).join(''):'<div class="cp-r"><small>Nenašiel sa. Skús iné meno alebo obec.</small></div>';
 }
 function cpPick(id,cid){var sel=$(id);sel.value=cid;$(id+'_cp').querySelector('.cp-res').innerHTML='';sel.dispatchEvent(new Event('change'))}
 function fillMontazSelects(){
@@ -2932,7 +2933,7 @@ function renderSearch(){
   var out=[];
   var qt=q.split(/\s+/).filter(Boolean);
   function hit(a){var hay=norm(a.filter(Boolean).join(' '));return qt.every(function(w){return hay.indexOf(w)>-1})}
-  dbData.clients.forEach(function(c){if(hit([nm(c),c.telefon,c.email,c.adresa,c.obec]))out.push(['👤',nm(c),[c.telefon,c.adresa,c.obec].filter(Boolean).join(' · '),"showEvent('clients','"+c.id+"')"])});
+  dbData.clients.forEach(function(c){if(hit([nm(c),c.firma,c.meno,c.priezvisko,c.ico,c.dic,c.icdph,c.telefon,c.email,c.adresa,c.obec]))out.push(['👤',nm(c),[c.firma&&((c.meno||'')+' '+(c.priezvisko||'')).trim()?'Kontakt: '+((c.meno||'')+' '+(c.priezvisko||'')).trim():'',c.telefon,c.adresa,c.obec].filter(Boolean).join(' · '),"showEvent('clients','"+c.id+"')"])});
   dbData.montaze.forEach(function(m){if(hit([m.title,m.clientName,m.address,m.telefon,m.email,m.popis,m.poznTech,m.faktCislo,(m.memberNames||[]).join(' '),deviceSummary(m)]))out.push([m.kind?'🛠':'🔧',(m.title||m.clientName||'Zákazka'),[m.clientName,m.date?fmtD(m.date):'',m.stav].filter(Boolean).join(' · '),"showEvent('montaze','"+m.id+"')"])});
   dbData.obhliadky.forEach(function(o){if(hit([onm(o),o.telefon,o.email,o.adresa,o.obec]))out.push(['🔍','Obhliadka: '+onm(o),[o.date?fmtD(o.date):'',o.obec].filter(Boolean).join(' · '),"showEvent('obhliadky','"+o.id+"')"])});
   dbData.ponuky.forEach(function(p){var k=p.klient||{};if(hit([p.cislo,k.meno,k.tel,k.adresa]))out.push(['💶',(p.cislo||'Ponuka')+' – '+(k.meno||''),p.datum?fmtD(p.datum):'',"editPonuka('"+p.id+"')"])});
@@ -4353,7 +4354,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-16.171';
+var APP_VERSION='2026-11-16.172';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5452,7 +5453,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <button class="action-btn" id="clientSaveBtn" onclick="saveClient()">Uložiť klienta</button>
     <button class="back-btn" onclick="hideClientForm()">✖ Zrušiť</button>
     </div>
-    <input type="search" id="clientSearch" placeholder="🔍 Hľadať klienta (meno, adresa, telefón…)" oninput="render()" autocomplete="off">
+    <input type="search" id="clientSearch" placeholder="🔍 Hľadať (meno, firma, IČO, adresa, telefón…)" oninput="render()" autocomplete="off">
     <div id="clTypeSeg" class="seg2"></div>
     <div id="clSortSeg" class="seg2"></div>
     <div id="clientsList">Načítavam...</div>
