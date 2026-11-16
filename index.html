@@ -621,7 +621,7 @@ var INBOX='inbox-1e3c920098581d86';
 function formUrl(q){var u=new URL('objednavka.html',location.href);u.hash='';u.search='';Object.keys(q).forEach(function(k){if(q[k])u.searchParams.set(k,q[k])});return u.href}
 var MONTHS=['Január','Február','Marec','Apríl','Máj','Jún','Júl','August','September','Október','November','December'];
 var viewYear=new Date().getFullYear(),viewMonth=new Date().getMonth();
-var CF=['Meno','Priezvisko','Adresa','Telefon','Email'];
+var CF=['Meno','Priezvisko','Adresa','Telefon','Email','Firma','Ico','Dic','Icdph'];
 
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -1041,7 +1041,7 @@ var V={
   clients:['clientsList','Žiadni klienti.',function(a,b){return nm(a).localeCompare(nm(b))},function(c){
     var w=warrantyInfo(c),p=String(nm(c)).trim().split(/\s+/),ini=((p[0]||'')[0]||'')+((p.length>1?p[p.length-1][0]:'')||''),tel=String(c.telefon||'').replace(/[^\d+]/g,'');
     var nd=0;clientInstalls(c).forEach(function(m){nd+=Math.max(devicesOf(m).length,m.title?1:0)});
-    var bg=clBig(c),sub=[c.obec||'',c.telefon||'',nd?'🔧 '+nd:''].filter(Boolean).map(esc).join(' · ');
+    var bg=clBig(c),sub=[c.firma?'🏢 '+(c.ico?'IČO '+c.ico:'firma'):'',c.obec||'',c.telefon||'',nd?'🔧 '+nd:''].filter(Boolean).map(esc).join(' · ');
     return '<div class="cl-row" onclick="clientCard(\''+esc(c.id)+'\')"><i class="cl-av" style="background:'+(w.c||'#64748b')+'">'+esc(ini.toUpperCase())+'</i><div class="cl-tx"><b>'+(isNewFor('clients',c)?'🆕 ':'')+esc(nm(c))+'</b>'+(bg?'<i class="cl-tag cl-big">🏢 '+esc(bg)+'</i>':'')+'<span>'+(sub||'&nbsp;')+'</span></div>'+(tel?'<a class="cl-call" href="tel:'+esc(tel)+'" onclick="event.stopPropagation()" aria-label="Zavolať">📞</a>':'')+'<em class="cl-go">›</em></div>'}],
   montaze:['montazList','Žiadne montáže.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')},function(m){
     if(m.kind)return card('montaze',m,stavPill(m)+srvIcon(m)+esc(m.title||'Servis')+' ('+esc(m.date||'bez dátumu')+(m.time?' '+esc(m.time):'')+')'+techSub(m),
@@ -1191,8 +1191,8 @@ function findDupClient(tel,exceptId){
 function saveClient(){
   var o={};
   CF.forEach(function(n){o[lf(n)]=gv('c'+n)});
-  o.name=(o.meno+' '+o.priezvisko).trim();
-  if(!o.name){toast('Zadajte meno alebo priezvisko');return}
+  o.name=o.firma||(o.meno+' '+o.priezvisko).trim();
+  if(!o.name){toast('Zadajte meno, priezvisko alebo názov firmy');return}
   var eid=$('editingClientId').value||null;
   var dup=findDupClient(o.telefon,eid);
   if(dup&&!confirm('Klient s týmto telefónom už existuje:\n'+nm(dup)+(dup.adresa?' – '+dup.adresa:'')+'\n\nUložiť aj tak?'))return;
@@ -2113,15 +2113,16 @@ function quickClient(cid){
   var c=findById('clients',cid);if(!c)return;
   qeCtx={cid:cid};
   var f=function(id,l,v,t){return '<div class="modal-row" style="margin:6px 0 2px"><strong>'+l+'</strong></div><input type="'+(t||'text')+'" id="'+id+'" value="'+esc(v||'')+'">'};
-  $('eventModalBody').innerHTML='<h3>✏️ Upraviť kontakt</h3>'+f('qcMeno','Meno',c.meno||'')+f('qcPrie','Priezvisko',c.priezvisko||(c.meno?'':nm(c)))+f('qcTel','Telefón',c.telefon,'tel')+f('qcMail','E-mail',c.email,'email')+f('qcAdr','Adresa',c.adresa)+
+  $('eventModalBody').innerHTML='<h3>✏️ Upraviť kontakt</h3>'+f('qcFirma','🏢 Názov firmy (ak je firma)',c.firma||'')+f('qcIco','IČO',c.ico||'')+f('qcDic','DIČ',c.dic||'')+f('qcIcdph','IČ DPH',c.icdph||'')+f('qcMeno','Meno',c.meno||'')+f('qcPrie','Priezvisko',c.priezvisko||(c.meno?'':nm(c)))+f('qcTel','Telefón',c.telefon,'tel')+f('qcMail','E-mail',c.email,'email')+f('qcAdr','Adresa',c.adresa)+
     '<div class="modal-row" style="margin:6px 0 2px"><strong>Poznámky</strong></div><textarea id="qcPozn" rows="3" style="width:100%">'+esc(c.poznamky||'')+'</textarea>'+
     '<div class="modal-actions"><button class="btn-edit" style="background:#16a34a" onclick="quickClientSave()">💾 Uložiť</button><button class="btn-delete" style="background:#64748b" onclick="qeBack()">Zrušiť</button></div>';
   $('eventModal').style.display='flex';
 }
 function quickClientSave(){
   var c=qeCtx;if(!c)return;var m=$('qcMeno').value.trim(),p=$('qcPrie').value.trim();
-  if(!m&&!p){toast('Zadajte meno');return}
-  put('clients',{meno:m,priezvisko:p,name:(m+' '+p).trim(),telefon:$('qcTel').value.trim(),email:$('qcMail').value.trim(),adresa:$('qcAdr').value.trim(),poznamky:$('qcPozn').value.trim()},c.cid);
+  var fi=$('qcFirma').value.trim();
+  if(!m&&!p&&!fi){toast('Zadajte meno alebo firmu');return}
+  put('clients',{meno:m,priezvisko:p,firma:fi,ico:$('qcIco').value.trim(),dic:$('qcDic').value.trim(),icdph:$('qcIcdph').value.trim(),name:fi||(m+' '+p).trim(),telefon:$('qcTel').value.trim(),email:$('qcMail').value.trim(),adresa:$('qcAdr').value.trim(),poznamky:$('qcPozn').value.trim()},c.cid);
   toast('Kontakt uložený');setTimeout(qeBack,60);
 }
 function quickServis(cid,dev){
@@ -3539,7 +3540,7 @@ function admHist(){
   }).catch(function(){$('admView').innerHTML='<h3>📜 História zmien</h3><div class="td-none">Históriu sa nepodarilo načítať.</div>'});
 }
 function clientInfo(c){
-  var rows=[['Meno',esc(c.meno||'-')],['Priezvisko',esc(c.priezvisko||(c.meno?'':nm(c))||'-')],['Telefón',telA(c.telefon)],['E-mail',mailA(c.email)],['Adresa',mapA(c)]];
+  var rows=(c.firma?[['🏢 Firma',esc(c.firma)],['IČO',esc(c.ico||'-')],['DIČ',esc(c.dic||'-')],['IČ DPH',esc(c.icdph||'-')],['Kontaktná osoba',esc(((c.meno||'')+' '+(c.priezvisko||'')).trim()||'-')]]:[['Meno',esc(c.meno||'-')],['Priezvisko',esc(c.priezvisko||(c.meno?'':nm(c))||'-')]]).concat([['Telefón',telA(c.telefon)],['E-mail',mailA(c.email)],['Adresa',mapA(c)]]);
   var devs=[];
   clientInstalls(c).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')}).forEach(function(m){
     var dl=devicesOf(m);
@@ -3593,6 +3594,7 @@ function clientCard(id){
   var legacy=[c.zariadenie&&'Typ: '+c.zariadenie,c.znacka&&'Značka: '+c.znacka,(c.snVnutorna||c.vyrobneCislo)&&'S/N vnútorná: '+(c.snVnutorna||c.vyrobneCislo),c.snVonkajsia&&'S/N vonkajšia: '+c.snVonkajsia].filter(Boolean);
   if(legacy.length)devs+='<div style="border:1px solid #e2e8f0;border-left:5px solid #94a3b8;border-radius:10px;padding:10px 12px;margin:8px 0">'+legacy.map(esc).join('<br>')+'</div>';
   var h='<h3>📇 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):'')+'</h3>'+
+    (c.firma?'<div class="modal-row"><strong>🏢 Firma:</strong> '+esc(c.firma)+(c.ico?' · IČO '+esc(c.ico):'')+(c.dic?' · DIČ '+esc(c.dic):'')+(c.icdph?' · IČ DPH '+esc(c.icdph):'')+'</div>'+(((c.meno||'')+(c.priezvisko||'')).trim()?'<div class="modal-row"><strong>Kontakt:</strong> '+esc(((c.meno||'')+' '+(c.priezvisko||'')).trim())+'</div>':''):'')+
     '<div class="modal-row"><strong>Telefón:</strong> '+telA(c.telefon)+'</div>'+
     (c.email?'<div class="modal-row"><strong>E-mail:</strong> '+mailA(c.email)+'</div>':'')+
     '<div class="modal-row"><strong>Adresa:</strong> '+mapA(c)+'</div>'+
@@ -4351,7 +4353,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-16.170';
+var APP_VERSION='2026-11-16.171';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5441,6 +5443,11 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
       <input type="text" id="cAdresa" placeholder="Adresa (ulica, číslo, obec)" class="full-width-input">
       <input type="tel" id="cTelefon" placeholder="Telefónne číslo">
       <input type="email" id="cEmail" placeholder="E-mail">
+      <div class="full-width-input" style="font-weight:700;margin-top:6px">🏢 Ak je klient firma</div>
+      <input type="text" id="cFirma" placeholder="Názov firmy" class="full-width-input">
+      <input type="text" id="cIco" placeholder="IČO" inputmode="numeric">
+      <input type="text" id="cDic" placeholder="DIČ" inputmode="numeric">
+      <input type="text" id="cIcdph" placeholder="IČ DPH (napr. SK1234567890)" class="full-width-input">
     </div>
     <button class="action-btn" id="clientSaveBtn" onclick="saveClient()">Uložiť klienta</button>
     <button class="back-btn" onclick="hideClientForm()">✖ Zrušiť</button>
