@@ -4315,7 +4315,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-16.177';
+var APP_VERSION='2026-11-16.178';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5393,7 +5393,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <div id="whoInfo" style="flex-basis:100%;font-size:.8rem;font-weight:600"></div>
   </div>
 
-  <div id="layTools"><div><button id="profBtn" onclick="openProfile()" aria-label="Profil">👤</button><button id="remHdrBtn" onclick="qkGo('rem')" aria-label="Pripomienky" style="position:relative">⏰<i id="remHdrBadge" style="display:none"></i></button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
+  <div id="layTools"><div><button id="profBtn" onclick="openProfile()" aria-label="Profil">👤</button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
   <h1 id="pageTitle">Dnes</h1>
   <p id="pageSub" style="display:none"></p>
 
