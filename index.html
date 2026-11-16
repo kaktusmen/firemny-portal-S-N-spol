@@ -2886,7 +2886,7 @@ function fabGo(w){
   if(w==='job')openSection('montazSection','Montáž / Servis','work');
   else if(w==='obh')openSection('obhliadkaSection','Nová obhliadka','work');
   else if(w==='wait')showWaitList();
-  else if(w==='rem')remForm({});
+  else if(w==='rem')remList();
   else if(w==='chl')openSection('chladivoSection','Chladivo','work');
   else if(w==='lm')openSection('montazListSection','Zoznam montáží a servisov','work');
   else if(w==='lo')openSection('obhliadkyListSection','Zoznam obhliadok','work');
@@ -3243,7 +3243,7 @@ var HELP=[
 ['❄️ Multisplit v obhliadke',0,'Keď v obhliadke vyberieš typ zariadenia <b>Multisplit</b>, objaví sa tlačidlo <b>➕ Pridať vnútornú jednotku</b>. Prvá vnútorná jednotka je v poli „Miesto zabudovania“ a výkon hore, ďalšie (2., 3., …) pridáš tlačidlom – každá má miesto (izbu) a výkon v kW. Zbytočnú odstrániš krížikom ×. Jednotky sa zobrazia v detaile obhliadky aj pri zákazke veľkého klienta.'],
 ['🏢 Zákazka veľkého klienta (VSE)',0,'Zákazka, pri ktorej je vyplnený <b>Veľký klient</b>, má iba 3 kroky: <b>Príchod → Fotky → Odchod</b>. Nevyplňuje sa podpis, zariadenia ani kontrola. Kontakt, adresa a údaje o zariadení sa zobrazia automaticky <b>z obhliadky</b> (hľadá sa podľa adresy alebo mena) a z karty zákazníka. Tlačidlom <b>Odchod – dokončiť</b> sa zákazka uzavrie; povinné sú len fotky.'],
 ['💬 Okno novej správy',0,'Keď ti príde nová správa a máš apku otvorenú, vyskočí okno s textom správy a tlačidlami <b>✓ Prečítané</b> a <b>Otvoriť</b>. Správa sa pri ťuknutí na Prečítané označí ako prečítaná (odosielateľ to uvidí). Ak okno zavrieš, správa ostane nečítaná. Ak apku práve nemáš otvorenú, správy uvidíš pri jej otvorení v okne „Nové pre teba“.'],
-['⏰ Pripomienky',0,'Pripomienku vytvoríš cez <b>+ → Nová pripomienka</b>, v <b>Nástroje → Pripomienky</b> alebo v <b>zákazníckej karte → ⏰ Pripomeň mi</b>. Napíš, čo treba urobiť (napr. zavolať), vyber dátum (Dnes / Zajtra / Za týždeň) a podľa potreby čas a klienta. Správca môže pripomienku nastaviť aj inému členovi. V deň pripomienky sa ukáže v bloku <b>Dnes</b> a v <b>Moje úlohy</b> s tlačidlami <b>✓ Hotovo</b>, <b>📞 Zavolať</b> a <b>⏱ Zajtra</b>. Keď pripomienka nastane (v zadaný čas, alebo ráno pri otvorení apky, ak čas nemá), vyskočí v apke okno s tlačidlami <b>✓ Hotovo</b>, <b>⏱ +1 hod</b>, <b>⏱ Zajtra</b>. Okno sa ukáže len keď máš apku otvorenú; na zamknutej obrazovke apka nezvoní.'],
+['⏰ Pripomienky',0,'Pripomienku vytvoríš cez <b>+ → Pripomienky → ➕ Nová pripomienka</b>, v <b>Nástroje → Pripomienky</b> alebo v <b>zákazníckej karte → ⏰ Pripomeň mi</b>. Napíš, čo treba urobiť (napr. zavolať), vyber dátum (Dnes / Zajtra / Za týždeň) a podľa potreby čas a klienta. Správca môže pripomienku nastaviť aj inému členovi. V deň pripomienky sa ukáže v bloku <b>Dnes</b> a v <b>Moje úlohy</b> s tlačidlami <b>✓ Hotovo</b>, <b>📞 Zavolať</b> a <b>⏱ Zajtra</b>. Keď pripomienka nastane (v zadaný čas, alebo ráno pri otvorení apky, ak čas nemá), vyskočí v apke okno s tlačidlami <b>✓ Hotovo</b>, <b>⏱ +1 hod</b>, <b>⏱ Zajtra</b>. Okno sa ukáže len keď máš apku otvorenú; na zamknutej obrazovke apka nezvoní.'],
 ['🧭 Kde čo nájdem',0,'Dole sú tlačidlá: <b>Dnes</b> (dnešné a zajtrajšie zákazky), <b>Zákazky</b> (montáže, servisy, obhliadky; aktívne, čakajúce, hotové; Kalendár je tlačidlom na konci), <b>+</b> (vytvoriť: montáž/servis, obhliadka, ponuka, pripomienka, chladivo), <b>Klienti</b> a <b>Tím</b> (správca: Správy, Potvrdenia, Voľno, Členovia, Štatistika, Ponuky; technik vidí namiesto Tímu Správy). Hore pri logu je <b>🧰 Nástroje</b> (Moje úlohy, Trasa dňa, Hľadať, Mapa klientov, Voľno…) a <b>⚙️ Viac</b> (správca: Dopyty, Prehľad, Servisné termíny, Návod, Správa, Nastavenia). Zálohu a zriedkavé veci nájdeš v <b>Nastavenia → Pokročilé</b>.'],
 ['📇 Zákaznícka karta',0,'V <b>Klientoch</b> ťukni na klienta a potom na <b>📇 Zákaznícka karta</b> (nájdeš ju aj v detaile zákazky). Hore je kontakt a záruka, potom <b>Namontované zariadenia</b> (značka, typ, výrobné čísla, chladivo, záruka) a pod tým <b>História práce</b> od najnovšej. Ťuknutím na záznam v histórii uvidíš podrobnosti, napríklad vykonanú prácu a podpisy.'],
 ['✍️ Podpis',0,'Políčka na podpis sú väčšie, aby sa dalo pohodlne podpísať prstom. Tlačidlo <b>Vymazať podpis</b> pod políčkom ho zmaže a môžeš podpísať znova.'],
@@ -4315,7 +4315,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-16.176';
+var APP_VERSION='2026-11-16.177';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5346,7 +5346,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   <button onclick="fabGo('obh')">🔍 Nová obhliadka</button>
   <button onclick="fabGo('chl')">❄️ Chladivo</button>
   <button onclick="closeSheets();voiceOpen()">🎤 Hlasom (zákazka, presun)</button>
-  <button onclick="fabGo('rem')">⏰ Nová pripomienka</button>
+  <button onclick="fabGo('rem')">⏰ Pripomienky</button>
   <button class="admin-only" onclick="closeSheets();openSection('ponukySection','Cenové ponuky','');showPonukaForm(null)">💶 Nová ponuka</button>
 </div></div>
 <div id="qkSheet" onclick="if(event.target===this)this.style.display='none'"><div class="fab-menu">
@@ -5393,7 +5393,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <div id="whoInfo" style="flex-basis:100%;font-size:.8rem;font-weight:600"></div>
   </div>
 
-  <div id="layTools"><div><button id="profBtn" onclick="openProfile()" aria-label="Profil">👤</button><button onclick="voiceOpen()" aria-label="Hlasový príkaz">🎤</button><button id="remHdrBtn" onclick="qkGo('rem')" aria-label="Pripomienky" style="position:relative">⏰<i id="remHdrBadge" style="display:none"></i></button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
+  <div id="layTools"><div><button id="profBtn" onclick="openProfile()" aria-label="Profil">👤</button><button id="remHdrBtn" onclick="qkGo('rem')" aria-label="Pripomienky" style="position:relative">⏰<i id="remHdrBadge" style="display:none"></i></button><button class="admin-only" onclick="showMore()" aria-label="Viac">⚙️</button></div></div>
   <h1 id="pageTitle">Dnes</h1>
   <p id="pageSub" style="display:none"></p>
 
