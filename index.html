@@ -4567,7 +4567,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-18.180';
+var APP_VERSION='2026-11-18.181';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5043,7 +5043,7 @@ function greetHtml(n,ev){
   var mm=me?findById('members',me):null,h=new Date().getHours();
   var g=h<10?'Dobré ráno ☀️':(h<18?'Dobrý deň 👋':'Dobrý večer 🌙');
   var nm1=mm?String(mm.name||'').split(' ')[0]:'';
-  var dn=0,tot=0;dayEvents(ev).forEach(function(x){if(x.type!=='montaze')return;var mm2=findById('montaze',x.id);if(!mm2||(!isAdmin()&&!isMine(mm2)))return;tot++;if(mm2.stav==='Hotová')dn++});
+  var dn=0,tot=0;dayEvents(ev).forEach(function(x){if(x.type!=='montaze')return;var mm2=findById('montaze',x.id);if(!mm2||((!isAdmin()||hvGet()==='me')&&!isMine(mm2)))return;tot++;if(mm2.stav==='Hotová')dn++});
   var rest=tot-dn;
   var big=(n||tot)?('<div class="greet-n"><div class="big">'+(tot?rest:n)+'</div><div class="lbl">'+(tot?(rest===0?'všetky zákazky sú hotové 🎉':(rest===1?'zákazka ešte čaká':(rest<5?'zákazky ešte čakajú':'zákaziek ešte čaká'))+(dn?' · hotové '+dn+' z '+tot:'')):'udalostí dnes')+(tot?'<div class="pbar"><i style="width:'+Math.round(dn*100/tot)+'%"></i></div>':'')+'</div></div>'):'';
   return '<div class="greet"><b>'+g+(nm1?', '+esc(nm1):'')+'</b>'+((n||tot)?big:'<span>Dnes nemáš žiadnu zákazku 🎉</span>')+'</div>';
@@ -5079,15 +5079,27 @@ function weekStrip(){
   if(wkSel){var ev=evFor(wkSel);h+='<div class="td-h">'+esc(fmtD(wkSel))+'</div>'+(ev.length?'<div class="tl">'+ev.map(dayRow).join('')+'</div>':'<div class="td-none">Žiadne udalosti</div>')}
   return h;
 }
-var TMR_N=0;
+var TMR_N=0,homeView='';
+function hvGet(){if(!isAdmin())return 'me';if(!homeView){try{homeView=localStorage.getItem('portal_hv')||'team'}catch(e){homeView='team'}}return homeView}
+function hvSet(v){homeView=v;try{localStorage.setItem('portal_hv',v)}catch(e){}renderToday()}
+function hvFilt(ev){
+  if(!isAdmin()||hvGet()!=='me')return ev;
+  return ev.filter(function(e){var o=findById(e.type,e.id);if(!o)return false;if(e.type==='montaze')return isMine(o);if(e.type==='obhliadky')return (o.memberIds||[]).indexOf(me)>-1;return false});
+}
+function hvBar(){
+  if(!isAdmin())return '';
+  var v=hvGet(),b=function(k,l){return '<button class="btn-edit" style="flex:1;margin:0;padding:9px;background:'+(v===k?'#0d9488':'#e2e8f0')+';color:'+(v===k?'#fff':'#334155')+'" onclick="hvSet(\''+k+'\')">'+l+'</button>'};
+  return '<div style="display:flex;gap:6px;margin:4px 0 8px">'+b('me','🙋 Moje udalosti')+b('team','👥 Celý tím')+'</div>';
+}
 function homeBtns(d1){
   var t=ymd(new Date()),a=remMineAll().filter(function(r){return !r.done}),due=a.filter(function(r){return r.date<=t}).length;
   var bt=function(ic,l,n,v,bg){return '<button class="btn-edit" style="background:'+bg+';width:100%;margin:4px 0;text-align:left;padding:11px 14px;display:flex;justify-content:space-between" onclick="'+v+'"><span>'+ic+' '+l+'</span><span>'+n+' ›</span></button>'};
-  return '<div style="margin-top:12px">'+bt('📅','Zajtra',TMR_N,'showTomorrow()','#2563eb')+
+  var nb=isAdmin()?burnItems().length:0,sm=isAdmin()?smsTomorrow().filter(function(m){return !remGet(smsKey(m))}).length:0;
+  return '<div style="margin-top:12px">'+(isAdmin()?bt('🔥','Na čo horí',(nb+sm)||'0',"phTab='burn';openSection('prehladSection','Prehľad','')",(nb+sm)?'#dc2626':'#64748b'):'')+bt('📅','Zajtra',TMR_N,'showTomorrow()','#2563eb')+
     (me?bt('⏰','Pripomienky',due?due+' na dnes'+(a.length>due?' · '+a.length:''):a.length,'remList()',due?'#d97706':'#64748b'):'')+'</div>';
 }
 function showTomorrow(){
-  var d1=ymd(new Date(Date.now()+86400000)),ev=evFor(d1);lastDay=null;
+  var d1=ymd(new Date(Date.now()+86400000)),ev=hvFilt(evFor(d1));lastDay=null;
   var lv=leaveOn(d1).filter(function(v){return v.memberId===me}).map(function(v){var ok=v.stav==='Schválené';
     return dayRow({type:'volno',id:v.id,color:ok?'#0891b2':'#67b7c9',text:(ok?'🏖 Voľno: ':'⏳ Žiadosť o voľno: ')+(v.memberName||''),sub:volnoWhen(v),time:v.casOd||''})}).join('');
   $('eventModalBody').innerHTML='<h3>📅 Zajtra · '+esc(fmtD(d1))+'</h3>'+((ev.length||lv)?'<div class="tl">'+ev.map(function(e){return dayRow(e)}).join('')+lv+'</div>':'<div class="td-none">Žiadne udalosti</div>')+
@@ -5098,13 +5110,13 @@ function renderToday(){
   var el=$('todayBox');if(!el)return;renderWho();
   var t=new Date(),d0=ymd(t),d1=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+1)),n0=0;
   var days=[['Dnes',d0],['Zajtra',d1]].map(function(x){
-    var ev=evFor(x[1]);if(x[1]===d0)n0=ev.length;
+    var ev=hvFilt(evFor(x[1]));if(x[1]===d0)n0=ev.length;
     var lv=leaveOn(x[1]).filter(function(v){return v.memberId===me}).map(function(v){var ok=v.stav==='Schválené';
       return dayRow({type:'volno',id:v.id,color:ok?'#0891b2':'#67b7c9',text:(ok?'🏖 Voľno: ':'⏳ Žiadosť o voľno: ')+(v.memberName||''),sub:volnoWhen(v),time:v.casOd||''})}).join('');
     if(LAY==='new'&&x[1]===d1){TMR_N=ev.length;return ''}
     return '<div class="td-h">📅 '+x[0]+' · '+esc(fmtD(x[1]))+'</div>'+((ev.length||lv)?'<div class="tl">'+ev.map(function(e){return dayRow(e,LAY==='new')}).join('')+lv+'</div>':'<div class="td-none">Žiadne udalosti</div>');
   }).join('');
-  el.innerHTML=(LAY==='new')?greetHtml(n0,d0)+days+homeBtns(d1)+burnHome():greetHtml(n0,d0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
+  el.innerHTML=(LAY==='new')?greetHtml(n0,d0)+hvBar()+days+homeBtns(d1):greetHtml(n0,d0)+remBlock()+burnHome()+renderHomeObh()+waitBlock()+days+weekStrip()+renderHomeMsgs()+leaveBlock(d0);
 }
 var me='';try{me=localStorage.getItem('portal_me')||''}catch(e){}
 function fillMe(){
