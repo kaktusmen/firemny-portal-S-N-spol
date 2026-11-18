@@ -1043,7 +1043,7 @@ function autoSave(id){
 var V={
   clients:['clientsList','Žiadni klienti.',function(a,b){return nm(a).localeCompare(nm(b))},function(c){
     var w=warrantyInfo(c),p=String(nm(c)).trim().split(/\s+/),ini=((p[0]||'')[0]||'')+((p.length>1?p[p.length-1][0]:'')||''),tel=String(c.telefon||'').replace(/[^\d+]/g,'');
-    var nd=0;clientInstalls(c).forEach(function(m){nd+=Math.max(devicesOf(m).length,m.title?1:0)});
+    var nd=0;clientInstalls(c).forEach(function(m){nd+=Math.max(devicesOf(m).length,m.title?1:0)});nd+=(Array.isArray(c.zar)?c.zar.length:0);
     var bg=clBig(c),sub=[c.firma?'🏢 '+(c.ico?'IČO '+c.ico:'firma'):'',c.obec||'',c.telefon||'',nd?'🔧 '+nd:''].filter(Boolean).map(esc).join(' · ');
     return '<div class="cl-row" onclick="clientCard(\''+esc(c.id)+'\')"><i class="cl-av" style="background:'+(w.c||'#64748b')+'">'+esc(ini.toUpperCase())+'</i><div class="cl-tx"><b>'+(isNewFor('clients',c)?'🆕 ':'')+esc(nm(c))+'</b>'+(bg?'<i class="cl-tag cl-big">🏢 '+esc(bg)+'</i>':'')+'<span>'+(sub||'&nbsp;')+'</span></div>'+(tel?'<a class="cl-call" href="tel:'+esc(tel)+'" onclick="event.stopPropagation()" aria-label="Zavolať">📞</a>':'')+'<em class="cl-go">›</em></div>'}],
   montaze:['montazList','Žiadne montáže.',function(a,b){if(!a.date!==!b.date)return a.date?-1:1;return (b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')},function(m){
@@ -2000,7 +2000,7 @@ function eventDetail(e){
   }
   return h+'<div class="modal-actions" style="flex-wrap:wrap;margin-top:8px">'+btn+'<button class="btn-edit" style="background:#64748b" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')">Otvoriť udalosť</button></div>';
 }
-function eventRows(c,onlyNext){
+function eventRows(c,onlyNext,mode){
   var ev=clientEvents(c),today=ymd(new Date());
   var plan=clientServiceDates(c).filter(function(d){return d>=today}).map(function(d){
     return '<div class="day-row" style="border-left-color:#dc2626;cursor:default"><b>'+esc(fmtD(d))+' – 🛠 Záručný servis (plánovaný)</b></div>'});
@@ -2009,7 +2009,7 @@ function eventRows(c,onlyNext){
       var key='ev:'+e.type+':'+e.id,open=!!openEv[key];
       return '<div class="day-row" style="border-left-color:'+e.color+'" onclick="toggleEv(this,\''+esc(key)+'\')"><b>'+(e.d?esc(fmtD(e.d)):'bez dátumu')+' – '+esc(e.label)+' ▾</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+'</div>'+
         '<div class="ev-detail"'+(open?'':' style="display:none"')+'>'+eventDetail(e)+'</div>';
-    }).join(''):'<div class="td-none">Zatiaľ žiadne udalosti.</div>')+(onlyNext?plan.slice(0,1):plan).join('');
+    }).join(''):'<div class="td-none">Zatiaľ žiadne udalosti.</div>')+(mode==='hist'?'':(onlyNext?plan.slice(0,1):plan).join(''));
 }
 function indList(d){
   var a=d.vnutorne||[],t=d.vnutorneTyp||[],n=Math.max(a.length,t.length),o=[];
@@ -2031,9 +2031,33 @@ function devEdit(mid,idx,cid){
   $('eventModal').style.display='flex';
   renderDevices([{typ:d.typ||'',znacka:d.znacka||'',kw:d.kw||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vnutorneTyp:(d.vnutorneTyp&&d.vnutorneTyp.length)?d.vnutorneTyp.slice():[''],vonkajsia:d.vonkajsia||'',vonkajsiaTyp:d.vonkajsiaTyp||'',zarukaRoky:d.zarukaRoky||'',chlTyp:d.chlTyp||'',chlKg:d.chlKg||''}]);
 }
+function devClient(cid,idx){
+  var c=findById('clients',cid);if(!c)return;
+  var L=Array.isArray(c.zar)?c.zar:[],d=L[idx]||{};
+  devEditCtx={cl:true,cid:cid,idx:idx};
+  var f=$('mDevices');if(f)f.innerHTML='';
+  DEVBOX='mDevicesDlg';
+  $('eventModalBody').innerHTML='<h3>'+(L[idx]?'✏️ Upraviť zariadenie':'➕ Pridať zariadenie')+'</h3><div class="modal-row" style="color:#64748b">'+esc(nm(c))+'</div>'+
+    '<div class="modal-row" style="margin:6px 0 2px"><strong>Dátum namontovania</strong> <span style="color:#64748b;font-size:.8rem">(z neho sa rátať záruka)</span></div><input type="date" id="dvDatum" value="'+esc(d.datum||'')+'">'+
+    '<div id="mDevicesDlg" class="full-width-input devDlg"></div>'+
+    '<div class="modal-actions"><button class="btn-edit" style="background:#16a34a" onclick="devEditSave()">💾 Uložiť</button>'+(L[idx]?'<button class="btn-delete" onclick="devClientDel()">Zmazať</button>':'')+'<button class="btn-delete" style="background:#64748b" onclick="devEditCancel()">Zrušiť</button></div>';
+  $('eventModal').style.display='flex';
+  renderDevices([{typ:d.typ||'',znacka:d.znacka||'',kw:d.kw||'',system:d.system||'',vnutorne:(d.vnutorne&&d.vnutorne.length)?d.vnutorne.slice():[''],vnutorneTyp:(d.vnutorneTyp&&d.vnutorneTyp.length)?d.vnutorneTyp.slice():[''],vonkajsia:d.vonkajsia||'',vonkajsiaTyp:d.vonkajsiaTyp||'',zarukaRoky:d.zarukaRoky||'',chlTyp:d.chlTyp||'',chlKg:d.chlKg||''}]);
+}
+function devClientDel(){
+  var c=devEditCtx,cl=c&&findById('clients',c.cid);if(!cl||!confirm('Zmazať toto zariadenie?'))return;
+  var L=(cl.zar||[]).slice();L.splice(c.idx,1);put('clients',{zar:L},c.cid);toast('Zariadenie zmazané');setTimeout(devEditCancel,50);
+}
 function devEditCancel(){DEVBOX='mDevices';var c=devEditCtx;devEditCtx=null;if(c&&c.cid&&findById('clients',c.cid))clientCard(c.cid);else closeEvent()}
 function devEditSave(){
-  var c=devEditCtx,m=c&&findById('montaze',c.mid);if(!m)return;
+  var c=devEditCtx;
+  if(c&&c.cl){
+    var cl=findById('clients',c.cid),e0=readDevices()[0];if(!cl||!e0)return;var il0=indList(e0);
+    var L0=Array.isArray(cl.zar)?cl.zar.map(function(x){return Object.assign({},x)}):[];
+    L0[c.idx]=Object.assign({},L0[c.idx]||{},{datum:($('dvDatum')||{}).value||'',typ:e0.typ||'',znacka:e0.znacka||'',kw:e0.kw||'',system:e0.system||'',vnutorne:il0.map(function(x){return x.sn}),vnutorneTyp:il0.map(function(x){return x.tp}),vonkajsia:e0.vonkajsia||'',vonkajsiaTyp:e0.vonkajsiaTyp||'',zarukaRoky:e0.zarukaRoky||'',chlTyp:e0.chlTyp||'',chlKg:e0.chlKg||''});
+    put('clients',{zar:L0},c.cid);toast('Zariadenie uložené');setTimeout(devEditCancel,50);return;
+  }
+  var m=c&&findById('montaze',c.mid);if(!m)return;
   var e=readDevices()[0];if(!e)return;var il=indList(e);
   var L=devicesOf(m).map(function(x){return Object.assign({},x)});
   var nd={typ:e.typ,znacka:e.znacka,kw:e.kw||'',system:e.system,vnutorne:il.map(function(x){return x.sn}),vnutorneTyp:il.map(function(x){return x.tp}),vonkajsia:e.vonkajsia,vonkajsiaTyp:e.vonkajsiaTyp,zarukaRoky:e.zarukaRoky,chlTyp:e.chlTyp||'',chlKg:e.chlKg||''};
@@ -3704,7 +3728,7 @@ function clientBrief(c){
     '<div class="modal-row" style="color:'+w.c+'">🛡 '+w.i+' '+esc(w.t)+'</div>'+
     '<button class="action-btn" style="background:#0d9488" onclick="clientCard(\''+esc(c.id)+'\')">📇 Zákaznícka karta</button>';
 }
-function clientCard(id){
+function clientCard(id,view){
   var c=findById('clients',id);if(!c)return;
   lastDay=null;
   var w=warrantyInfo(c),devs='';
@@ -3726,21 +3750,57 @@ function clientCard(id){
         '</div>';
     });
   });
+  (Array.isArray(c.zar)?c.zar:[]).forEach(function(d,di){
+    var t=[d.typ,d.system].filter(Boolean).join(' – '),ind=indList(d),we=devEnd({date:d.datum||''},d),today=ymd(new Date());
+    var ln=function(l,v){return v?'<div style="margin:2px 0"><span style="color:#64748b">'+l+':</span> '+esc(v)+'</div>':''};
+    devs+='<div style="border:1px solid #e2e8f0;border-left:5px solid #2563eb;border-radius:10px;padding:10px 12px;margin:8px 0;background:#f8fafc">'+
+      '<div style="font-weight:700;font-size:1.02rem">'+esc(d.znacka||t||'Zariadenie')+'</div>'+
+      (d.znacka&&t?'<div style="color:#475569;margin-bottom:4px">'+esc(t)+'</div>':'')+
+      ln('Namontované',d.datum?fmtD(d.datum):'')+ln('Výkon',d.kw?d.kw+' kW':'')+
+      ind.map(function(x,j){return ln('Vnútorná'+(ind.length>1?' '+(j+1):''),[x.tp,x.sn&&'S/N '+x.sn].filter(Boolean).join(' · '))}).join('')+
+      ((d.vonkajsia||d.vonkajsiaTyp)?ln('Vonkajšia',[d.vonkajsiaTyp,d.vonkajsia&&'S/N '+d.vonkajsia].filter(Boolean).join(' · ')):'')+
+      (chlText(d)?ln('❄️ Chladivo',chlText(d)):'')+
+      (we?'<div style="margin-top:4px;font-weight:600;color:'+(we>=today?'#15803d':'#b91c1c')+'">🛡 '+(we>=today?'V záruke do ':'Záruka skončila ')+esc(fmtD(we))+'</div>':'<div style="margin-top:4px;color:#64748b">🛡 Záruka nie je zadaná</div>')+
+      '<div style="margin-top:8px"><button class="btn-edit" style="background:#2563eb;padding:6px 14px;width:auto" onclick="devClient(\''+esc(c.id)+'\','+di+')">✏️ Upraviť zariadenie</button> <button class="btn-edit" style="background:#0d9488;padding:6px 14px;width:auto" onclick="quickServis(\''+esc(c.id)+'\',\''+esc(String(d.znacka||t||'').replace(/'/g,''))+'\')">🧹 Naplánovať servis</button></div></div>';
+  });
   var legacy=[c.zariadenie&&'Typ: '+c.zariadenie,c.znacka&&'Značka: '+c.znacka,(c.snVnutorna||c.vyrobneCislo)&&'S/N vnútorná: '+(c.snVnutorna||c.vyrobneCislo),c.snVonkajsia&&'S/N vonkajšia: '+c.snVonkajsia].filter(Boolean);
   if(legacy.length)devs+='<div style="border:1px solid #e2e8f0;border-left:5px solid #94a3b8;border-radius:10px;padding:10px 12px;margin:8px 0">'+legacy.map(esc).join('<br>')+'</div>';
-  var h='<h3>📇 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):'')+'</h3>'+
+  var head='<h3>📇 '+esc(nm(c))+(c.obec?' – '+esc(c.obec):'')+'</h3>'+
     (c.firma?'<div class="modal-row"><strong>🏢 Firma:</strong> '+esc(c.firma)+(c.ico?' · IČO '+esc(c.ico):'')+(c.dic?' · DIČ '+esc(c.dic):'')+(c.icdph?' · IČ DPH '+esc(c.icdph):'')+'</div>'+(((c.meno||'')+(c.priezvisko||'')).trim()?'<div class="modal-row"><strong>Kontakt:</strong> '+esc(((c.meno||'')+' '+(c.priezvisko||'')).trim())+'</div>':''):'')+
     '<div class="modal-row"><strong>Telefón:</strong> '+telA(c.telefon)+'</div>'+
     (c.email?'<div class="modal-row"><strong>E-mail:</strong> '+mailA(c.email)+'</div>':'')+
     '<div class="modal-row"><strong>Adresa:</strong> '+mapA(c)+'</div>'+
     '<div class="modal-row" style="color:'+w.c+';font-weight:600">🛡 '+w.i+' '+esc(w.t)+'</div>'+
     (c.poznamky?'<div class="modal-row"><strong>Poznámky:</strong> '+esc(c.poznamky)+'</div>':'')+
-    '<div class="modal-row"><button class="btn-edit" style="background:#2563eb;padding:6px 14px;width:auto" onclick="quickClient(\''+esc(c.id)+'\')">✏️ Upraviť kontakt a poznámky</button></div>'+
-    '<div class="td-h" style="margin-top:12px">🔧 Namontované zariadenia</div>'+(devs||'<div class="td-none">Zatiaľ nič namontované.</div>')+
-    hovorBlock(c)+
-    eventRows(c,true).replace('📋 Udalosti u klienta','🕘 História práce u klienta')+
-    '<div class="modal-actions"><button class="btn-edit" style="background:#d97706" onclick="remForm({clientId:\''+esc(c.id)+'\'})">⏰ Pripomeň mi</button><button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button><button class="btn-delete" onclick="closeEvent();delItem(\'clients\',\''+esc(c.id)+'\')">Zmazať</button>'+
-    '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
+    '<div class="modal-row"><button class="btn-edit" style="background:#2563eb;padding:6px 14px;width:auto" onclick="quickClient(\''+esc(c.id)+'\')">✏️ Upraviť kontakt a poznámky</button></div>';
+  var cidq="'"+esc(c.id)+"'",today=ymd(new Date());
+  var back='<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="clientCard('+cidq+')">‹ Späť ku karte</button></div>';
+  var nDev=(devs.match(/margin:8px 0/g)||[]).length,nHov=(dbData.hovory||[]).filter(function(x){return x.clientId===c.id}).length;
+  var nHist=clientEvents(c).length,pl=clientServiceDates(c).filter(function(d){return d>=today});
+  var h;
+  if(view==='dev'){
+    h='<h3>🔧 Zariadenia – '+esc(nm(c))+'</h3>'+(devs||'<div class="td-none">Zatiaľ nič namontované ani pridané.</div>')+
+      '<div class="modal-row"><button class="btn-edit" style="background:#16a34a;padding:6px 14px;width:auto" onclick="devClient('+cidq+','+((Array.isArray(c.zar)?c.zar:[]).length)+')">➕ Pridať zariadenie</button></div>'+back;
+  }else if(view==='hist'){
+    h='<h3>🕘 História prác – '+esc(nm(c))+'</h3>'+eventRows(c,false,'hist').replace('📋 Udalosti u klienta','Práce a udalosti')+back;
+  }else if(view==='srv'){
+    h='<h3>🛠 Záručný servis – '+esc(nm(c))+'</h3><div class="modal-row" style="color:'+w.c+';font-weight:600">🛡 '+w.i+' '+esc(w.t)+'</div>'+
+      (pl.length?pl.map(function(d){return '<div class="day-row" style="border-left-color:#dc2626;cursor:default"><b>'+esc(fmtD(d))+' – plánovaný záručný servis</b></div>'}).join(''):'<div class="td-none">Žiadny plánovaný záručný servis.</div>')+
+      '<div class="modal-row"><button class="btn-edit" style="background:#0d9488;padding:6px 14px;width:auto" onclick="quickServis('+cidq+',\'\')">🧹 Naplánovať servis</button></div>'+back;
+  }else if(view==='err'){
+    h='<h3>📞 Chyby a telefonáty – '+esc(nm(c))+'</h3>'+hovorBlock(c)+back;
+  }else{
+    var bt=function(ic,l,n,v,bg){return '<button class="btn-edit" style="background:'+bg+';width:100%;margin:4px 0;text-align:left;padding:11px 14px;display:flex;justify-content:space-between" onclick="'+v+'"><span>'+ic+' '+l+'</span><span>'+(n===''?'›':n+' ›')+'</span></button>'};
+    h=head+'<div style="margin-top:12px">'+
+      bt('🔧','Zariadenia klienta',nDev,"clientCard("+cidq+",'dev')",'#0d9488')+
+      bt('🕘','História prác',nHist,"clientCard("+cidq+",'hist')",'#2563eb')+
+      bt('🛠','Záručný servis',pl.length?fmtD(pl[0]):'',"clientCard("+cidq+",'srv')",'#7c3aed')+
+      bt('📞','Chyby',nHov,"clientCard("+cidq+",'err')",'#dc2626')+
+      bt('⏰','Pripomeň mi','',"remForm({clientId:"+cidq+"})",'#d97706')+'</div>'+
+      '<div class="modal-actions"><button class="btn-edit" onclick="closeEvent();editClient('+cidq+')">Upraviť klienta</button>'+
+      '<button class="btn-delete" onclick="closeEvent();delItem(\'clients\','+cidq+')">Zmazať</button>'+
+      '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
+  }
   $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
 }
 function clientDetail(c){
@@ -3946,7 +4006,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEvent()
 function srvIcon(m){if(m.stav==='Hotová')return '✅ ';if(m.urgent)return '🚨 ';if(!m.kind)return '🔧 ';return m.servisType==='Oprava'?'🔨 ':'🧹 '}
 function srvColor(m){if(m.stav==='Hotová')return '#94a3b8';if(m.urgent)return '#b91c1c';if(m.stav==='Prebieha')return '#ca8a04';if(!m.kind)return '#0d9488';return '#2563eb'}
 function warrantyInfo(c){
-  var ends=clientInstalls(c).map(montazWarrantyEnd).filter(Boolean).sort(),end=ends.length?ends[ends.length-1]:'';
+  var ends=clientInstalls(c).map(montazWarrantyEnd).concat((Array.isArray(c.zar)?c.zar:[]).map(function(d){return devEnd({date:d.datum||''},d)})).filter(Boolean).sort(),end=ends.length?ends[ends.length-1]:'';
   if(!end){
     var inst=installDate(c),y=parseInt(c.zarukaRoky,10);
     if(inst&&y){var a=inst.split('-');end=ymd(new Date(+a[0]+y,+a[1]-1,+a[2]))}
@@ -4493,7 +4553,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-17.176';
+var APP_VERSION='2026-11-18.178';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
