@@ -3809,7 +3809,7 @@ function clientDetail(c){
     '<button class="action-btn" style="background:#0d9488" onclick="clientCard(\''+esc(c.id)+'\')">📇 Zákaznícka karta (zariadenia a história)</button>'+
     clientInfo(c).filter(function(r){return r[0]!=='Zariadenia'}).map(function(r){return rh(r[0],r[1])}).join('');
 }
-function showEvent(type,id){
+function showEvent(type,id,view){
   if(type==='volno'){showLeave(id);return}
   var o=findById(type,id);if(!o)return;
   if(NEWC.indexOf(type)>-1)markRead(type,id);
@@ -3849,6 +3849,19 @@ function showEvent(type,id){
     (c?clientDetail(c):(type==='obhliadky'?'':'<div class="modal-row">Karta klienta sa nenašla.</div>'))+
     (type==='obhliadky'?fotoSection(o):'')+'<div class="modal-actions">'+(lastDay?'<button class="btn-delete" style="background:#0d9488" onclick="openDay(\''+lastDay+'\')">⬅ Späť na deň</button>':'')+(typeof edO!=='undefined'?edO:'')+(c?'<button class="btn-edit" onclick="closeEvent();editClient(\''+esc(c.id)+'\')">Upraviť klienta</button>':'')+
     '<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
+  if(type==='montaze'){
+    var oq="'"+esc(o.id)+"'",bk='<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="showEvent(\'montaze\','+oq+')">‹ Späť</button></div>';
+    var nF=(o.fotky&&o.fotky.length)||(o.fotoCount)||0;
+    var bt=function(ic,l,v,bg){return '<button class="btn-edit" style="background:'+bg+';width:100%;margin:4px 0;text-align:left;padding:11px 14px;display:flex;justify-content:space-between" onclick="'+v+'"><span>'+ic+' '+l+'</span><span>›</span></button>'};
+    if(view==='foto'){h='<h3>📸 Fotky – '+esc(o.clientName||o.title||'')+'</h3>'+fotoSection(o)+bk}
+    else if(view==='edit'){h='<h3>✏️ Úpravy a protokol</h3>'+waJobBtns(o)+'<div class="modal-actions" style="flex-wrap:wrap">'+edO.replace('<button class="btn-edit" style="background:#0d9488" onclick="showJob(\''+esc(o.id)+'\')">📋 Otvoriť zákazku</button>','')+'</div>'+bk}
+    else{h=((needsAck(o))?'<button class="action-btn" style="background:#16a34a" onclick="ackItem(\'montaze\','+oq+')">👍 Beriem na vedomie'+(o.chg?' (zmenený termín/tím)':'')+'</button>':'')+info+readInfo(type,o)+(typeof stB!=='undefined'?stB:'')+
+      '<div style="margin-top:10px"><button class="action-btn" style="background:#0d9488" onclick="showJob('+oq+')">📋 Otvoriť zákazku</button>'+
+      bt('📸','Fotky',"showEvent('montaze',"+oq+",'foto')",'#2563eb')+
+      (c?bt('📇','Karta klienta',"clientCard('"+esc(c.id)+"')",'#7c3aed'):'')+
+      bt('✏️','Úpravy, tím, protokol',"showEvent('montaze',"+oq+",'edit')",'#475569')+'</div>'+
+      '<div class="modal-actions">'+(lastDay?'<button class="btn-delete" style="background:#0d9488" onclick="openDay(\''+lastDay+'\')">⬅ Späť na deň</button>':'')+'<button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>'}
+  }
   $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
   if(type==='montaze'||type==='obhliadky')fotoLoad(o.id);
 }
@@ -4553,7 +4566,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-18.178';
+var APP_VERSION='2026-11-18.179';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
