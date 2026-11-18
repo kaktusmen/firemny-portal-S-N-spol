@@ -3899,14 +3899,17 @@ function remBlock(){
     (due.length?due.map(function(r){return remRow(r)}).join(''):'<div class="td-none">Na dnes nič.</div>')+
     (later?'<div class="td-none"><a onclick="remList()" style="color:#2563eb;cursor:pointer">Ďalšie pripomienky ('+later+') ›</a></div>':'');
 }
+var remFar=false,remAllV=false;
+function remFarToggle(){remFar=!remFar;remList(remAllV)}
 function remList(all){
-  var t=ymd(new Date()),adm=isAdmin(),arr=(all&&adm?dbData.pripomienky:remMineAll()).slice();
+  remAllV=all;var t=ymd(new Date()),lim=ymd(new Date(Date.now()+31*86400000)),adm=isAdmin(),arr=(all&&adm?dbData.pripomienky:remMineAll()).slice();
   var by=function(a,b){return ((a.date||'')+(a.time||'')).localeCompare((b.date||'')+(b.time||''))};
-  var open=arr.filter(function(r){return !r.done}).sort(by),done=arr.filter(function(r){return r.done}).sort(function(a,b){return (b.doneAt||0)-(a.doneAt||0)}).slice(0,8);
+  var open0=arr.filter(function(r){return !r.done}).sort(by),far=open0.filter(function(r){return (r.date||'')>lim}),open=remFar?open0:open0.filter(function(r){return (r.date||'')<=lim}),done=arr.filter(function(r){return r.done}).sort(function(a,b){return (b.doneAt||0)-(a.doneAt||0)}).slice(0,8);
   $('eventModalBody').innerHTML='<h3>⏰ Pripomienky'+(all&&adm?' – všetci':'')+'</h3>'+
     '<button class="action-btn" style="background:#d97706" onclick="remForm({})">➕ Nová pripomienka</button>'+
     (adm?'<div class="modal-row"><a onclick="remList('+(all?'false':'true')+')" style="color:#2563eb;cursor:pointer">'+(all?'Zobraziť len moje':'Zobraziť pripomienky všetkých')+'</a></div>':'')+
     (open.length?open.map(function(r){return remRow(r,all&&adm)}).join(''):'<div class="td-none">Žiadne aktívne pripomienky.</div>')+
+    (far.length?'<div class="modal-row"><a onclick="remFarToggle()" style="color:#2563eb;cursor:pointer">'+(remFar?'▲ Skryť pripomienky neskôr ako mesiac':'📅 Ďalšie pripomienky neskôr ('+far.length+') – ukážu sa mesiac pred termínom ›')+'</a></div>':'')+
     (done.length?'<div class="td-h">Vybavené</div>'+done.map(function(r){return remRow(r,all&&adm)}).join(''):'')+
     '<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModal').style.display='flex';
@@ -4015,7 +4018,7 @@ function remOpenToast(){
   if(!dbData.pripomienky.length&&!nfyLoaded.pripomienky)return;
   remOpenToast.done=true;if(n)toast('⏰ Pripomienky na dnes: '+n);
 }
-function closeEvent(){lastDay=null;DEVBOX='mDevices';qeCtx=null;try{if(vRec){vRec.onend=null;vRec.abort()}}catch(e){}vRec=null;try{$('eventModalBody').removeAttribute('data-remedit');$('eventModalBody').removeAttribute('data-rem');$('eventModalBody').removeAttribute('data-msgq')}catch(e){}$('eventModal').style.display='none'}
+function closeEvent(){remFar=false;lastDay=null;DEVBOX='mDevices';qeCtx=null;try{if(vRec){vRec.onend=null;vRec.abort()}}catch(e){}vRec=null;try{$('eventModalBody').removeAttribute('data-remedit');$('eventModalBody').removeAttribute('data-rem');$('eventModalBody').removeAttribute('data-msgq')}catch(e){}$('eventModal').style.display='none'}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEvent()});
 function srvIcon(m){if(m.stav==='Hotová')return '✅ ';if(m.urgent)return '🚨 ';if(!m.kind)return '🔧 ';return m.servisType==='Oprava'?'🔨 ':'🧹 '}
 function srvColor(m){if(m.stav==='Hotová')return '#94a3b8';if(m.urgent)return '#b91c1c';if(m.stav==='Prebieha')return '#ca8a04';if(!m.kind)return '#0d9488';return '#2563eb'}
@@ -4567,7 +4570,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-18.183';
+var APP_VERSION='2026-11-18.184';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5092,7 +5095,7 @@ function hvBar(){
   return '<div style="display:flex;gap:6px;margin:4px 0 8px">'+b('me','🙋 Moje udalosti')+b('team','👥 Celý tím')+'</div>';
 }
 function homeBtns(d1){
-  var t=ymd(new Date()),a=remMineAll().filter(function(r){return !r.done}),due=a.filter(function(r){return r.date<=t}).length;
+  var t=ymd(new Date()),a=remMineAll().filter(function(r){return !r.done&&(r.date||'')<=ymd(new Date(Date.now()+31*86400000))}),due=a.filter(function(r){return r.date<=t}).length;
   var bt=function(ic,l,n,v,bg){return '<button class="btn-edit" style="background:'+bg+';width:100%;margin:4px 0;text-align:left;padding:11px 14px;display:flex;justify-content:space-between" onclick="'+v+'"><span>'+ic+' '+l+'</span><span>'+n+' ›</span></button>'};
   var nb=isAdmin()?burnItems().length:0,sm=isAdmin()?smsTomorrow().filter(function(m){return !remGet(smsKey(m))}).length:0;
   return '<div style="margin-top:12px">'+(isAdmin()?bt('🔥','Čo horí',(nb+sm)||'0',"phTab='burn';openSection('prehladSection','Prehľad','')",(nb+sm)?'#dc2626':'#64748b'):'')+bt('📅','Zajtra',TMR_N,'showTomorrow()','#2563eb')+
