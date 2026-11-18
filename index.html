@@ -4493,7 +4493,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-17.175';
+var APP_VERSION='2026-11-17.176';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5456,7 +5456,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   <button onclick="fabGo('chl')">❄️ Chladivo</button>
   <button onclick="closeSheets();voiceOpen()">🎤 Hlasom (zákazka, presun)</button>
   <button onclick="fabGo('rem')">⏰ Pripomienka</button>
-  <button onclick="closeSheets();hovorForm()">📞 Telefonát od zákazníka</button>
+  <button onclick="closeSheets();openSection('hovorySection','Telefonáty','more')">📞 Telefonáty</button>
   <button class="admin-only" onclick="closeSheets();openSection('ponukySection','Cenové ponuky','');showPonukaForm(null)">💶 Nová ponuka</button>
 </div></div>
 <div id="qkSheet" onclick="if(event.target===this)this.style.display='none'"><div class="fab-menu">
@@ -5536,7 +5536,6 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <div class="menu-h admin-only">Klienti</div>
     <div class="menu-card admin-only" onclick="openSection('clientsSection','Klienti','more')">👥 Klienti</div>
     <div class="menu-card admin-only" onclick="openSection('autaSection','Autá','more')">🚗 Firemné autá</div>
-    <div class="menu-card" onclick="openSection('hovorySection','Telefonáty','more')">📞 Telefonáty</div>
     <div class="menu-card admin-only" onclick="openSection('bigSection','Veľkí klienti','more')">🏢 Veľkí klienti</div>
     <div class="menu-h">Tím</div>
     <div class="menu-card" id="volnoTile" onclick="openSection('volnoSection','Voľno','more')">🏖 Voľno</div>
