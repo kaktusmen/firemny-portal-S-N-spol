@@ -4567,7 +4567,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-18.181';
+var APP_VERSION='2026-11-18.183';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5095,8 +5095,8 @@ function homeBtns(d1){
   var t=ymd(new Date()),a=remMineAll().filter(function(r){return !r.done}),due=a.filter(function(r){return r.date<=t}).length;
   var bt=function(ic,l,n,v,bg){return '<button class="btn-edit" style="background:'+bg+';width:100%;margin:4px 0;text-align:left;padding:11px 14px;display:flex;justify-content:space-between" onclick="'+v+'"><span>'+ic+' '+l+'</span><span>'+n+' ›</span></button>'};
   var nb=isAdmin()?burnItems().length:0,sm=isAdmin()?smsTomorrow().filter(function(m){return !remGet(smsKey(m))}).length:0;
-  return '<div style="margin-top:12px">'+(isAdmin()?bt('🔥','Na čo horí',(nb+sm)||'0',"phTab='burn';openSection('prehladSection','Prehľad','')",(nb+sm)?'#dc2626':'#64748b'):'')+bt('📅','Zajtra',TMR_N,'showTomorrow()','#2563eb')+
-    (me?bt('⏰','Pripomienky',due?due+' na dnes'+(a.length>due?' · '+a.length:''):a.length,'remList()',due?'#d97706':'#64748b'):'')+'</div>';
+  return '<div style="margin-top:12px">'+(isAdmin()?bt('🔥','Čo horí',(nb+sm)||'0',"phTab='burn';openSection('prehladSection','Prehľad','')",(nb+sm)?'#dc2626':'#64748b'):'')+bt('📅','Zajtra',TMR_N,'showTomorrow()','#2563eb')+
+    (me?bt('💬','Správy',(dbData.spravy.filter(msgUnread).length||'0')+(dbData.spravy.filter(msgUnread).length?' nových':''),"openSection('spravySection','Správy','')",dbData.spravy.filter(msgUnread).length?'#7c3aed':'#64748b'):'')+(me?bt('⏰','Pripomienky',due?due+' na dnes'+(a.length>due?' · '+a.length:''):a.length,'remList()',due?'#d97706':'#64748b'):'')+'</div>';
 }
 function showTomorrow(){
   var d1=ymd(new Date(Date.now()+86400000)),ev=hvFilt(evFor(d1));lastDay=null;
