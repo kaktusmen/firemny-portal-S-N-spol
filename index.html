@@ -3162,7 +3162,8 @@ function burnItems(){
     out.push({k:'au',c:st.c,tx:(st.n<0?'⛔ ':'⚠️ ')+esc(t[1].replace(/^\S+\s/,''))+': '+esc(a.nazov||a.spz||'auto')+(a.spz?' ('+esc(a.spz)+')':''),sub:esc(fmtD(a[t[0]])+' · '+st.t),act:"openSection('autaSection','Autá','more')"});
   })});
   // telefonaty - nevybavene
-  (dbData.hovory||[]).filter(function(h){return h.stav!=='Vybavené'}).forEach(function(h){
+  /* v.185: telefonáty (chyby) sa v Čo horí neukazujú */
+  ([]).forEach(function(h){
     out.push({k:'hv',c:h.urgent?'#b91c1c':'#d97706',tx:(h.urgent?'🔥 ':'📞 ')+esc('Telefonát: '+hvName(h))+(h.kod?' · '+esc(h.kod):''),sub:esc(hvWhen(h)+(h.popis?' · '+h.popis:'')),act:"hovorShow('"+h.id+"')"});
   });
   // spravy
@@ -4570,7 +4571,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-18.184';
+var APP_VERSION='2026-11-18.185';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
