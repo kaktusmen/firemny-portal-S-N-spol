@@ -1336,6 +1336,7 @@ function addMontazMember(auto){
 function removeMontazMember(i){mTeam.splice(i,1);renderMontazChips()}
 function showMS(v){
   if(v==='choice')fromCal=false;
+  ['cl','rp'].forEach(function(p){var e=$('svBig_'+p);if(e&&!e.options.length)svBigFill(p,'')});
   var map={choice:'msChoice',montaz:'msMontaz',servis:'msServis',clean:'msClean',repair:'msRepair'};
   Object.keys(map).forEach(function(k){$(map[k]).style.display='none'});
   $(map[v]).style.display=(v==='choice'?'grid':'block');
@@ -1443,7 +1444,7 @@ function clearServis(p){
   sTeam[p]=[];renderServisChips(p);$(p+'Member').value='';
   ['Name','Addr','Date','Time','ClientId','EditId'].forEach(function(f){$(p+f).value=''});
   $(p+'Phone').value='';$(p+'Email').value='';
-  showWarranty(p,null);
+  svBigFill(p,'');showWarranty(p,null);
   if(p==='cl')$('clDevice').value='';else{$('rpDesc').value='';$('rpStav').value='Nová';$('rpPriorita').value='';$('rpWork').value='';$('rpParts').value='';$('rpPrice').value='';$('rpHours').value=''}
   $(p+'Sug').style.display='none';
   $(p+'SaveBtn').innerText='Vytvoriť zákazku';$(p+'CancelBtn').style.display='none';
@@ -1467,7 +1468,7 @@ function saveServis(p){
   var o={kind:'servis',servisType:type,title:type+' – '+cname,clientId:c?c.id:'',clientName:cname,
     address:$(p+'Addr').value.trim()||(c?clientAddr(c):''),date:$(p+'Date').value,time:$(p+'Time').value,
     memberIds:sTeam[p].map(function(x){return x.id}),memberNames:sTeam[p].map(function(x){return x.name})};
-  o.telefon=$(p+'Phone').value.trim()||(c&&c.telefon)||'';o.email=$(p+'Email').value.trim()||(c&&c.email)||'';
+  o.telefon=$(p+'Phone').value.trim()||(c&&c.telefon)||'';o.email=$(p+'Email').value.trim()||(c&&c.email)||'';o.big=($('svBig_'+p)||{}).value||'';
   if(p==='cl')o.zariadenie=$('clDevice').value.trim()||(c?clientDevice(c):'');
   else{o.popis=$('rpDesc').value.trim();o.stav=$('rpStav').value||'Nová';o.urgent=$('rpPriorita').value==='urgent';o.praca=$('rpWork').value.trim();o.diely=$('rpParts').value.trim();o.cena=$('rpPrice').value.trim();o.hodiny=$('rpHours').value.trim()}
   var eid=$(p+'EditId').value||null;
@@ -1487,7 +1488,7 @@ function editServis(id){
   $(p+'Name').value=m.clientName||'';$(p+'ClientId').value=m.clientId||'';$(p+'Addr').value=m.address||'';
   $(p+'Date').value=m.date||'';$(p+'Time').value=m.time||'';
   $(p+'Phone').value=m.telefon||'';$(p+'Email').value=m.email||'';
-  showWarranty(p,m.clientId?findById('clients',m.clientId):null);
+  svBigFill(p,m.big||'');showWarranty(p,m.clientId?findById('clients',m.clientId):null);
   if(p==='cl')$('clDevice').value=m.zariadenie||'';else{$('rpDesc').value=m.popis||'';$('rpStav').value=m.stav||'Nová';$('rpPriorita').value=m.urgent?'urgent':'';$('rpWork').value=m.praca||'';$('rpParts').value=m.diely||'';$('rpPrice').value=m.cena||'';$('rpHours').value=m.hodiny||''}
   sTeam[p]=(m.memberNames||[]).map(function(n,i){return {id:(m.memberIds&&m.memberIds[i])||'',name:n}});renderServisChips(p);
   $(p+'EditId').value=m.id;$(p+'SaveBtn').innerText='Aktualizovať zákazku';$(p+'CancelBtn').style.display='block';svGo(p,1);
@@ -2267,7 +2268,7 @@ function quickServisSave(){
   var d=$('qsDate').value;if(!d){toast('Vyber dátum');return}
   var team=qeTeamRead(),t=$('qsTime').value;if(!leaveConflict(team,d,t,''))return;
   var typ=$('qsTyp').value;
-  var o={kind:'servis',servisType:typ,title:typ+' – '+nm(cl),clientId:cl.id,clientName:nm(cl),address:clientAddr(cl)||'',date:d,time:t,telefon:cl.telefon||'',email:cl.email||'',zariadenie:c.dev||clientDevice(cl)||'',popis:$('qsPopis').value.trim(),
+  var o={kind:'servis',servisType:typ,title:typ+' – '+nm(cl),clientId:cl.id,clientName:nm(cl),address:clientAddr(cl)||'',date:d,time:t,telefon:cl.telefon||'',email:cl.email||'',zariadenie:c.dev||clientDevice(cl)||'',popis:$('qsPopis').value.trim(),big:clBig(cl)||'',
     memberIds:team.map(function(x){return x.id}),memberNames:team.map(function(x){return x.name})};
   if(typ==='Oprava'){o.stav='Nová'}
   put('montaze',o);toast('Servis vytvorený');setTimeout(qeBack,60);
@@ -3237,7 +3238,7 @@ function burnItems(){
   });
   // VSE faktury
   var wait=dbData.montaze.concat(dbData.obhliadky).filter(function(x){return x.big&&x.faktStav==='Čaká na platbu'}).length;
-  var nof=dbData.montaze.filter(function(x){return !x.kind&&x.big&&x.stav==='Hotová'&&!x.faktStav}).length;
+  var nof=dbData.montaze.filter(function(x){return x.big&&x.stav==='Hotová'&&!x.faktStav}).length;
   if(wait)out.push({k:'fa',c:'#0891b2',tx:'🧾 Veľkí klienti: čaká na platbu '+wait,sub:'',act:"openSection('bigSection','Veľkí klienti','more')"});
   if(nof)out.push({k:'fa',c:'#0891b2',tx:'🧾 Hotové montáže veľkých klientov bez faktúry: '+nof,sub:'',act:"openSection('bigSection','Veľkí klienti','more')"});
   // firemne auta – STK, EK, dialnicna znamka
@@ -4119,7 +4120,14 @@ function warrantyInfo(c){
   var b=end.split('-'),e=new Date(+b[0],+b[1]-1,+b[2]),today=new Date();today.setHours(0,0,0,0);
   return e>=today?{t:'V záruke do '+fmtD(end),c:'#15803d',i:'✅'}:{t:'Po záruke (skončila '+fmtD(end)+')',c:'#b91c1c',i:'⚠️'};
 }
+function svBigFill(p,val){
+  var el=$('svBig_'+p);if(!el)return;
+  var a=bigNames();if(val&&a.indexOf(val)<0)a.push(val);
+  el.innerHTML='<option value="">-- Náš zákazník (nie veľký klient) --</option>'+a.map(function(n){return '<option'+(n===val?' selected':'')+'>'+esc(n)+'</option>'}).join('');
+  el.value=val||'';
+}
 function showWarranty(p,c){
+  var el0=$('svBig_'+p);if(el0&&!el0.options.length)svBigFill(p,'');if(el0&&c&&!el0.value){var bg=clBig(c);if(bg)svBigFill(p,bg)}
   var el=$(p+'Warranty');if(!el)return;
   if(!c){el.innerHTML='';return}
   var w=warrantyInfo(c);el.innerHTML='<span style="color:'+w.c+'">🛡 '+w.i+' '+esc(w.t)+'</span>';
@@ -4479,9 +4487,10 @@ function bigNames(){
   return a;
 }
 function bigSet(t){bigTab=t;renderBig()}
+function bigSrc(){return bigTab==='ob'?dbData.obhliadky:dbData.montaze.filter(function(m){return bigTab==='sv'?!!m.kind:!m.kind})}
 function bigRows(){
   var sel=$('bigSel')?$('bigSel').value:'';
-  var src=bigTab==='ob'?dbData.obhliadky:dbData.montaze.filter(function(m){return !m.kind});
+  var src=bigSrc();
   var f=$('bigFlt')?$('bigFlt').value:'all';
   return src.filter(function(x){
     if(x.big!==sel)return false;
@@ -4497,8 +4506,8 @@ function renderBig(){
   var nm_=bigNames(),cur=sl.value;
   sl.innerHTML=nm_.map(function(n){return '<option>'+esc(n)+'</option>'}).join('');
   sl.value=nm_.indexOf(cur)>-1?cur:nm_[0];
-  $('bigTabOb').style.background=bigTab==='ob'?'#0d9488':'#94a3b8';$('bigTabMo').style.background=bigTab==='mo'?'#0d9488':'#94a3b8';
-  var all=(bigTab==='ob'?dbData.obhliadky:dbData.montaze.filter(function(m){return !m.kind})).filter(function(x){return x.big===sl.value});
+  $('bigTabOb').style.background=bigTab==='ob'?'#0d9488':'#94a3b8';$('bigTabMo').style.background=bigTab==='mo'?'#0d9488':'#94a3b8';if($('bigTabSv'))$('bigTabSv').style.background=bigTab==='sv'?'#0d9488':'#94a3b8';
+  var all=bigSrc().filter(function(x){return x.big===sl.value});
   var n0=all.filter(function(x){return !x.faktStav}).length,w=all.filter(function(x){return x.faktStav==='Čaká na platbu'}),p=all.filter(function(x){return x.faktStav==='Zaplatené'});
   $('bigSum').innerHTML='<div class="modal-row">📭 Bez faktúry: <b>'+n0+'</b><br>⏳ Čaká na platbu: <b>'+w.length+'</b>'+(w.some(function(x){return bigAge(x)>BIG_DAYS})?' <span style="color:#dc2626">· po splatnosti: '+w.filter(function(x){return bigAge(x)>BIG_DAYS}).length+'</span>':'')+'<br>✅ Zaplatené: <b>'+p.length+'</b></div>';
   var rows=bigRows();
@@ -4507,7 +4516,7 @@ function renderBig(){
     if(x.faktStav==='Zaplatené'){bd='#16a34a';st='✅ Zaplatené'+(x.faktZaplatene?' '+esc(fmtD(x.faktZaplatene)):'')}
     else if(x.faktStav==='Čaká na platbu'){var ag=bigAge(x);bd=ag>BIG_DAYS?'#dc2626':'#ca8a04';st='⏳ Čaká na platbu'+(ag>BIG_DAYS?' · <b style="color:#dc2626">'+ag+' dní</b>':'')}
     else{bd=done?'#dc2626':'#94a3b8';st=done?'🔴 Bez faktúry':'… ešte neukončené'}
-    var t=ob?('🔍 '+esc(onm(x))+(x.obec?' – '+esc(x.obec):'')):('🔧 '+esc(x.title||'Montáž')+(x.clientName?' · '+esc(x.clientName):'')+(x.stav?' ['+esc(x.stav)+']':''));
+    var t=ob?('🔍 '+esc(onm(x))+(x.obec?' – '+esc(x.obec):'')):((x.kind?'🛠 ':'🔧 ')+esc(x.title||'Montáž')+(x.clientName?' · '+esc(x.clientName):'')+(x.stav?' ['+esc(x.stav)+']':''));
     return '<div class="day-row" style="border-left-color:'+bd+'" onclick="openFakt(\''+(ob?'obhliadky':'montaze')+'\',\''+esc(x.id)+'\')"><b>'+t+'</b><span>'+(x.date?esc(fmtD(x.date))+' · ':'')+st+(x.faktCislo?' · č. '+esc(x.faktCislo):'')+'</span></div>';
   }).join(''):'<div class="td-none">Nič na zobrazenie</div>';
 }
@@ -4534,7 +4543,7 @@ function bigCsv(){
   var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'};
   var ob=bigTab==='ob',l=[['Dátum','Názov','Klient/Obec','Stav faktúry','Číslo faktúry','Dátum vystavenia','Dátum zaplatenia'].map(q).join(';')];
   bigRows().forEach(function(x){l.push([x.date?fmtD(x.date):'',ob?onm(x):(x.title||''),ob?(x.obec||''):(x.clientName||''),x.faktStav||'Bez faktúry',x.faktCislo||'',x.faktDatum?fmtD(x.faktDatum):'',x.faktZaplatene?fmtD(x.faktZaplatene):''].map(q).join(';'))});
-  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+l.join('\r\n')],{type:'text/csv;charset=utf-8'}));a.download='velky_klient_'+($('bigSel').value||'')+'_'+(ob?'obhliadky':'montaze')+'.csv';document.body.appendChild(a);a.click();a.remove();
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+l.join('\r\n')],{type:'text/csv;charset=utf-8'}));a.download='velky_klient_'+($('bigSel').value||'')+'_'+(ob?'obhliadky':(bigTab==='sv'?'servis':'montaze'))+'.csv';document.body.appendChild(a);a.click();a.remove();
 }
 
 /* ===== Mapa klientov (OpenStreetMap + Leaflet, zadarmo) ===== */
@@ -4661,7 +4670,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-19.191';
+var APP_VERSION='2026-11-19.192';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -6128,6 +6137,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <div class="modal-actions" style="margin:8px 0">
       <button type="button" class="btn-edit" id="bigTabOb" onclick="bigSet('ob')">🔍 Obhliadky</button>
       <button type="button" class="btn-edit" id="bigTabMo" onclick="bigSet('mo')">🔧 Montáže</button>
+      <button type="button" class="btn-edit" id="bigTabSv" onclick="bigSet('sv')">🛠 Servis a opravy</button>
     </div>
     <select id="bigFlt" onchange="renderBig()" style="width:100%"><option value="all">Všetko</option><option value="none">Bez faktúry</option><option value="wait">Čaká na platbu</option><option value="paid">Zaplatené</option></select>
     <div id="bigSum" style="margin:8px 0"></div>
@@ -6298,6 +6308,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <input type="text" id="clAddr" placeholder="Adresa (vyplní sa automaticky, inak ju zadajte)">
     </div>
     <div class="svStep" data-p="cl" data-s="2" style="display:none">
+    <select id="svBig_cl" class="full-width-input" title="Veľký klient"></select>
     <input type="text" id="clDevice" placeholder="Zariadenie (napr. Klimatizácia Daikin)">
     <div class="form-grid">
       <label class="fl">Dátum<input type="date" id="clDate"></label>
@@ -6336,6 +6347,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <input type="text" id="rpAddr" placeholder="Adresa (vyplní sa automaticky, inak ju zadajte)">
     </div>
     <div class="svStep" data-p="rp" data-s="2" style="display:none">
+    <select id="svBig_rp" class="full-width-input" title="Veľký klient"></select>
     <textarea id="rpDesc" placeholder="Popis poruchy" style="min-height:90px"></textarea>
     <div class="form-grid">
       <select id="rpStav" title="Stav opravy"><option>Nová</option><option>Naplánovaná</option><option>Prebieha</option><option>Hotová</option></select>
