@@ -521,6 +521,60 @@ html[data-theme=dark] .cl-big{color:#93c5fd}html[data-theme=dark] .cl-klima{colo
 .au-box{padding:4px 2px}.au-d{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid rgba(120,120,128,.18)}.au-d span{flex:1 1 150px;font-weight:600}.au-d small{flex:1 1 100%;margin-left:0}.au-n{color:#64748b;padding-top:6px;font-size:.9rem}
 .ws-t th,.ws-t td{padding:5px 4px!important;font-size:.78rem!important;white-space:nowrap}
 .cl-go{color:#94a3b8;font-style:normal;font-size:1.4rem}
+/* ===== v.188 Apple skin (len vzhľad, bez zmeny usporiadania) ===== */
+:root{--sk-tint:#0d9488;--sk-card:#fff;--sk-fill:rgba(120,120,128,.12);--sk-fill2:rgba(120,120,128,.18);--sk-sec:#8e8e93;--sk-text:#1c1c1e;--sk-sep:rgba(60,60,67,.12);--sk-red:#ff3b30;--sk-sh:0 .5px 0 rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.05)}
+html[data-theme=dark]{--sk-tint:#2dd4bf;--sk-card:#1c1c1e;--sk-fill:rgba(120,120,128,.24);--sk-fill2:rgba(120,120,128,.36);--sk-sec:#98989f;--sk-text:#f2f2f7;--sk-sep:rgba(255,255,255,.12);--sk-red:#ff453a;--sk-sh:0 0 0 .5px rgba(255,255,255,.06)}
+html body{background:var(--bg)}
+html[data-lay] body .container{padding-left:16px;padding-right:16px}
+/* tlačidlá: jemné, tónované; plné len hlavná akcia */
+html[data-lay] body .btn-edit,html[data-lay] body .action-btn{background:var(--sk-fill)!important;color:var(--sk-tint)!important;border:none!important;border-radius:13px!important;font-weight:600!important;font-size:1rem!important;letter-spacing:-.01em;box-shadow:none!important;padding:13px 16px;transition:transform .12s ease,opacity .12s ease}
+html[data-lay] body .btn-edit:active,html[data-lay] body .action-btn:active{transform:scale(.98);opacity:.7}
+html[data-lay] body .btn-edit[style*="#16a34a"],html[data-lay] body .action-btn[style*="#16a34a"],html[data-lay] body .action-btn[style*="#0d9488"],html[data-lay] body .btn-edit[style*="background:#0d9488;padding"]{background:var(--sk-tint)!important;color:#fff!important}
+html[data-lay] body .btn-edit[onclick*="editClient("],html[data-lay] body .modal-actions>.btn-edit[onclick*="Save"],html[data-lay] body .modal-actions>.btn-edit[onclick*="save"]{background:var(--sk-tint)!important;color:#fff!important}
+html[data-theme=dark][data-lay] body .btn-edit[style*="#16a34a"],html[data-theme=dark][data-lay] body .action-btn[style*="#16a34a"],html[data-theme=dark][data-lay] body .action-btn[style*="#0d9488"],html[data-theme=dark][data-lay] body .btn-edit[onclick*="editClient("]{color:#04342f!important}
+html[data-lay] body .btn-delete{background:var(--sk-fill)!important;color:var(--sk-sec)!important;border:none!important;border-radius:13px!important;font-weight:600!important;box-shadow:none!important;padding:13px 16px}
+html[data-lay] body .btn-delete:not([style*="background"]){color:var(--sk-red)!important;background:rgba(255,59,48,.12)!important}
+/* riadky zoznamu (Zajtra, Správy, Klient karta…) = inset zoznam so šípkou */
+html[data-lay] body button.btn-edit[style*="justify-content:space-between"],html[data-lay] body button[style*="justify-content:space-between"]{background:var(--sk-card)!important;color:var(--sk-text)!important;border-radius:14px!important;box-shadow:var(--sk-sh)!important;margin:0 0 1px!important;padding:14px 16px!important;font-weight:500!important}
+html[data-lay] body button[style*="justify-content:space-between"] span:last-child{color:var(--sk-sec);font-weight:400}
+html[data-lay] body button[style*="#dc2626"][style*="justify-content:space-between"] span:first-child{color:var(--sk-red);font-weight:600}
+html[data-lay] body button[style*="#d97706"][style*="justify-content:space-between"] span:last-child,html[data-lay] body button[style*="#7c3aed"][style*="justify-content:space-between"] span:last-child{color:var(--sk-tint);font-weight:600}
+/* prepínač Moje / Celý tím = segmented control */
+html[data-lay] body div[style*="display:flex;gap:6px;margin:4px 0 8px"]{background:var(--sk-fill);border-radius:11px;padding:2px;gap:2px!important}
+html[data-lay] body div[style*="display:flex;gap:6px;margin:4px 0 8px"] .btn-edit{background:transparent!important;color:var(--sk-text)!important;border-radius:9px!important;padding:7px 8px!important;font-size:.9rem!important;font-weight:500!important}
+html[data-lay] body div[style*="display:flex;gap:6px;margin:4px 0 8px"] .btn-edit[style*="#0d9488"]{background:var(--sk-card)!important;box-shadow:0 1px 3px rgba(0,0,0,.14)!important;font-weight:600!important}
+/* karty dňa */
+html[data-lay] body .today-box{background:transparent!important;box-shadow:none!important;padding:0!important}
+html[data-lay] body .day-row{background:var(--sk-card)!important;border-radius:16px!important;box-shadow:var(--sk-sh)!important}
+html[data-lay] body .day-row b{font-weight:600;letter-spacing:-.015em}
+html[data-lay] body .day-row .tm{background:transparent!important;padding:0!important;color:var(--sk-sec)!important;font-weight:600;font-variant-numeric:tabular-nums}
+html[data-lay] body .day-row span,html[data-lay] body .day-row .dr-q a{color:var(--sk-sec)}
+html[data-lay] body .dr-q a{background:var(--sk-fill)!important;color:var(--sk-tint)!important;border-radius:999px!important;font-weight:600}
+html[data-lay] body .td-h{color:var(--sk-sec)!important;font-size:.78rem!important;font-weight:600!important;text-transform:uppercase;letter-spacing:.04em;margin:18px 4px 8px!important}
+html[data-lay] body .td-none{color:var(--sk-sec)}
+/* detail / modal ako Apple sheet */
+html[data-lay] body .modal-box,html[data-lay] body #eventModal>div{background:var(--sk-card)!important;border-radius:26px!important;box-shadow:0 20px 60px rgba(0,0,0,.28)!important;border:none!important}
+html[data-lay] body #eventModalBody h3{font-size:1.35rem;font-weight:700;letter-spacing:-.025em;margin:2px 0 10px}
+html[data-lay] body .modal-row{color:var(--sk-text);line-height:1.5}
+html[data-lay] body .modal-row strong,html[data-lay] body .modal-row b{font-weight:500;color:var(--sk-sec)}
+html[data-lay] body #eventModalBody .modal-actions{gap:8px;margin-top:14px}
+html[data-lay] body .modal-bg{-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);background:rgba(0,0,0,.32)}
+/* klienti */
+html[data-lay] body .cl-row{background:var(--sk-card)!important;border-bottom:.5px solid var(--sk-sep)!important}
+/* spodná lišta */
+html[data-lay] body .tabbar,html[data-lay] body #tabBar,html[data-lay] body nav.tabs{-webkit-backdrop-filter:saturate(1.8) blur(22px);backdrop-filter:saturate(1.8) blur(22px)}
+/* oznam */
+html[data-lay] body #toast,html[data-lay] body .toast{background:rgba(40,40,42,.82)!important;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-radius:16px!important;font-size:.9rem;font-weight:500}
+/* pozdrav */
+html[data-lay] body .greet{background:var(--sk-card)!important;border-radius:20px!important;box-shadow:var(--sk-sh)!important}
+
+html[data-lay] body .day-row{border-left-width:3px!important}
+
+html[data-theme=dark][data-lay] body .today-box{background:transparent!important;box-shadow:none!important}
+html[data-theme=dark][data-lay] body div[style*="display:flex;gap:6px;margin:4px 0 8px"] .btn-edit[style*="#0d9488"]{background:var(--sk-fill2)!important;box-shadow:none!important}
+html[data-theme=dark][data-lay] body .day-row{background:var(--sk-card)!important}
+html[data-lay] body #todayBox,html[data-theme=dark][data-lay] body #todayBox{background:transparent!important;box-shadow:none!important;padding:0!important;border-radius:0!important}
+html[data-lay] body .greet,html[data-theme=dark][data-lay] body .greet{background:transparent!important;box-shadow:none!important;border-radius:0!important;padding:4px 2px 10px!important}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -4589,7 +4643,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-18.187';
+var APP_VERSION='2026-11-19.188';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
