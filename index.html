@@ -796,7 +796,7 @@ function start(){
   try{inboxCol().onSnapshot(function(s){dbData.dopyty=s.docs.map(function(d){var o=d.data();o.id=d.id;return o}).sort(function(a,b){return (b.ts||0)-(a.ts||0)});render()},function(){})}catch(e){}
   ALLC.forEach(function(c){
     col(c).onSnapshot(function(s){
-      dbData[c]=s.docs.map(function(d){var o=d.data();o.id=d.id;return o});
+      dbRaw[c]=s.docs.map(function(d){var o=d.data();o.id=d.id;return o});dbData[c]=draftF(c,dbRaw[c]);
       if(c==='members')membersReady=true;
       if(CORE.indexOf(c)>-1)setStatus(true);
       if(!(s.metadata&&s.metadata.fromCache))nfyLoaded[c]=true;
@@ -1043,6 +1043,7 @@ function goHome(){
 var openCards={};
 function stavPill(m){
   var st=m.stav||'Nová',late=st!=='Hotová'&&m.date&&m.date<ymd(new Date());
+  if(m.draft)return '<span class="pill wait">📝 Návrh</span>';
   if(late)return '<span class="pill late">po termíne</span>';
   var cl={'Nová':'nova','Naplánovaná':'plan','Prebieha':'run','Hotová':'done','Čaká na jednotku':'wait'}[st]||'nova';
   return '<span class="pill '+cl+'">'+esc(st)+'</span>';
@@ -1146,7 +1147,11 @@ function msgStat(x){
 }
 function msgNoRead(x){return ''}
 function norm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()}
+var dbRaw={};
+function draftF(c,a){return (c==='montaze'&&!isAdmin())?a.filter(function(m){return !m.draft}):a}
+function draftSync(){if(dbRaw.montaze)dbData.montaze=draftF('montaze',dbRaw.montaze)}
 function render(){
+  draftSync();
   COLS.forEach(function(c){
     var v=V[c],el=$(v[0]);if(!el)return;
     var arr=dbData[c].slice(),empty=v[1];
@@ -1516,7 +1521,7 @@ function mNearUi(){
 }
 function clearMontaz(){
   toggleNewClient(false);if($('mSteps'))mGo(1);
-  ['mTitle','mClient','mDate','mTime','mMember','mDod','mTake','mPopis'].forEach(function(i){$(i).value=''});takeChips();$('mWait').checked=false;mWaitUi();
+  ['mTitle','mClient','mDate','mTime','mMember','mDod','mTake','mPopis'].forEach(function(i){$(i).value=''});takeChips();$('mWait').checked=false;mWaitUi();$('mDraft').checked=false;$('mDraftBox').style.display=isAdmin()?'flex':'none'
   renderDevices([emptyDev()]);sv('mBig','');
   mTeam=[];renderMontazChips();mObhCur={id:'',text:''};
   $('editingMontazId').value='';$('montazSaveBtn').innerText='Vytvoriť zákazku';$('montazCancelBtn').style.display='none';
@@ -1529,7 +1534,7 @@ function editMontaz(id){
   $('mTitle').value=m.title||'';$('mDate').value=m.date||'';$('mTime').value=m.time||'';sv('mBig',m.big||'');$('mTake').value=m.zobrat||'';takeChips();mObhCur={id:m.obhId||'',text:m.obhText||''};
   var pp=m.popis||'';
   if(!pp){var ob0=(m.obhId&&findById('obhliadky',m.obhId))||(m.clientId&&dbData.obhliadky.filter(function(x){return x.klientId===m.clientId}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')})[0])||null;if(ob0){pp=obhText(ob0);if(!mObhCur.id)mObhCur={id:ob0.id,text:pp}}else if(m.obhText)pp=m.obhText}
-  $('mPopis').value=pp;$('mWait').checked=m.stav==='Čaká na jednotku';$('mDod').value=m.dodavka||'';mWaitUi();
+  $('mPopis').value=pp;$('mWait').checked=m.stav==='Čaká na jednotku';$('mDod').value=m.dodavka||'';mWaitUi();$('mDraft').checked=!!m.draft;$('mDraftBox').style.display=isAdmin()?'flex':'none';
   var cid=m.clientId||'';
   if(!cid&&m.clientName){var f=dbData.clients.filter(function(x){return nm(x).toLowerCase()===m.clientName.toLowerCase()})[0];if(f)cid=f.id}
   $('mClient').value=cid;
@@ -1564,12 +1569,13 @@ function saveMontaz(){
   else if(oldM&&oldM.stav==='Čaká na jednotku'){stX={stav:$('mDate').value?'Naplánovaná':'Nová',dodavka:''}}
   put('montaze',Object.assign({title:t,clientId:cid||'',clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,big:gv('mBig'),zobrat:$('mTake').value.trim(),popis:$('mPopis').value.trim(),obhId:mObhCur.id||'',obhText:mObhCur.text||'',
     zariadenia:devs,typ:'',system:'',vnutorne:[],vonkajsia:'',zarukaRoky:'',
-    memberIds:mTeam.map(function(x){return x.id}),memberNames:mTeam.map(function(x){return x.name})},stX),eid);
+    memberIds:mTeam.map(function(x){return x.id}),memberNames:mTeam.map(function(x){return x.name}),draft:isAdmin()?!!$('mDraft').checked:false},stX),eid);
+  var isDr=isAdmin()&&$('mDraft').checked;
   var back=fromCal;
   var waO={zobrat:$('mTake').value.trim(),title:t,clientName:cl?nm(cl):newName,date:$('mDate').value,time:$('mTime').value,address:(cl?clientAddr(cl):(typeof nc!=='undefined'&&nc?nc.adresa:''))||'',memberIds:mTeam.map(function(x){return x.id})};
-  clearMontaz();toast(eid?'Zákazka aktualizovaná!':'Zákazka vytvorená!');
+  clearMontaz();toast(isDr?'📝 Návrh uložený – vidí ho len správca':(eid?'Zákazka aktualizovaná!':'Zákazka vytvorená!'));
   if(back)backToCalendar();else openSection('montazListSection','Zoznam montáží a servisov','work');
-  waAfterSave(waO,!!eid);
+  if(!isDr)waAfterSave(waO,!!eid);
 }
 function clearMember(){
   $('tName').value='';$('tTel').value='';$('tRola').value='Technik';$('tHeslo').value='';$('tPin').value='';$('tPinClear').checked=false;$('editingMemberId').value='';
@@ -3937,6 +3943,7 @@ function showEvent(type,id,view){
     else if(view==='edit'){h='<h3>✏️ Úpravy a protokol</h3>'+waJobBtns(o)+'<div class="modal-actions" style="flex-wrap:wrap">'+edO.replace('<button class="btn-edit" style="background:#0d9488" onclick="showJob(\''+esc(o.id)+'\')">📋 Otvoriť zákazku</button>','')+'</div>'+bk}
     else{h=((needsAck(o))?'<button class="action-btn" style="background:#16a34a" onclick="ackItem(\'montaze\','+oq+')">👍 Beriem na vedomie'+(o.chg?' (zmenený termín/tím)':'')+'</button>':'')+info+readInfo(type,o)+(typeof stB!=='undefined'?stB:'')+
       (function(){var ph=jobPhone(o);return '<div class="dr-q" style="margin-top:8px">'+(ph?'<a href="tel:'+esc(ph)+'">📞 Zavolať</a>':'')+navBtn(o)+'</div>'})()+
+      (o.draft&&isAdmin()?'<div class="modal-row" style="background:rgba(124,58,237,.12);border-radius:12px;padding:10px 12px;margin-top:8px">📝 <b>Návrh</b> – vidí ho len správca. Doplň termín a tím a potom ho zverejni.</div><button class="action-btn" style="background:#16a34a" onclick="publishJob('+oq+')">🚀 Zverejniť zákazku</button>':'')+
       '<div style="margin-top:10px"><button class="action-btn" style="background:#0d9488" onclick="showJob('+oq+')">📋 Otvoriť zákazku</button>'+
       bt('📸','Fotky',"showEvent('montaze',"+oq+",'foto')",'#2563eb')+
       (c?bt('📇','Karta klienta',"clientCard('"+esc(c.id)+"')",'#7c3aed'):'')+
@@ -4654,7 +4661,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-19.189';
+var APP_VERSION='2026-11-19.190';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5119,7 +5126,7 @@ function evFor(ds){
   return dayEvents(ds).filter(function(e){
     if(e.type==='volno')return false;
     if(e.type==='obhliadky'){var ob=findById('obhliadky',e.id);return !isAdmin()&&!!ob&&(ob.memberIds||[]).indexOf(me)>-1}
-    if(e.type==='montaze'){var q=findById('montaze',e.id);if(q&&q.stav==='Hotová')return false}
+    if(e.type==='montaze'){var q=findById('montaze',e.id);if(q&&(q.stav==='Hotová'||q.draft))return false}
     if(isAdmin())return true;
     var o=findById(e.type,e.id);
     if(e.type==='montaze'&&o)return isMine(o);
@@ -5205,6 +5212,10 @@ function homeBtns(d1){
   var nb=isAdmin()?burnItems().length:0,sm=isAdmin()?smsTomorrow().filter(function(m){return !remGet(smsKey(m))}).length:0;
   return '<div style="margin-top:12px">'+(isAdmin()?bt('🔥','Čo horí',(nb+sm)||'0',"phTab='burn';openSection('prehladSection','Prehľad','')",(nb+sm)?'#dc2626':'#64748b'):'')+bt('📅','Zajtra',TMR_N,'showTomorrow()','#2563eb')+
     (me?bt('💬','Správy',(dbData.spravy.filter(msgUnread).length||'0')+(dbData.spravy.filter(msgUnread).length?' nových':''),"openSection('spravySection','Správy','')",dbData.spravy.filter(msgUnread).length?'#7c3aed':'#64748b'):'')+(me?bt('⏰','Pripomienky',due?due+' na dnes'+(a.length>due?' · '+a.length:''):a.length,'remList()',due?'#d97706':'#64748b'):'')+'</div>';
+}
+function publishJob(id){
+  var m=findById('montaze',id);if(!m)return;
+  put('montaze',{draft:false},id);toast('🚀 Zákazka zverejnená');setTimeout(function(){showEvent('montaze',id)},250);
 }
 function showTomorrow(){
   var d1=ymd(new Date(Date.now()+86400000)),ev=hvFilt(evFor(d1));lastDay=null;
@@ -5346,13 +5357,15 @@ function revBtn(m){
 function reviewSent(id){var m=findById('montaze',id);if(m)m.reviewAt=Date.now();col('montaze').doc(id).update({reviewAt:Date.now()}).catch(function(){});setTimeout(renderZak,300)}
 function renderZak(){
   var el=$('zakList');if(!el||LAY!=='new'&&el.offsetParent===null)return;
-  var s1=[['montaze','Montáže'],['servis','Servisy'],['obh','Obhliadky']],s2=zakT==='obh'?[['act','Čakajú na vykonanie'],['done','Vykonané']]:[['act','Aktívne'],['wait','Čakajú'],['done','Hotové']];
+  var s1=[['montaze','Montáže'],['servis','Servisy'],['obh','Obhliadky']],s2=zakT==='obh'?[['act','Čakajú na vykonanie'],['done','Vykonané']]:[['act','Aktívne'],['wait','Čakajú'],['done','Hotové']].concat(isAdmin()?[['draft','📝 Návrhy ('+dbData.montaze.filter(function(m){return m.draft&&(zakT==='servis'?!!m.kind:!m.kind)}).length+')']]:[]);
   if(!s2.some(function(x){return x[0]===zakF}))zakF='act';
   $('zakSeg1').innerHTML=s1.map(function(x){return '<button class="'+(zakT===x[0]?'on':'')+'" onclick="zakSet(\''+x[0]+'\',null)">'+x[1]+'</button>'}).join('');
   $('zakSeg2').innerHTML=s2.map(function(x){return '<button class="'+(zakF===x[0]?'on':'')+'" onclick="zakSet(null,\''+x[0]+'\')">'+x[1]+'</button>'}).join('');
   var obh=zakT==='obh',src=obh?dbData.obhliadky:dbData.montaze.filter(function(m){return zakT==='servis'?!!m.kind:!m.kind});
   if(!isAdmin())src=src.filter(function(m){return obh?(m.memberIds||[]).indexOf(me)>-1:isMine(m)});
   src=src.filter(function(m){
+    if(!obh&&zakF==='draft')return !!m.draft;
+    if(!obh&&m.draft)return false;
     var dn=obh?!!m.vykonana:m.stav==='Hotová',wt=obh?false:m.stav==='Čaká na jednotku';
     return zakF==='done'?dn:(zakF==='wait'?wt:(!dn&&!wt));
   });
@@ -6234,6 +6247,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
       <label class="fl">Dátum montáže<input type="date" id="mDate"></label>
       <label class="fl">Čas<input type="time" id="mTime"></label>
       <label class="fl" style="display:flex;flex-direction:row;align-items:center;gap:10px;padding:6px 2px"><input type="checkbox" id="mWait" onchange="mWaitUi()" style="width:24px;height:24px;min-height:0;flex:none;padding:0;margin:0;-webkit-appearance:checkbox;appearance:auto"> 📦 Čaká na jednotku (termín je len orientačný)</label>
+      <label class="fl" id="mDraftBox" style="display:none;flex-direction:row;align-items:center;gap:10px;padding:6px 2px"><input type="checkbox" id="mDraft" style="width:24px;height:24px;min-height:0;flex:none;padding:0;margin:0;-webkit-appearance:checkbox;appearance:auto"> 📝 Návrh – zatiaľ nezverejňovať (vidí len správca, ostatným sa ukáže po „Zverejniť“)</label>
       <label class="fl" id="mDodBox" style="display:none">Očakávaná dodávka jednotky<input type="date" id="mDod"></label>
       <div class="full-width-input" id="mTakeBox"><label class="fl">🧰 Čo si zobrať na montáž</label>
         <div id="mTakeChips" style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0"></div>
