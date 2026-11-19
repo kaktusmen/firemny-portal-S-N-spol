@@ -2154,7 +2154,8 @@ function workStatData(ym){
   });
   dbData.obhliadky.forEach(function(o){
     if(!o.vykonana||!inM(o.vykonanaAt,o.date))return;
-    (o.memberIds||[]).forEach(function(id,i){var e=ensure(id,(o.memberNames||[])[i]||((findById('members',id)||{}).name)||'?');e.obh++});
+    var odur=(o.startAt&&o.vykonanaAt&&o.vykonanaAt>o.startAt&&o.vykonanaAt-o.startAt<16*36e5)?o.vykonanaAt-o.startAt:0,otrv=(o.navAt&&o.startAt&&o.startAt>o.navAt&&o.startAt-o.navAt<3*36e5)?o.startAt-o.navAt:0;
+    (o.memberIds||[]).forEach(function(id,i){var e=ensure(id,(o.memberNames||[])[i]||((findById('members',id)||{}).name)||'?');e.obh++;if(odur){e.ms+=odur;e.hn++}if(otrv)e.tr+=otrv;var pk=pday(id,o.vykonanaAt?ymd(new Date(o.vykonanaAt)):(o.date||''));pk.ms+=odur;pk.tr+=otrv});
   });
   /* v.186: Začiatok / Koniec dňa */
   var cnt={};
@@ -2178,7 +2179,7 @@ function openWorkStat(ym){
   var tot={mon:0,ser:0,obh:0,ms:0,tr:0,ot:0,sp:0};rows.forEach(function(r){tot.mon+=r.mon;tot.ser+=r.ser;tot.obh+=r.obh;tot.ms+=r.ms;tot.tr+=r.tr;tot.ot+=r.ot;tot.sp+=r.sp});
   $('eventModalBody').innerHTML='<h3>📈 Zákazky a hodiny</h3><input type="month" id="wsM" value="'+esc(ym)+'" onchange="openWorkStat(this.value)">'+
     (rows.length?'<div style="overflow-x:auto"><table class="ws-t"><tr><th>Technik</th><th>Mont.</th><th>Serv.</th><th>Obhl.</th><th>Práca*</th><th>Cesta*</th><th>Iné*</th><th>Spolu</th></tr>'+rows.map(function(r){return '<tr><td>'+esc(r.name)+'</td><td>'+r.mon+'</td><td>'+r.ser+'</td><td>'+r.obh+'</td><td>'+h(r.ms)+'</td><td>'+h(r.tr)+'</td><td>'+h(r.ot)+'</td><td><b>'+h(r.sp)+'</b></td></tr>'}).join('')+'<tr class="ws-sum"><td>Spolu</td><td>'+tot.mon+'</td><td>'+tot.ser+'</td><td>'+tot.obh+'</td><td>'+h(tot.ms)+'</td><td>'+h(tot.tr)+'</td><td>'+h(tot.ot)+'</td><td>'+h(tot.sp)+'</td></tr></table></div>':'<div class="td-none">Za tento mesiac zatiaľ nič.</div>')+
-    '<div class="modal-row" style="font-size:.78rem;color:#64748b">*Práca = čas od ▶ „Som na mieste“ po dokončenie zákazky. Cesta = čas od klepnutia na 🧭 Navigovať po ▶ „Som na mieste“ (len ak sa navigovalo pri tej zákazke, najviac 3 h). Iné = zvyšok dňa (sklad, návrat) – čas medzi 🚐 Začiatok dňa a 🏁 Koniec dňa mínus práca a cesta. Spolu = celý deň, ak bol zapísaný Začiatok aj Koniec dňa, inak práca + cesta. Deň aj zákazka sa započítajú každému členovi tímu, ktorý išiel s tým, kto klikol.</div>'+
+    '<div class="modal-row" style="font-size:.78rem;color:#64748b">*Práca = čas od ▶ „Som na mieste“ po dokončenie zákazky alebo obhliadky. Cesta = čas od klepnutia na 🧭 Navigovať po ▶ „Som na mieste“ (len ak sa navigovalo pri tej zákazke, najviac 3 h). Iné = zvyšok dňa (sklad, návrat) – čas medzi 🚐 Začiatok dňa a 🏁 Koniec dňa mínus práca a cesta. Spolu = celý deň, ak bol zapísaný Začiatok aj Koniec dňa, inak práca + cesta. Deň aj zákazka sa započítajú každému členovi tímu, ktorý išiel s tým, kto klikol.</div>'+
     '<div class="modal-actions"><button class="btn-edit" onclick="workStatCsv(\''+esc(ym)+'\')">⬇️ Stiahnuť CSV</button><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
   $('eventModal').style.display='flex';
 }
@@ -2650,6 +2651,15 @@ function fillPonukaSelects(){
 function ponukaFromObh(){
   var o=findById('obhliadky',$('pObh').value);if(!o)return;
   $('pMeno').value=onm(o);$('pTel').value=o.telefon||'';$('pEmail').value=o.email||'';$('pAdresa').value=[o.adresa,o.obec].filter(Boolean).join(', ');
+}
+function obhStart(id){
+  var o=findById('obhliadky',id);if(!o)return;
+  if(o.startAt){toast('Obhliadku už začal '+(o.startByName||'iný technik'));showEvent('obhliadky',id);return}
+  var nowT=Date.now(),u={startAt:nowT,startBy:me||'',startByName:(findById('members',me)||{}).name||''};
+  try{var mp=JSON.parse(localStorage.getItem('portal_navs')||'{}'),nt=mp[id];
+    if(nt&&nowT-nt>60000&&nowT-nt<3*36e5)u.navAt=nt;
+    if(mp[id]){delete mp[id];localStorage.setItem('portal_navs',JSON.stringify(mp))}}catch(e){}
+  put('obhliadky',u,id);toast('▶ Obhliadka prebieha');setTimeout(function(){showEvent('obhliadky',id)},200);
 }
 function obhDone(id,v){
   var o=findById('obhliadky',id);if(!o)return;
@@ -3908,7 +3918,8 @@ function showEvent(type,id,view){
       info='<h3>🔍 Obhliadka: '+esc(onm(o))+(o.vykonana?' <small style="color:#16a34a">✅ vykonaná</small>':'')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+'</div>'+
         '<div class="modal-row"><strong>Telefón:</strong> '+telA(o.telefon)+'</div><div class="modal-row"><strong>E-mail:</strong> '+mailA(o.email)+'</div><div class="modal-row"><strong>Adresa:</strong> '+mapA(o)+'</div>'+
         OL.map(function(x){return o[x[0]]?'<div class="modal-row"><strong>'+x[1]+':</strong> '+esc(o[x[0]])+(x[0]==='vnutorna'&&oUnitTxt(o)?' · '+esc(oUnitTxt(o)):'')+'</div>':''}).join('');
-      var edO=(o.vykonana?'<button class="btn-edit" style="background:#64748b" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',false)">↩ Vrátiť do úloh</button>':'<button class="btn-edit" style="background:#0d9488" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',true)">✅ Vykonaná</button>')+(isAdmin()?'<button class="btn-edit" style="background:#2563eb" onclick="closeEvent();ponukaFromObhId(\''+esc(o.id)+'\')">💶 Vytvoriť ponuku</button>':'')+'<button class="btn-edit" onclick="closeEvent();editObhliadka(\''+esc(o.id)+'\')">Upraviť obhliadku</button>'+
+      var obS=(!o.vykonana)?(o.startAt?'<div class="modal-row" style="color:#0d9488;font-weight:600;width:100%">▶ Obhliadka prebieha od '+new Date(o.startAt).toTimeString().slice(0,5)+'</div>':'<button class="btn-edit" style="background:#16a34a" onclick="obhStart(\''+esc(o.id)+'\')">▶ Som na mieste</button>'):'';
+      var edO=obS+(o.vykonana?'<button class="btn-edit" style="background:#64748b" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',false)">↩ Vrátiť do úloh</button>':'<button class="btn-edit" style="background:#0d9488" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',true)">✅ Vykonaná</button>')+(isAdmin()?'<button class="btn-edit" style="background:#2563eb" onclick="closeEvent();ponukaFromObhId(\''+esc(o.id)+'\')">💶 Vytvoriť ponuku</button>':'')+'<button class="btn-edit" onclick="closeEvent();editObhliadka(\''+esc(o.id)+'\')">Upraviť obhliadku</button>'+
         (o.klientId?'<button class="btn-edit" style="background:#0d9488" onclick="montazFromObh(\''+esc(o.id)+'\')">🔧 Vytvoriť zákazku</button>':'<button class="btn-edit" style="background:#16a34a" onclick="closeEvent();convertObhliadka(\''+esc(o.id)+'\')">✅ Na klienta</button>');
     }
     var nmx=(o.clientName||o.name||'').trim().toLowerCase();
@@ -4643,7 +4654,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-19.188';
+var APP_VERSION='2026-11-19.189';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
