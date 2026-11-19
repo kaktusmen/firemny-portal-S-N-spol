@@ -813,7 +813,7 @@ function recLabel(c,o,id){
   if(c==='members')return x.name||'';
   if(c==='spravy')return 'správa od '+(x.author||'');
   if(c==='ponuky')return 'ponuka '+(x.cislo||'')+' '+((x.klient&&x.klient.meno)||'');
-  if(c==='hovory')return 'telefonát '+(x.clientName||'')+' '+(x.kod||'');
+  if(c==='hovory')return 'chybové hlásenie '+(x.clientName||'')+' '+(x.kod||'');
   if(c==='auta')return 'auto '+(x.nazov||'')+' '+(x.spz||'');
   if(c==='chladivo')return 'chladivo '+(x.typ||'')+' '+(x.kg||'')+' kg – '+(x.clientName||'');
   if(c==='nastavenia')return id==='cennik'?'cenník':'údaje o firme';
@@ -1116,7 +1116,7 @@ var V={
     return card('ponuky',p,'💶 '+esc(p.cislo||'')+' – '+esc((p.klient&&p.klient.meno)||'')+' ('+fmtEur(ponukaTotal(p).total)+')',
       '<strong>Dátum:</strong> '+esc(p.datum?fmtD(p.datum):'')+'\n'+(p.polozky||[]).map(function(x){return esc(x.n)+' – '+esc(x.q)+' '+esc(x.u)+' × '+fmtEur(num(x.c))}).join('\n')+(p.pozn?'\n<em>'+esc(p.pozn)+'</em>':''),
       'editPonuka',true,'<button class="btn-edit" style="background:#16a34a" onclick="sharePonuka(\''+esc(p.id)+'\')">📤 PDF / Poslať</button><button class="btn-edit" style="background:#475569" onclick="printPonuka(\''+esc(p.id)+'\')">🖨 Tlač</button>')}],
-  hovory:['hovoryList','Zatiaľ žiadne telefonáty. Zapíš prvý cez ➕ → Telefonát.',function(a,b){return (b.ts||0)-(a.ts||0)},function(h){return hvCard(h)}],
+  hovory:['hovoryList','Zatiaľ žiadne chybové hlásenia. Zapíš prvé cez ➕ → Chybové hlásenia.',function(a,b){return (b.ts||0)-(a.ts||0)},function(h){return hvCard(h)}],
   auta:['autaList','Zatiaľ žiadne firemné autá. Pridaj prvé tlačidlom hore.',function(a,b){return String(a.nazov||'').localeCompare(String(b.nazov||''))},function(a){
     var rows=AU_T.map(function(t){var st=auSt(a[t[0]]);return '<div class="au-d"><span>'+t[1]+'</span><b style="color:'+st.c+'">'+st.i+' '+(a[t[0]]?esc(fmtD(a[t[0]])):'nezadané')+'</b><small style="color:'+st.c+'">'+esc(st.t)+'</small></div>'}).join('');
     return '<div class="item-card"><div class="item-card-header"><span class="item-card-title">🚗 '+esc(a.nazov||'Auto')+(a.spz?' · <b>'+esc(a.spz)+'</b>':'')+'</span></div><div class="au-box">'+rows+(a.poznamka?'<div class="au-n">'+esc(a.poznamka)+'</div>':'')+'</div><div class="btn-group" style="margin:8px 0 2px"><button class="btn-edit" onclick="autoForm(\''+esc(a.id)+'\')">Upraviť</button><button class="btn-delete" onclick="delItem(\'auta\',\''+esc(a.id)+'\')">Zmazať</button></div></div>'}],
@@ -2326,7 +2326,7 @@ function dictate(id,btn){
 function dictRow(id,label,ph,rows){return '<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 2px"><strong>'+label+'</strong><button type="button" class="dict" style="width:auto;margin:0;padding:6px 12px;background:#2563eb;color:#fff;border:none;border-radius:10px" onclick="dictate(\''+id+'\',this)">🎤 Diktovať</button></div><textarea id="'+id+'" rows="'+(rows||3)+'" style="width:100%" placeholder="'+ph+'"></textarea>'}
 function hovorForm(id,cid){
   var h=id?findById('hovory',id):null;h=h||{};if(!h.clientId&&cid)h.clientId=cid;
-  $('eventModalBody').innerHTML='<h3>📞 '+(id?'Upraviť telefonát':'Telefonát od zákazníka')+'</h3>'+
+  $('eventModalBody').innerHTML='<h3>📞 '+(id?'Upraviť chybové hlásenie':'Chybové hlásenie od zákazníka')+'</h3>'+
     '<div class="modal-row" style="color:#64748b;font-size:.85rem">'+(id?esc(hvWhen(h)):'Čas a dátum sa doplnia sami.')+'</div>'+
     '<div style="font-weight:700;margin:8px 0 2px">Kto volal</div><select id="hvClient"><option value="">-- Nie je v klientoch / neznámy --</option>'+dbData.clients.slice().sort(function(a,b){return nm(a).localeCompare(nm(b))}).map(function(x){return '<option value="'+esc(x.id)+'">'+esc(nm(x))+(x.obec?' – '+esc(x.obec):'')+'</option>'}).join('')+'</select>'+
     '<input type="text" id="hvName" placeholder="Meno volajúceho (ak nie je v klientoch)" value="'+esc(h.clientId?'':(h.clientName||''))+'">'+
@@ -2347,8 +2347,8 @@ function hovorSave(id){
   var o={clientId:cid||'',clientName:c?nm(c):$('hvName').value.trim(),telefon:$('hvTel').value.trim()||(c&&c.telefon)||'',kod:$('hvKod').value.trim(),popis:$('hvPopis').value.trim(),urobil:$('hvUrobil').value.trim(),riesenie:$('hvRies').value.trim(),urgent:$('hvUrg').checked};
   if(!o.clientName&&!o.telefon&&!o.kod&&!o.popis){toast('Vyplň aspoň kto volal alebo popis');return}
   if(!id){o.ts=Date.now();o.stav='Nový';o.byId=me||'';var mm=findById('members',me);o.byName=mm?mm.name:''}
-  put('hovory',o,id||null);closeEvent();toast('Telefonát uložený');
-  if(!id&&c)logAct('zapísal telefonát','clients',nm(c));
+  put('hovory',o,id||null);closeEvent();toast('Chybové hlásenie uložené');
+  if(!id&&c)logAct('zapísal chybové hlásenie','clients',nm(c));
 }
 function hovorShow(id){
   var h=findById('hovory',id);if(!h)return;var ok=h.stav==='Vybavené',tel=hvTel(h),c=hvCl(h);
@@ -2371,7 +2371,7 @@ function hovorRepair(id){
 }
 function hovorBlock(c){
   var L=(dbData.hovory||[]).filter(function(h){return h.clientId===c.id}).sort(function(a,b){return (b.ts||0)-(a.ts||0)});
-  return '<div class="modal-row" style="margin-top:10px"><strong>📞 TELEFONÁTY ('+L.length+')</strong> <a href="#" onclick="hovorForm(\'\',\''+esc(c.id)+'\');return false" style="float:right">➕ Zapísať</a></div>'+
+  return '<div class="modal-row" style="margin-top:10px"><strong>📞 CHYBOVÉ HLÁSENIA ('+L.length+')</strong> <a href="#" onclick="hovorForm(\'\',\''+esc(c.id)+'\');return false" style="float:right">➕ Zapísať</a></div>'+
     (L.length?L.slice(0,8).map(function(h){return '<div class="day-row" style="border-left-color:'+(h.stav==='Vybavené'?'#15803d':'#d97706')+'" onclick="hovorShow(\''+esc(h.id)+'\')"><b>'+esc(hvWhen(h))+(h.kod?' · '+esc(h.kod):'')+'</b><span>'+esc(h.popis||'')+'</span></div>'}).join(''):'<div class="td-none" style="padding:6px 0">Zatiaľ žiadny telefonát.</div>');
 }
 
@@ -3174,8 +3174,8 @@ function renderSearch(){
   dbData.montaze.forEach(function(m){if(hit([m.title,m.clientName,m.address,m.telefon,m.email,m.popis,m.poznTech,m.faktCislo,(m.memberNames||[]).join(' '),deviceSummary(m)]))out.push([m.kind?'🛠':'🔧',(m.title||m.clientName||'Zákazka'),[m.clientName,m.date?fmtD(m.date):'',m.stav].filter(Boolean).join(' · '),"showEvent('montaze','"+m.id+"')"])});
   dbData.obhliadky.forEach(function(o){if(hit([onm(o),o.telefon,o.email,o.adresa,o.obec]))out.push(['🔍','Obhliadka: '+onm(o),[o.date?fmtD(o.date):'',o.obec].filter(Boolean).join(' · '),"showEvent('obhliadky','"+o.id+"')"])});
   dbData.ponuky.forEach(function(p){var k=p.klient||{};if(hit([p.cislo,k.meno,k.tel,k.adresa]))out.push(['💶',(p.cislo||'Ponuka')+' – '+(k.meno||''),p.datum?fmtD(p.datum):'',"editPonuka('"+p.id+"')"])});
-  (dbData.hovory||[]).forEach(function(h){if(hit([hvName(h),hvTel(h),h.kod,h.popis,h.urobil]))out.push(['📞','Telefonát: '+hvName(h),hvWhen(h)+(h.kod?' · '+h.kod:''),"hovorShow('"+h.id+"')"])});
-  var grp={'📞':'📞 Telefonáty','👤':'👤 Klienti','🔧':'🔧 Zákazky','🛠':'🔧 Zákazky','🔍':'🔍 Obhliadky','💶':'💶 Ponuky'},lastG='';
+  (dbData.hovory||[]).forEach(function(h){if(hit([hvName(h),hvTel(h),h.kod,h.popis,h.urobil]))out.push(['📞','Chybové hlásenie: '+hvName(h),hvWhen(h)+(h.kod?' · '+h.kod:''),"hovorShow('"+h.id+"')"])});
+  var grp={'📞':'📞 Chybové hlásenia','👤':'👤 Klienti','🔧':'🔧 Zákazky','🛠':'🔧 Zákazky','🔍':'🔍 Obhliadky','💶':'💶 Ponuky'},lastG='';
   el.innerHTML=out.length?out.slice(0,60).map(function(x){var g=grp[x[0]]||'',hd=(g&&g!==lastG)?'<div class="td-h">'+g+'</div>':'';lastG=g||lastG;return hd+phRow('#2563eb',x[0]+' '+esc(x[1]),esc(x[2]),x[3])}).join('')+(out.length>60?'<div class="td-none">…a ďalších '+(out.length-60)+', upresni hľadanie.</div>':''):'<div class="td-none">Nič sa nenašlo.</div>';
 }
 // ---------- Prehľad pre správcu ----------
@@ -3248,7 +3248,7 @@ function burnItems(){
   // telefonaty - nevybavene
   /* v.185: telefonáty (chyby) sa v Čo horí neukazujú */
   ([]).forEach(function(h){
-    out.push({k:'hv',c:h.urgent?'#b91c1c':'#d97706',tx:(h.urgent?'🔥 ':'📞 ')+esc('Telefonát: '+hvName(h))+(h.kod?' · '+esc(h.kod):''),sub:esc(hvWhen(h)+(h.popis?' · '+h.popis:'')),act:"hovorShow('"+h.id+"')"});
+    out.push({k:'hv',c:h.urgent?'#b91c1c':'#d97706',tx:(h.urgent?'🔥 ':'📞 ')+esc('Chybové hlásenie: '+hvName(h))+(h.kod?' · '+esc(h.kod):''),sub:esc(hvWhen(h)+(h.popis?' · '+h.popis:'')),act:"hovorShow('"+h.id+"')"});
   });
   // spravy
   var un=dbData.spravy.filter(msgUnread).length;
@@ -3749,7 +3749,7 @@ function statsCsv(){
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='statistika_'+mo+'.csv';
   document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
 }
-var KOS_T={clients:'Klient',montaze:'Montáž / servis',obhliadky:'Obhliadka',members:'Člen tímu',spravy:'Správa',ponuky:'Ponuka',volno:'Voľno',chladivo:'Chladivo',auta:'Firemné auto',hovory:'Telefonát'},kosCache={};
+var KOS_T={clients:'Klient',montaze:'Montáž / servis',obhliadky:'Obhliadka',members:'Člen tímu',spravy:'Správa',ponuky:'Ponuka',volno:'Voľno',chladivo:'Chladivo',auta:'Firemné auto',hovory:'Chybové hlásenie'},kosCache={};
 function admKos(){
   $('admView').innerHTML='<h3>🗑 Kôš</h3><div class="td-none">Načítavam…</div>';
   col('kos').orderBy('deletedAt','desc').limit(100).get().then(function(snap){
@@ -3873,14 +3873,14 @@ function clientCard(id,view){
       (pl.length?pl.map(function(d){return '<div class="day-row" style="border-left-color:#dc2626;cursor:default"><b>'+esc(fmtD(d))+' – plánovaný záručný servis</b></div>'}).join(''):'<div class="td-none">Žiadny plánovaný záručný servis.</div>')+
       '<div class="modal-row"><button class="btn-edit" style="background:#0d9488;padding:6px 14px;width:auto" onclick="quickServis('+cidq+',\'\')">🧹 Naplánovať servis</button></div>'+back;
   }else if(view==='err'){
-    h='<h3>📞 Chyby a telefonáty – '+esc(nm(c))+'</h3>'+hovorBlock(c)+back;
+    h='<h3>📞 Chybové hlásenia – '+esc(nm(c))+'</h3>'+hovorBlock(c)+back;
   }else{
     var bt=function(ic,l,n,v,bg){return '<button class="btn-edit" style="background:'+bg+';width:100%;margin:4px 0;text-align:left;padding:11px 14px;display:flex;justify-content:space-between" onclick="'+v+'"><span>'+ic+' '+l+'</span><span>'+(n===''?'›':n+' ›')+'</span></button>'};
     h=head+'<div style="margin-top:12px">'+
       bt('🔧','Zariadenia klienta',nDev,"clientCard("+cidq+",'dev')",'#0d9488')+
       bt('🕘','História prác',nHist,"clientCard("+cidq+",'hist')",'#2563eb')+
       bt('🛠','Záručný servis',pl.length?fmtD(pl[0]):'',"clientCard("+cidq+",'srv')",'#7c3aed')+
-      bt('📞','Chyby',nHov,"clientCard("+cidq+",'err')",'#dc2626')+
+      bt('📞','Chybové hlásenia',nHov,"clientCard("+cidq+",'err')",'#dc2626')+
       bt('⏰','Pripomeň mi','',"remForm({clientId:"+cidq+"})",'#d97706')+'</div>'+
       '<div class="modal-actions"><button class="btn-edit" onclick="closeEvent();editClient('+cidq+')">Upraviť klienta</button>'+
       '<button class="btn-delete" onclick="closeEvent();delItem(\'clients\','+cidq+')">Zmazať</button>'+
@@ -4661,7 +4661,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-19.190';
+var APP_VERSION='2026-11-19.191';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5679,7 +5679,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   <button onclick="fabGo('chl')">❄️ Chladivo</button>
   <button onclick="closeSheets();voiceOpen()">🎤 Hlasom (zákazka, presun)</button>
   <button onclick="fabGo('rem')">⏰ Pripomienka</button>
-  <button onclick="closeSheets();openSection('hovorySection','Telefonáty','more')">📞 Telefonáty</button>
+  <button onclick="closeSheets();openSection('hovorySection','Chybové hlásenia','more')">📞 Chybové hlásenia</button>
   <button class="admin-only" onclick="closeSheets();openSection('ponukySection','Cenové ponuky','');showPonukaForm(null)">💶 Nová ponuka</button>
 </div></div>
 <div id="qkSheet" onclick="if(event.target===this)this.style.display='none'"><div class="fab-menu">
@@ -5868,8 +5868,8 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
 
   <div id="hovorySection" class="section-content">
     <button class="back-btn" onclick="goHome()">‹ Späť</button>
-    <h2>📞 Telefonáty</h2>
-    <button class="action-btn" onclick="hovorForm()">➕ Zapísať telefonát</button>
+    <h2>📞 Chybové hlásenia</h2>
+    <button class="action-btn" onclick="hovorForm()">➕ Zapísať chybové hlásenie</button>
     <input type="search" id="hovorySearch" placeholder="🔍 Hľadať (meno, telefón, kód chyby, popis…)" oninput="render()" autocomplete="off" style="margin-top:8px">
     <div id="hvSeg" class="seg2"></div>
     <div id="hovoryList" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">Načítavam...</div>
