@@ -2156,12 +2156,12 @@ function workStatData(ym){
   dbData.montaze.forEach(function(m){
     if(m.stav!=='Hotová'||!inM(m.doneAt,m.date))return;
     var dur=(m.startAt&&m.doneAt&&m.doneAt>m.startAt&&m.doneAt-m.startAt<16*36e5)?m.doneAt-m.startAt:0;
-    var trv=(m.navAt&&m.startAt&&m.startAt>m.navAt&&m.startAt-m.navAt<3*36e5)?m.startAt-m.navAt:0;
+    var trv=(m.navAt&&m.startAt&&m.startAt>m.navAt&&m.startAt-m.navAt<12*36e5)?m.startAt-m.navAt:0;
     (m.memberIds||[]).forEach(function(id,i){var e=ensure(id,(m.memberNames||[])[i]||((findById('members',id)||{}).name)||'?');if(m.kind==='servis')e.ser++;else e.mon++;if(dur){e.ms+=dur;e.hn++}if(trv)e.tr+=trv;var pk=pday(id,m.doneAt?ymd(new Date(m.doneAt)):(m.date||''));pk.ms+=dur;pk.tr+=trv});
   });
   dbData.obhliadky.forEach(function(o){
     if(!o.vykonana||!inM(o.vykonanaAt,o.date))return;
-    var odur=(o.startAt&&o.vykonanaAt&&o.vykonanaAt>o.startAt&&o.vykonanaAt-o.startAt<16*36e5)?o.vykonanaAt-o.startAt:0,otrv=(o.navAt&&o.startAt&&o.startAt>o.navAt&&o.startAt-o.navAt<3*36e5)?o.startAt-o.navAt:0;
+    var odur=(o.startAt&&o.vykonanaAt&&o.vykonanaAt>o.startAt&&o.vykonanaAt-o.startAt<16*36e5)?o.vykonanaAt-o.startAt:0,otrv=(o.navAt&&o.startAt&&o.startAt>o.navAt&&o.startAt-o.navAt<12*36e5)?o.startAt-o.navAt:0;
     (o.memberIds||[]).forEach(function(id,i){var e=ensure(id,(o.memberNames||[])[i]||((findById('members',id)||{}).name)||'?');e.obh++;if(odur){e.ms+=odur;e.hn++}if(otrv)e.tr+=otrv;var pk=pday(id,o.vykonanaAt?ymd(new Date(o.vykonanaAt)):(o.date||''));pk.ms+=odur;pk.tr+=otrv});
   });
   /* v.186: Začiatok / Koniec dňa */
@@ -2659,12 +2659,17 @@ function ponukaFromObh(){
   var o=findById('obhliadky',$('pObh').value);if(!o)return;
   $('pMeno').value=onm(o);$('pTel').value=o.telefon||'';$('pEmail').value=o.email||'';$('pAdresa').value=[o.adresa,o.obec].filter(Boolean).join(', ');
 }
+function navLong(ms){
+  if(ms>=12*36e5)return false;
+  var h=Math.floor(ms/36e5),mi=Math.round(ms%36e5/6e4);
+  return confirm('Od navigácie uplynulo '+h+' h '+mi+' min. Započítať to ako cestu?\n\nOK = započítať, Zrušiť = nezapočítať.');
+}
 function obhStart(id){
   var o=findById('obhliadky',id);if(!o)return;
   if(o.startAt){toast('Obhliadku už začal '+(o.startByName||'iný technik'));showEvent('obhliadky',id);return}
   var nowT=Date.now(),u={startAt:nowT,startBy:me||'',startByName:(findById('members',me)||{}).name||''};
   try{var mp=JSON.parse(localStorage.getItem('portal_navs')||'{}'),nt=mp[id];
-    if(nt&&nowT-nt>60000&&nowT-nt<3*36e5)u.navAt=nt;
+    if(nt&&nowT-nt>60000&&(nowT-nt<3*36e5||navLong(nowT-nt)))u.navAt=nt;
     if(mp[id]){delete mp[id];localStorage.setItem('portal_navs',JSON.stringify(mp))}}catch(e){}
   put('obhliadky',u,id);toast('▶ Obhliadka prebieha');setTimeout(function(){showEvent('obhliadky',id)},200);
 }
@@ -4347,7 +4352,7 @@ function jobStart(id){
   }
   var nowT=Date.now(),upd={stav:'Prebieha',startAt:nowT,startBy:me||'',startByName:(findById('members',me)||{}).name||''};
   try{var mp=JSON.parse(localStorage.getItem('portal_navs')||'{}'),nt=mp[id];
-    if(nt&&nowT-nt>60000&&nowT-nt<3*36e5)upd.navAt=nt;
+    if(nt&&nowT-nt>60000&&(nowT-nt<3*36e5||navLong(nowT-nt)))upd.navAt=nt;
     if(mp[id]){delete mp[id];localStorage.setItem('portal_navs',JSON.stringify(mp))}}catch(e){}
   jobPersist(m,upd);logAct('začal zákazku','montaze',m.title||m.clientName||'');toast('▶ Zákazka prebieha');
   render();showJob(id,jobStep);
@@ -4670,7 +4675,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-19.192';
+var APP_VERSION='2026-11-20.193';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
