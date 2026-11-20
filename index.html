@@ -575,6 +575,12 @@ html[data-theme=dark][data-lay] body div[style*="display:flex;gap:6px;margin:4px
 html[data-theme=dark][data-lay] body .day-row{background:var(--sk-card)!important}
 html[data-lay] body #todayBox,html[data-theme=dark][data-lay] body #todayBox{background:transparent!important;box-shadow:none!important;padding:0!important;border-radius:0!important}
 html[data-lay] body .greet,html[data-theme=dark][data-lay] body .greet{background:transparent!important;box-shadow:none!important;border-radius:0!important;padding:4px 2px 10px!important}
+/* Čo horí – zoskupené riadky */
+.bn-g{display:flex;align-items:center;gap:10px;background:var(--sk-card,#fff);border-radius:14px;border-left:3px solid #94a3b8;padding:12px 14px;margin:6px 0;cursor:pointer;box-shadow:0 .5px 0 rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05)}
+.bn-g b{flex:1;font-weight:600}.bn-g .bn-n{background:rgba(120,120,128,.16);border-radius:999px;padding:1px 9px;font-size:.85em;font-weight:600}.bn-g i{font-style:normal;color:#8e8e93}
+.bn-box{margin:-2px 0 8px 10px}
+.bn-it{display:block;padding:9px 12px;margin:4px 0;background:rgba(120,120,128,.1);border-radius:11px;border-left:3px solid #94a3b8;cursor:pointer;font-size:.92rem;line-height:1.35}
+.bn-it b{font-weight:600}.bn-it span{display:block;color:#8e8e93;font-size:.85em}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -3279,9 +3285,20 @@ function renderBurn(){
   var h='';
   if(st.length)h+='<div class="td-h">📅 SMS na zajtra</div>'+phRow(pend.length?'#2563eb':'#16a34a',pend.length?'Neodoslané: '+pend.length+' z '+st.length:'✅ Všetky odoslané ('+st.length+')','Otvorí SMS pre ďalšieho klienta a označí ju ako odoslanú',null,pend.length?phBtn('💬 Ďalšia SMS ('+esc(pend[0].clientName||'')+')','#2563eb','smsNext()'):'');
   h+='<div class="td-h">🔥 Čo horí ('+it.length+')</div>';
-  h+=it.length?it.map(function(x){return phRow(x.c,x.raw?x.tx:esc(x.tx),x.raw?x.sub:esc(x.sub),x.act,x.btns)}).join(''):'<div class="td-none">Všetko v poriadku 👍</div>';
+  if(!it.length)return h+'<div class="td-none">Všetko v poriadku 👍</div>';
+  var G=[],gi={};
+  it.forEach(function(x){if(gi[x.k]==null){gi[x.k]=G.length;G.push({k:x.k,c:x.c,a:[]})}G[gi[x.k]].a.push(x)});
+  var LBL={late:'🔴 Po termíne',rem:'📞 Pripomeň klientovi',dop:'📥 Nové dopyty',nt:'👷 Bez technika',ack:'⏳ Nepotvrdili',cl:'⚠️ Prekrývanie',op:'📝 Obhliadky bez ponuky',po:'💶 Ponuky bez odpovede',fa:'🧾 Faktúry',au:'🚗 Autá',hv:'🔧 Chybové hlásenia',sp:'💬 Správy',bk:'💾 Záloha'};
+  var cRow=function(x){return '<div class="bn-it" style="border-left-color:'+x.c+(x.act?'':';cursor:default')+'"'+(x.act?' onclick="'+x.act+'"':'')+'><b>'+(x.raw?x.tx:esc(x.tx)).replace(/^[^:]*:\s*/,'')+'</b><span>'+(x.raw?x.sub:esc(x.sub))+'</span>'+(x.btns?'<div class="modal-actions" style="margin-top:6px;flex-wrap:wrap" onclick="event.stopPropagation()">'+x.btns+'</div>':'')+'</div>'};
+  G.forEach(function(g){
+    if(g.a.length===1){var x=g.a[0];h+=phRow(x.c,x.raw?x.tx:esc(x.tx),x.raw?x.sub:esc(x.sub),x.act,x.btns);return}
+    var o=!!burnOpen[g.k];
+    h+='<div class="bn-g" onclick="burnTog(\''+g.k+'\')" style="border-left-color:'+g.c+'"><b>'+(LBL[g.k]||'Iné')+'</b><span class="bn-n">'+g.a.length+'</span><i>'+(o?'⌄':'›')+'</i></div>'+(o?'<div class="bn-box">'+g.a.map(cRow).join('')+'</div>':'');
+  });
   return h;
 }
+var burnOpen={};
+function burnTog(k){burnOpen[k]=!burnOpen[k];renderPrehlad()}
 function phWeek(){
   var t=new Date(),ws=weekStart(new Date(t.getFullYear(),t.getMonth(),t.getDate()+7*phOff));
   var days=[0,1,2,3,4,5,6].map(function(i){return ymd(new Date(ws.getFullYear(),ws.getMonth(),ws.getDate()+i))});
@@ -4675,7 +4692,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-20.193';
+var APP_VERSION='2026-11-20.194';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
