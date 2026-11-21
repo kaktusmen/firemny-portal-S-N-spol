@@ -4692,7 +4692,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-21.195';
+var APP_VERSION='2026-11-21.196';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5248,35 +5248,57 @@ function publishJob(id){
   var m=findById('montaze',id);if(!m)return;
   put('montaze',{draft:false},id);toast('🚀 Zákazka zverejnená');setTimeout(function(){showEvent('montaze',id)},250);
 }
-var agDays=30;
-function agSet(n){agDays=n;showAgenda()}
-function agItems(){
-  var t=new Date(),out=[];
-  for(var i=0;i<=agDays;i++){
-    var d=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()+i)),ev=dayEvents(d).filter(function(e){var o=findById(e.type,e.id);return !(e.type==='montaze'&&o&&o.stav==='Hotová')});
-    var rm=remMineAll().filter(function(r){return !r.done&&r.date===d});
-    if(ev.length||rm.length)out.push({d:d,ev:ev,rm:rm});
-  }
-  return out;
+var agDays=7,agSel=null,agMo=0;
+function agSet(n){agDays=n;agMo=0;agSel=null;showAgenda()}
+function agPick(d){agSel=(agSel===d?null:d);showAgenda()}
+function agNav(k){agMo+=k;agSel=null;showAgenda()}
+function agEv(d){return dayEvents(d).filter(function(e){var o=findById(e.type,e.id);return !(e.type==='montaze'&&o&&o.stav==='Hotová')})}
+function agRm(d){return remMineAll().filter(function(r){return !r.done&&r.date===d})}
+function agCell(d,today,big){
+  var ev=agEv(d),rm=agRm(d),n=ev.length+rm.length,dots=ev.slice(0,4).map(function(e){return '<i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+e.color+'"></i>'}).join('')+(rm.length?'<i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d97706"></i>':'');
+  var dd=+d.slice(8),sel=agSel===d,isT=d===today;
+  return '<div onclick="agPick(\''+d+'\')" style="cursor:pointer;border-radius:10px;padding:4px 2px;min-height:'+(big?'58':'52')+'px;text-align:center;box-sizing:border-box;border:'+(sel?'2px solid #0d9488':isT?'2px solid #2563eb':'1px solid #cbd5e1')+';background:'+(sel?'#ccfbf1':'#fff')+';color:#0f172a">'+
+    '<div style="font-weight:700;font-size:.9rem">'+dd+(dd===1||big===0?'<span style="font-size:.6rem;color:#64748b"> '+(+d.slice(5,7))+'.</span>':'')+'</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:3px">'+dots+'</div>'+
+    (n>4?'<div style="font-size:.6rem;color:#475569">'+n+'</div>':'')+'</div>';
 }
 function showAgenda(){
   lastDay=null;
   var adm=isAdmin(),unr=dbData.spravy.filter(msgUnread).length,req=adm?dbData.volno.filter(function(x){return x.stav==='Žiadosť'}):[];
   var bt=function(ic,l,n,v,hot){return '<button class="btn-edit" style="background:'+(hot?'#7c3aed':'#64748b')+';width:100%;margin:4px 0;text-align:left;padding:11px 14px;display:flex;justify-content:space-between" onclick="'+v+'"><span>'+ic+' '+l+'</span><span>'+n+' ›</span></button>'};
-  var seg=[[14,'14 dní'],[30,'Mesiac'],[90,'3 mesiace']].map(function(x){return '<button class="btn-edit" style="flex:1;margin:0;padding:8px;background:'+(agDays===x[0]?'#0d9488':'#e2e8f0')+';color:'+(agDays===x[0]?'#fff':'#334155')+'" onclick="agSet('+x[0]+')">'+x[1]+'</button>'}).join('');
-  var days=agItems(),nEv=days.reduce(function(a,x){return a+x.ev.length},0);
+  var seg='<div class="seg2">'+[[7,'7 dní'],[14,'14 dní'],[30,'Mesiac']].map(function(x){return '<button class="'+(agDays===x[0]?'on':'')+'" onclick="agSet('+x[0]+')">'+x[1]+'</button>'}).join('')+'</div>';
   var drafts=adm?dbData.montaze.filter(function(m){return m.draft}):[];
-  var h='<h3>📆 Plán a udalosti</h3>'+
+  var t=new Date(),today=ymd(t),cells=[],head,title='',nav='';
+  var hn=['Po','Ut','St','Št','Pi','So','Ne'];
+  if(agDays===30){
+    var f=new Date(t.getFullYear(),t.getMonth()+agMo,1),mn=['Január','Február','Marec','Apríl','Máj','Jún','Júl','August','September','Október','November','December'];
+    title=mn[f.getMonth()]+' '+f.getFullYear();
+    nav='<div style="display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px"><button class="btn-edit" style="margin:0;padding:6px 14px;background:#e2e8f0;color:#334155" onclick="agNav(-1)">‹</button><b>'+title+'</b><button class="btn-edit" style="margin:0;padding:6px 14px;background:#e2e8f0;color:#334155" onclick="agNav(1)">›</button></div>';
+    var off=(f.getDay()+6)%7,dim=new Date(f.getFullYear(),f.getMonth()+1,0).getDate();
+    for(var i=0;i<off;i++)cells.push('<div></div>');
+    for(var k=1;k<=dim;k++)cells.push(agCell(ymd(new Date(f.getFullYear(),f.getMonth(),k)),today,1));
+    head=hn;
+  }else{
+    head=[];
+    for(var j=0;j<agDays;j++){var dt=new Date(t.getFullYear(),t.getMonth(),t.getDate()+j);cells.push(agCell(ymd(dt),today,0));if(j<7)head.push(hn[(dt.getDay()+6)%7])}
+  }
+  var grid='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:.7rem;text-align:center;color:#64748b;margin-bottom:4px">'+head.map(function(x){return '<div>'+x+'</div>'}).join('')+'</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">'+cells.join('')+'</div>';
+  var sel='';
+  if(agSel){
+    var ev=agEv(agSel),rm=agRm(agSel),dn=['Nedeľa','Pondelok','Utorok','Streda','Štvrtok','Piatok','Sobota'][new Date(agSel+'T12:00').getDay()];
+    var add=function(k,l,bg){return '<button class="btn-edit" style="background:'+bg+'" onclick="addEventOn(\''+k+'\',\''+agSel+'\')">'+l+'</button>'};
+    sel='<div class="td-h" style="margin-top:12px">'+dn+' · '+esc(fmtD(agSel))+'</div>'+
+      ((ev.length||rm.length)?'<div class="tl">'+ev.map(function(e){return dayRow(e)}).join('')+rm.map(function(r){return '<div class="day-row" style="border-left-color:#d97706" onclick="remList()"><b>⏰ '+esc(r.text||'')+'</b>'+(r.time?'<span>'+esc(r.time)+'</span>':'')+'</div>'}).join('')+'</div>':'<div class="td-none">Žiadne udalosti v tento deň.</div>')+
+      '<div class="modal-row"><strong>➕ Pridať udalosť</strong></div><div class="modal-actions" style="flex-wrap:wrap">'+add('montaz','🔧 Montáž','#0d9488')+add('cl','🧹 Čistenie','#2563eb')+add('rp','🔨 Oprava','#ea580c')+'</div>';
+  }else sel='<div class="td-none" style="margin-top:10px">Ťukni na deň – zobrazia sa udalosti a môžeš pridať novú.</div>';
+  $('eventModalBody').innerHTML='<h3>📆 Plán a udalosti</h3>'+
     bt('💬','Správy',unr?unr+' nových':'0',"closeEvent();openSection('spravySection','Správy','')",unr)+
     bt('🏖','Žiadosti o voľno',adm?(req.length?req.length+' čaká':'0'):'moje',"closeEvent();openSection('volnoSection','Voľno','')",req.length)+
     (adm?bt('📝','Návrhy zákaziek',drafts.length,"closeEvent();zakT='montaze';zakF='draft';openSection('zakazkySection','Zákazky','')",false):'')+
-    '<div style="display:flex;gap:6px;margin:4px 0 8px">'+seg+'</div>'+
-    (days.length?days.map(function(x){
-      var dn=['Nedeľa','Pondelok','Utorok','Streda','Štvrtok','Piatok','Sobota'][new Date(x.d+'T12:00').getDay()];
-      return '<div class="td-h">'+dn+' · '+esc(fmtD(x.d))+'</div><div class="tl">'+x.ev.map(function(e){return dayRow(e)}).join('')+x.rm.map(function(r){return '<div class="day-row" style="border-left-color:#d97706" onclick="remList()"><b>⏰ '+esc(r.text||'')+'</b>'+(r.time?'<span>'+esc(r.time)+'</span>':'')+'</div>'}).join('')+'</div>'
-    }).join(''):'<div class="td-none">Na najbližšie obdobie nič nie je naplánované.</div>')+
+    seg+nav+grid+sel+
     '<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
-  $('eventModalBody').innerHTML=h;$('eventModal').style.display='flex';
+  $('eventModal').style.display='flex';
 }
 function showTomorrow(){
   var d1=ymd(new Date(Date.now()+86400000)),ev=hvFilt(evFor(d1));lastDay=null;
