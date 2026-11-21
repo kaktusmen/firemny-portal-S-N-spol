@@ -4692,7 +4692,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-21.196';
+var APP_VERSION='2026-11-21.197';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5255,12 +5255,11 @@ function agNav(k){agMo+=k;agSel=null;showAgenda()}
 function agEv(d){return dayEvents(d).filter(function(e){var o=findById(e.type,e.id);return !(e.type==='montaze'&&o&&o.stav==='Hotová')})}
 function agRm(d){return remMineAll().filter(function(r){return !r.done&&r.date===d})}
 function agCell(d,today,big){
-  var ev=agEv(d),rm=agRm(d),n=ev.length+rm.length,dots=ev.slice(0,4).map(function(e){return '<i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+e.color+'"></i>'}).join('')+(rm.length?'<i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d97706"></i>':'');
+  var n=agEv(d).length+agRm(d).length;
   var dd=+d.slice(8),sel=agSel===d,isT=d===today;
-  return '<div onclick="agPick(\''+d+'\')" style="cursor:pointer;border-radius:10px;padding:4px 2px;min-height:'+(big?'58':'52')+'px;text-align:center;box-sizing:border-box;border:'+(sel?'2px solid #0d9488':isT?'2px solid #2563eb':'1px solid #cbd5e1')+';background:'+(sel?'#ccfbf1':'#fff')+';color:#0f172a">'+
+  return '<div onclick="agPick(\''+d+'\')" style="cursor:pointer;border-radius:10px;padding:4px 2px;min-height:'+(big?'52':'50')+'px;text-align:center;box-sizing:border-box;border:'+(sel?'2px solid #0d9488':isT?'2px solid #2563eb':'1px solid #cbd5e1')+';background:'+(sel?'#ccfbf1':'#fff')+';color:#0f172a">'+
     '<div style="font-weight:700;font-size:.9rem">'+dd+(dd===1||big===0?'<span style="font-size:.6rem;color:#64748b"> '+(+d.slice(5,7))+'.</span>':'')+'</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:3px">'+dots+'</div>'+
-    (n>4?'<div style="font-size:.6rem;color:#475569">'+n+'</div>':'')+'</div>';
+    (n?'<div style="font-size:.72rem;font-weight:700;color:#0d9488;margin-top:4px">'+n+'×</div>':'')+'</div>';
 }
 function showAgenda(){
   lastDay=null;
