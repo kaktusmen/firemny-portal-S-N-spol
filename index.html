@@ -4692,7 +4692,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-21.197';
+var APP_VERSION='2026-11-23.199';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5156,7 +5156,7 @@ function wkPick(d){wkSel=(wkSel===d?'':d);renderToday()}
 function evFor(ds){
   return dayEvents(ds).filter(function(e){
     if(e.type==='volno')return false;
-    if(e.type==='obhliadky'){var ob=findById('obhliadky',e.id);return !isAdmin()&&!!ob&&(ob.memberIds||[]).indexOf(me)>-1}
+    if(e.type==='obhliadky'){var ob=findById('obhliadky',e.id);return !!ob&&(isAdmin()?LAY==='new':(ob.memberIds||[]).indexOf(me)>-1)}
     if(e.type==='montaze'){var q=findById('montaze',e.id);if(q&&(q.stav==='Hotová'||q.draft))return false}
     if(isAdmin())return true;
     var o=findById(e.type,e.id);
@@ -5242,7 +5242,7 @@ function homeBtns(d1){
   var bt=function(ic,l,n,v,bg){return '<button class="btn-edit" style="background:'+bg+';width:100%;margin:4px 0;text-align:left;padding:11px 14px;display:flex;justify-content:space-between" onclick="'+v+'"><span>'+ic+' '+l+'</span><span>'+n+' ›</span></button>'};
   var nb=isAdmin()?burnItems().length:0,sm=isAdmin()?smsTomorrow().filter(function(m){return !remGet(smsKey(m))}).length:0;
   return '<div style="margin-top:12px">'+bt('📆','Plán a udalosti','','showAgenda()','#2563eb')+(isAdmin()?bt('🔥','Čo horí',(nb+sm)||'0',"phTab='burn';openSection('prehladSection','Prehľad','')",(nb+sm)?'#dc2626':'#64748b'):'')+bt('📅','Zajtra',TMR_N,'showTomorrow()','#2563eb')+
-    (me?bt('💬','Správy',(dbData.spravy.filter(msgUnread).length||'0')+(dbData.spravy.filter(msgUnread).length?' nových':''),"openSection('spravySection','Správy','')",dbData.spravy.filter(msgUnread).length?'#7c3aed':'#64748b'):'')+(me?bt('⏰','Pripomienky',due?due+' na dnes'+(a.length>due?' · '+a.length:''):a.length,'remList()',due?'#d97706':'#64748b'):'')+'</div>';
+    (me&&!isAdmin()?bt('🏖','Požiadať o voľno',(dbData.volno.filter(function(v){return v.memberId===me&&v.stav==='Žiadosť'}).length||''),"openSection('volnoSection','Voľno','')",'#0891b2'):'')+(me?bt('💬','Správy',(dbData.spravy.filter(msgUnread).length||'0')+(dbData.spravy.filter(msgUnread).length?' nových':''),"openSection('spravySection','Správy','')",dbData.spravy.filter(msgUnread).length?'#7c3aed':'#64748b'):'')+(me?bt('⏰','Pripomienky',due?due+' na dnes'+(a.length>due?' · '+a.length:''):a.length,'remList()',due?'#d97706':'#64748b'):'')+'</div>';
 }
 function publishJob(id){
   var m=findById('montaze',id);if(!m)return;
@@ -5293,7 +5293,7 @@ function showAgenda(){
   }else sel='<div class="td-none" style="margin-top:10px">Ťukni na deň – zobrazia sa udalosti a môžeš pridať novú.</div>';
   $('eventModalBody').innerHTML='<h3>📆 Plán a udalosti</h3>'+
     bt('💬','Správy',unr?unr+' nových':'0',"closeEvent();openSection('spravySection','Správy','')",unr)+
-    bt('🏖','Žiadosti o voľno',adm?(req.length?req.length+' čaká':'0'):'moje',"closeEvent();openSection('volnoSection','Voľno','')",req.length)+
+    bt('🏖',adm?'Žiadosti o voľno':'Požiadať o voľno',adm?(req.length?req.length+' čaká':'0'):'',"closeEvent();openSection('volnoSection','Voľno','')",req.length)+
     (adm?bt('📝','Návrhy zákaziek',drafts.length,"closeEvent();zakT='montaze';zakF='draft';openSection('zakazkySection','Zákazky','')",false):'')+
     seg+nav+grid+sel+
     '<div class="modal-actions"><button class="btn-delete" style="background:#64748b" onclick="closeEvent()">Zavrieť</button></div>';
