@@ -4692,7 +4692,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-24.200';
+var APP_VERSION='2026-11-24.201';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4902,19 +4902,21 @@ function initGestures(){
 }
 function ymd(d){return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())}
 function dayRow(e,cp){
-  var q='';
+  var q='',adr='';
   if(e.type==='montaze'){
     var m=findById('montaze',e.id);
     if(m&&isMine(m)||m&&isAdmin()){
       var ph=jobPhone(m),mi=m.stav==='Hotová'?[]:jobMissing(m);
       var st0=!m.stav||m.stav==='Nová',stel=smsTel(m);
+      var ad0=jobAddr(m);
+      if(ad0)adr='<div onclick="event.stopPropagation()" style="margin-top:4px;font-size:.88rem">📍 '+esc(ad0)+'<div id="trm_'+esc(e.id)+'">'+(TRIP['montaze_'+e.id]?tripHtml(m,TRIP['montaze_'+e.id]):'')+'</div></div>';
       q='<div class="dr-q" onclick="event.stopPropagation()">'+(needsAck(m)?'<a href="#" style="background:#16a34a;color:#fff" onclick="ackJob(\''+esc(e.id)+'\');return false">👍 Beriem na vedomie</a>':'')+(ph&&!cp?'<a href="tel:'+esc(ph)+'">📞 Zavolať</a>':'')+
         (!cp&&stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(smsText(m))+'" onclick="markRem(\''+smsKey(m)+'\')">💬 Odoslať SMS</a>':'')+(!cp&&stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(SMS_TPL[1][1])+'">⏰ Meškáme</a>':'')+
-        (!cp&&stel&&m.stav==='Hotová'&&reviewText()?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(reviewText())+'">⭐ Požiadať o hodnotenie</a>':'')+(cp?'':navBtn(m))+'<a href="#" onclick="showJob(\''+esc(e.id)+'\');return false">📋 Zákazka'+(mi.length?' <span class="miss">'+mi.length+'</span>':'')+'</a></div>';
+        (!cp&&stel&&m.stav==='Hotová'&&reviewText()?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(reviewText())+'">⭐ Požiadať o hodnotenie</a>':'')+(cp?'':navBtn(m))+(ad0?'<a href="#" onclick="tripCalc(\'montaze\',\''+esc(e.id)+'\',\'trm_'+esc(e.id)+'\');return false">🚗 Cesta</a>':'')+'<a href="#" onclick="showJob(\''+esc(e.id)+'\');return false">📋 Zákazka'+(mi.length?' <span class="miss">'+mi.length+'</span>':'')+'</a></div>';
     }
   }
   var dn=e.type==='montaze'&&(findById('montaze',e.id)||{}).stav==='Hotová';
-  return '<div class="day-row'+(dn?' dr-done':'')+'" style="border-left-color:'+(dn?'#94a3b8':e.color)+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+(e.time?'<i class="tm" style="font-style:normal">'+esc(e.time)+'</i>':'')+(e.type==='montaze'&&findById('montaze',e.id)?stavPill(findById('montaze',e.id)):'')+esc(e.text)+(e.type==='montaze'&&findById('montaze',e.id)?'<span class="avs">'+techAvs(findById('montaze',e.id).memberNames)+'</span>':'')+'</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+(e.type==='montaze'?dayAck(findById('montaze',e.id)):'')+q+'</div>';
+  return '<div class="day-row'+(dn?' dr-done':'')+'" style="border-left-color:'+(dn?'#94a3b8':e.color)+'" onclick="showEvent(\''+e.type+'\',\''+esc(e.id)+'\')"><b>'+(e.time?'<i class="tm" style="font-style:normal">'+esc(e.time)+'</i>':'')+(e.type==='montaze'&&findById('montaze',e.id)?stavPill(findById('montaze',e.id)):'')+esc(e.text)+(e.type==='montaze'&&findById('montaze',e.id)?'<span class="avs">'+techAvs(findById('montaze',e.id).memberNames)+'</span>':'')+'</b>'+(e.sub?'<span>'+esc(e.sub)+'</span>':'')+(e.type==='montaze'?dayAck(findById('montaze',e.id)):'')+adr+q+'</div>';
 }
 function msgForMe(x){
   var mm=me?findById('members',me):null;if(!mm||x.fromId===me)return false;
@@ -5798,17 +5800,17 @@ function tripBox(o,type){
     '<div id="tripRes" style="margin-top:4px">'+(TRIP[k]?tripHtml(o,TRIP[k]):'<button class="btn-edit" style="background:#0d9488;margin:4px 0 0" onclick="tripCalc(\''+type+'\',\''+esc(o.id)+'\')">🚗 Spočítať cestu a čas výjazdu</button>')+'</div></div>';
 }
 function tripHtml(o,t){
-  var min=Math.round(t.s/60),km=Math.round(t.m/1000),h='🚗 Cesta asi <b>'+(min>=60?Math.floor(min/60)+' h '+(min%60)+' min':min+' min')+'</b> ('+km+' km) z tvojej polohy';
+  var min=Math.round(t.s/60),km=Math.round(t.m/1000),h='🚗 Cesta asi <em style="font-style:normal;font-weight:700;color:inherit">'+(min>=60?Math.floor(min/60)+' h '+(min%60)+' min':min+' min')+'</em> ('+km+' km) z tvojej polohy';
   if(o.time&&o.date){
     var st=new Date(o.date+'T'+o.time+':00'),lv=new Date(st.getTime()-(t.s+600)*1000);
     var p=function(x){return ('0'+x).slice(-2)},lt=p(lv.getHours())+':'+p(lv.getMinutes());
-    h+='<br>⏰ Na '+esc(o.time)+' vyraz najneskôr o <b>'+(ymd(lv)===o.date?lt:fmtD(ymd(lv))+' '+lt)+'</b> <span style="color:#64748b">(rezerva 10 min)</span>';
+    h+='<br>⏰ Na '+esc(o.time)+' vyraz najneskôr o <em style="font-style:normal;font-weight:700;color:inherit">'+(ymd(lv)===o.date?lt:fmtD(ymd(lv))+' '+lt)+'</em> <span style="color:#64748b">(rezerva 10 min)</em>';
   }
-  return h+'<br><span style="color:#64748b;font-size:.8rem">Bez zápch a dopravy. Pri výjazde z iného miesta ťukni znova.</span> <a href="#" onclick="tripReset(\''+esc(t.k)+'\');return false" style="font-size:.85rem">↻ prepočítať</a>';
+  return h+'<br><span style="color:#64748b;font-size:.78rem">Bez zápch. </span><a href="#" onclick="tripReset(\''+esc(t.k)+'\');return false" style="font-size:.85rem">↻ prepočítať</a>';
 }
-function tripReset(k){delete TRIP[k];var a=k.split('_'),t=a.shift(),id=a.join('_');tripCalc(t,id)}
-function tripCalc(type,id){
-  var o=findById(type,id),r=$('tripRes');if(!o||!r)return;
+function tripReset(k){var tid=(TRIP[k]||{}).tid||'';delete TRIP[k];var a=k.split('_'),t=a.shift(),id=a.join('_');tripCalc(t,id,tid||undefined)}
+function tripCalc(type,id,tid){
+  var o=findById(type,id),r=$(tid||'tripRes');if(!o||!r)return;
   var ad=tripAddr(type,o),k=type+'_'+id;
   r.innerHTML='⏳ Zisťujem polohu a trasu…';
   if(!navigator.geolocation){r.innerHTML='Poloha nie je dostupná. Použi 🧭 Navigovať.';return}
@@ -5819,7 +5821,7 @@ function tripCalc(type,id){
       if(!g){r.innerHTML='Adresu sa nepodarilo nájsť na mape. Použi 🧭 Navigovať.';return}
       return fetch('https://router.project-osrm.org/route/v1/driving/'+pos.coords.longitude+','+pos.coords.latitude+';'+g.lng+','+g.lat+'?overview=false').then(function(x){return x.json()}).then(function(j){
         var rt=j&&j.routes&&j.routes[0];if(!rt){r.innerHTML='Trasu sa nepodarilo vypočítať. Použi 🧭 Navigovať.';return}
-        TRIP[k]={s:rt.duration,m:rt.distance,k:k};r.innerHTML=tripHtml(o,TRIP[k]);
+        TRIP[k]={s:rt.duration,m:rt.distance,k:k,tid:tid||''};r.innerHTML=tripHtml(o,TRIP[k]);
       });
     }).catch(function(){r.innerHTML='Cestu sa nepodarilo zistiť (bez internetu?). Použi 🧭 Navigovať.'});
   },function(){r.innerHTML='Povoľ polohu v nastaveniach prehliadača, inak cestu nespočítam. Použi 🧭 Navigovať.'},{enableHighAccuracy:false,timeout:15000,maximumAge:60000});
