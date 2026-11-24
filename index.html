@@ -581,6 +581,12 @@ html[data-lay] body .greet,html[data-theme=dark][data-lay] body .greet{backgroun
 .bn-box{margin:-2px 0 8px 10px}
 .bn-it{display:block;padding:9px 12px;margin:4px 0;background:rgba(120,120,128,.1);border-radius:11px;border-left:3px solid #94a3b8;cursor:pointer;font-size:.92rem;line-height:1.35}
 .bn-it b{font-weight:600}.bn-it span{display:block;color:#8e8e93;font-size:.85em}
+.trip-box{background:#f0fdfa;color:#0f172a;border-left:4px solid #0d9488;padding:8px 10px;border-radius:6px}
+.trip-box strong{color:inherit}.trip-box a{color:#0d9488}
+html[data-theme=dark] .trip-box{background:#12332f!important;color:#e5e5ea!important}
+html[data-theme=dark] .trip-box strong,html[data-theme=dark] .trip-box em{color:#fff!important}
+html[data-theme=dark] .trip-box a{color:#5eead4}
+html[data-theme=dark] .trip-box span{color:#a1a1aa!important}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -4692,7 +4698,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-24.201';
+var APP_VERSION='2026-11-24.202';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5796,7 +5802,7 @@ function tripAddr(type,o){return type==='obhliadky'?[o.adresa,o.obec].filter(Boo
 function tripBox(o,type){
   type=type||'montaze';var ad=tripAddr(type,o);if(!ad)return '';
   var k=type+'_'+o.id;
-  return '<div class="modal-row" id="trip" style="background:#f0fdfa;border-left:4px solid #0d9488;padding:8px 10px;border-radius:6px"><strong>📍 Adresa:</strong> '+esc(ad)+
+  return '<div class="modal-row" id="trip" class="trip-box"><strong>📍 Adresa:</strong> '+esc(ad)+
     '<div id="tripRes" style="margin-top:4px">'+(TRIP[k]?tripHtml(o,TRIP[k]):'<button class="btn-edit" style="background:#0d9488;margin:4px 0 0" onclick="tripCalc(\''+type+'\',\''+esc(o.id)+'\')">🚗 Spočítať cestu a čas výjazdu</button>')+'</div></div>';
 }
 function tripHtml(o,t){
