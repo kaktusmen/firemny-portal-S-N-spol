@@ -1715,7 +1715,14 @@ function ackItem(c,id){
   var m=findById(c,id);if(!m||!me)return;
   m.ackBy=(m.ackBy||[]).concat(me);m.readBy=(m.readBy||[]).indexOf(me)<0?(m.readBy||[]).concat(me):m.readBy;
   col(c).doc(id).update({ackBy:firebase.firestore.FieldValue.arrayUnion(me),readBy:firebase.firestore.FieldValue.arrayUnion(me)}).catch(function(){});
-  toast('👍 Vzaté na vedomie');render();renderToday();if($('eventModal').style.display==='flex'){if(c==='montaze'&&$('jbSteps')===null&&typeof jobStep!=='undefined'&&document.querySelector('#eventModalBody .jb-steps'))showJob(id,jobStep);else closeEvent()}
+  toast('👍 Vzaté na vedomie');render();renderToday();
+  if($('eventModal').style.display==='flex'){
+    var nx=[];['montaze','obhliadky'].forEach(function(k){(dbData[k]||[]).forEach(function(x){if(!(k===c&&x.id===id)&&needsAck(x))nx.push({k:k,id:x.id,d:(x.date||'9999')+(x.time||'')})})});
+    nx.sort(function(a,b){return a.d<b.d?-1:1});
+    if(nx.length){toast('👍 Vzaté na vedomie · ešte '+nx.length+' na potvrdenie');showEvent(nx[0].k,nx[0].id)}
+    else if(c==='montaze'&&document.querySelector('#eventModalBody .jb-steps'))showJob(id,jobStep);
+    else showEvent(c,id);
+  }
 }
 function renderHomeObh(){
   if(!me)return '';
@@ -4698,7 +4705,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-24.202';
+var APP_VERSION='2026-11-24.203';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
