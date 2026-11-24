@@ -3928,7 +3928,7 @@ function showEvent(type,id,view){
       c=(o.clientId&&findById('clients',o.clientId))||null;
       var isR=o.servisType==='Oprava';
       info='<h3>'+srvIcon(o)+esc(o.servisType||'Servis')+': '+esc(o.clientName||'')+'</h3>'+
-        '<div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+
+        '<div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+tripBox(o)+
         '<div class="modal-row"><strong>Telefón:</strong> '+telA(o.telefon)+'</div><div class="modal-row"><strong>E-mail:</strong> '+mailA(o.email)+'</div>'+
         '<div class="modal-row"><strong>Adresa:</strong> '+mapA({adresa:o.address})+'</div>'+
         (o.zariadenie?'<div class="modal-row"><strong>Zariadenie:</strong> '+esc(o.zariadenie)+'</div>':'')+
@@ -3938,14 +3938,14 @@ function showEvent(type,id,view){
       var stB=stavButtons(o);
     }else if(type==='montaze'){
       c=(o.clientId&&findById('clients',o.clientId))||null;
-      info='<h3>'+srvIcon(o)+esc(o.title||'Montáž')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+
+      info='<h3>'+srvIcon(o)+esc(o.title||'Montáž')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+(o.time?' o '+esc(o.time):'')+'</div>'+tripBox(o)+
         deviceRows(o)+'<div class="modal-row" style="background:#ecfeff;border-left:4px solid #0d9488;padding:8px 10px;border-radius:6px"><strong>👷 Na montáž idú:</strong> '+(o.memberNames&&o.memberNames.length?o.memberNames.map(esc).join(', '):'nikto nie je priradený')+'</div>';
       var edO='<button class="btn-edit" style="background:#0d9488" onclick="showJob(\''+esc(o.id)+'\')">📋 Otvoriť zákazku</button><button class="btn-edit" onclick="closeEvent();editMontaz(\''+esc(o.id)+'\')">Upraviť montáž</button>'+(isAdmin()?'<button class="btn-edit" style="background:#2563eb" onclick="quickSched(\'montaze\',\''+esc(o.id)+'\')">📅 Termín a tím</button><button class="btn-edit" style="background:#7c3aed" onclick="quickTeam(\'montaze\',\''+esc(o.id)+'\')">👷 Zmena technika</button>':'')+'<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+esc(o.id)+'\')">🧾 Protokol / podpis</button>';
       var stB=stavButtons(o);
     }else{
       c=(o.klientId&&findById('clients',o.klientId))||null;
       info='<h3>🔍 Obhliadka: '+esc(onm(o))+(o.vykonana?' <small style="color:#16a34a">✅ vykonaná</small>':'')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+'</div>'+
-        '<div class="modal-row"><strong>Telefón:</strong> '+telA(o.telefon)+'</div><div class="modal-row"><strong>E-mail:</strong> '+mailA(o.email)+'</div><div class="modal-row"><strong>Adresa:</strong> '+mapA(o)+'</div>'+
+        '<div class="modal-row"><strong>Telefón:</strong> '+telA(o.telefon)+'</div><div class="modal-row"><strong>E-mail:</strong> '+mailA(o.email)+'</div><div class="modal-row"><strong>Adresa:</strong> '+mapA(o)+'</div>'+tripBox(o,'obhliadky')+
         OL.map(function(x){return o[x[0]]?'<div class="modal-row"><strong>'+x[1]+':</strong> '+esc(o[x[0]])+(x[0]==='vnutorna'&&oUnitTxt(o)?' · '+esc(oUnitTxt(o)):'')+'</div>':''}).join('');
       var obS=(!o.vykonana)?(o.startAt?'<div class="modal-row" style="color:#0d9488;font-weight:600;width:100%">▶ Obhliadka prebieha od '+new Date(o.startAt).toTimeString().slice(0,5)+'</div>':'<button class="btn-edit" style="background:#16a34a" onclick="obhStart(\''+esc(o.id)+'\')">▶ Som na mieste</button>'):'';
       var edO=obS+(o.vykonana?'<button class="btn-edit" style="background:#64748b" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',false)">↩ Vrátiť do úloh</button>':'<button class="btn-edit" style="background:#0d9488" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',true)">✅ Vykonaná</button>')+(isAdmin()?'<button class="btn-edit" style="background:#2563eb" onclick="closeEvent();ponukaFromObhId(\''+esc(o.id)+'\')">💶 Vytvoriť ponuku</button>':'')+'<button class="btn-edit" onclick="closeEvent();editObhliadka(\''+esc(o.id)+'\')">Upraviť obhliadku</button>'+
@@ -4392,7 +4392,7 @@ function showJob(id,step){
     h+='<div class="modal-actions" style="flex-wrap:wrap;margin:6px 0">'+
       (ph?'<a class="btn-edit" style="background:#16a34a;text-decoration:none" href="tel:'+esc(ph)+'">📞 Zavolať</a><a class="btn-edit" style="background:#2563eb;text-decoration:none" href="sms:'+esc(ph)+'">💬 SMS</a>':'')+
       (ad?'<a class="btn-edit" style="background:#0d9488;text-decoration:none" data-nj="'+esc(id)+'" target="_blank" rel="noopener" href="'+esc(navUrl(ad))+'">🧭 Navigovať</a>':'')+'</div>'+
-      '<div class="modal-row">'+(ph?'📞 '+telA(ph)+'<br>':'')+(ad?'📍 '+esc(ad)+'<br>':'')+'<strong>Dátum:</strong> '+esc(m.date?fmtD(m.date):'-')+(m.time?' o '+esc(m.time):'')+(m.memberNames&&m.memberNames.length?'<br>👷 '+m.memberNames.map(esc).join(', '):'')+'</div>'+
+      tripBox(m)+'<div class="modal-row">'+(ph?'📞 '+telA(ph)+'<br>':'')+'<strong>Dátum:</strong> '+esc(m.date?fmtD(m.date):'-')+(m.time?' o '+esc(m.time):'')+(m.memberNames&&m.memberNames.length?'<br>👷 '+m.memberNames.map(esc).join(', '):'')+'</div>'+
       (m.popis?'<div class="modal-row"><strong>Popis:</strong> '+esc(m.popis)+'</div>':'')+takeRow(m)+(jobObh(m)||m.popis?'':obhRow(m))+
       (function(){var ob=jobObh(m);if(!ob)return jobShort(m)?'<div class="modal-row" style="color:#64748b">ℹ️ Údaje o zákazníkovi sa berú z karty zákazníka.</div>':'';
         return '<div class="modal-row" style="background:#f1f5f9;border-radius:8px;padding:8px">📋 <b>Z obhliadky</b>'+(ob.date?' ('+esc(fmtD(ob.date))+')':'')+'<br>'+[ob.name,ob.telefon,ob.email].filter(Boolean).map(esc).join(' · ')+
@@ -4692,7 +4692,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-23.199';
+var APP_VERSION='2026-11-24.200';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5747,6 +5747,84 @@ function openProfile(){
   $('eventModal').style.display='flex';
 }
 function doLogout(){if(!confirm('Odhlásiť sa? Pri ďalšom otvorení vyberieš svoje meno a zadáš PIN alebo heslo.'))return;try{setPinOk('');setAuth('')}catch(e){}closeEvent();setMeHome('',true);gateUpdate()}
+
+/* ===== Späť o krok (v.200) + cesta k zákazke ===== */
+var BK=[],BKbusy=false,BKn=0;
+function bkWrap(n,t){
+  var o=window[n];if(typeof o!=='function')return;
+  window[n]=function(){
+    var a=[].slice.call(arguments),r;
+    if(!BKbusy){
+      BKn++;
+      var top=BK[BK.length-1],j=JSON.stringify(a);
+      if(top&&top.n===n&&(n==='showJob'?top.a[0]===a[0]:JSON.stringify(top.a)===j))BK[BK.length-1]={n:n,a:a,t:t};
+      else BK.push({n:n,a:a,t:t});
+      if(BK.length>30)BK.shift();
+    }
+    r=o.apply(this,arguments);
+    if(t==='m'&&!BKbusy&&BK.length>1&&BK[BK.length-2].t==='m'){
+      try{$('eventModalBody').insertAdjacentHTML('afterbegin','<button class="back-btn" style="margin:0 0 6px" onclick="goBack()">‹ Späť</button>')}catch(e){}
+    }
+    return r;
+  };
+}
+['openSection'].forEach(function(n){bkWrap(n,'s')});
+['showEvent','showJob','showAgenda','showTomorrow','openDay','showLeave','remList','showProtocol'].forEach(function(n){bkWrap(n,'m')});
+['showHome','showWork','showMore'].forEach(function(n){var o=window[n];window[n]=function(){if(!BKbusy){BK=[];BKn++}return o.apply(this,arguments)}});
+(function(){var o=window.closeEvent;window.closeEvent=function(){var r=o.apply(this,arguments);if(BKbusy)return r;var n=BKn;setTimeout(function(){if(n!==BKn)return;while(BK.length&&BK[BK.length-1].t==='m')BK.pop()},0);return r}})();
+function goBack(){
+  var cur=BK.pop(),prev=BK[BK.length-1],modalOpen=$('eventModal').style.display==='flex';
+  BKn++;BKbusy=true;
+  try{
+    if(!cur){if(modalOpen)closeEvent();else goHome();return}
+    if(cur.t==='m'){
+      if(prev&&prev.t==='m'){window[prev.n].apply(null,prev.a)}
+      else closeEvent();
+    }else{
+      if(modalOpen)closeEvent();
+      if(prev&&prev.t==='s')window[prev.n].apply(null,prev.a);
+      else if(prev&&prev.t==='m'){window[prev.n].apply(null,prev.a)}
+      else goHome();
+    }
+  }finally{BKbusy=false}
+  if(prev&&prev.t==='m'&&BK.length>1&&BK[BK.length-2].t==='m'){try{$('eventModalBody').insertAdjacentHTML('afterbegin','<button class="back-btn" style="margin:0 0 6px" onclick="goBack()">‹ Späť</button>')}catch(e){}}
+}
+var TRIP={};
+function tripAddr(type,o){return type==='obhliadky'?[o.adresa,o.obec].filter(Boolean).join(', '):jobAddr(o)}
+function tripBox(o,type){
+  type=type||'montaze';var ad=tripAddr(type,o);if(!ad)return '';
+  var k=type+'_'+o.id;
+  return '<div class="modal-row" id="trip" style="background:#f0fdfa;border-left:4px solid #0d9488;padding:8px 10px;border-radius:6px"><strong>📍 Adresa:</strong> '+esc(ad)+
+    '<div id="tripRes" style="margin-top:4px">'+(TRIP[k]?tripHtml(o,TRIP[k]):'<button class="btn-edit" style="background:#0d9488;margin:4px 0 0" onclick="tripCalc(\''+type+'\',\''+esc(o.id)+'\')">🚗 Spočítať cestu a čas výjazdu</button>')+'</div></div>';
+}
+function tripHtml(o,t){
+  var min=Math.round(t.s/60),km=Math.round(t.m/1000),h='🚗 Cesta asi <b>'+(min>=60?Math.floor(min/60)+' h '+(min%60)+' min':min+' min')+'</b> ('+km+' km) z tvojej polohy';
+  if(o.time&&o.date){
+    var st=new Date(o.date+'T'+o.time+':00'),lv=new Date(st.getTime()-(t.s+600)*1000);
+    var p=function(x){return ('0'+x).slice(-2)},lt=p(lv.getHours())+':'+p(lv.getMinutes());
+    h+='<br>⏰ Na '+esc(o.time)+' vyraz najneskôr o <b>'+(ymd(lv)===o.date?lt:fmtD(ymd(lv))+' '+lt)+'</b> <span style="color:#64748b">(rezerva 10 min)</span>';
+  }
+  return h+'<br><span style="color:#64748b;font-size:.8rem">Bez zápch a dopravy. Pri výjazde z iného miesta ťukni znova.</span> <a href="#" onclick="tripReset(\''+esc(t.k)+'\');return false" style="font-size:.85rem">↻ prepočítať</a>';
+}
+function tripReset(k){delete TRIP[k];var a=k.split('_'),t=a.shift(),id=a.join('_');tripCalc(t,id)}
+function tripCalc(type,id){
+  var o=findById(type,id),r=$('tripRes');if(!o||!r)return;
+  var ad=tripAddr(type,o),k=type+'_'+id;
+  r.innerHTML='⏳ Zisťujem polohu a trasu…';
+  if(!navigator.geolocation){r.innerHTML='Poloha nie je dostupná. Použi 🧭 Navigovať.';return}
+  navigator.geolocation.getCurrentPosition(function(pos){
+    geoFetch(ad).then(function(g){
+      if(!g&&o.obec)return geoFetch(o.obec);return g;
+    }).then(function(g){
+      if(!g){r.innerHTML='Adresu sa nepodarilo nájsť na mape. Použi 🧭 Navigovať.';return}
+      return fetch('https://router.project-osrm.org/route/v1/driving/'+pos.coords.longitude+','+pos.coords.latitude+';'+g.lng+','+g.lat+'?overview=false').then(function(x){return x.json()}).then(function(j){
+        var rt=j&&j.routes&&j.routes[0];if(!rt){r.innerHTML='Trasu sa nepodarilo vypočítať. Použi 🧭 Navigovať.';return}
+        TRIP[k]={s:rt.duration,m:rt.distance,k:k};r.innerHTML=tripHtml(o,TRIP[k]);
+      });
+    }).catch(function(){r.innerHTML='Cestu sa nepodarilo zistiť (bez internetu?). Použi 🧭 Navigovať.'});
+  },function(){r.innerHTML='Povoľ polohu v nastaveniach prehliadača, inak cestu nespočítam. Použi 🧭 Navigovať.'},{enableHighAccuracy:false,timeout:15000,maximumAge:60000});
+}
+
 setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
 </script>
 </head>
@@ -5854,7 +5932,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="settingsSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Nastavenia</h2>
     <div class="menu-list">
       <div class="menu-card" onclick="hardRefresh()">🔄 Aktualizovať aplikáciu</div>
@@ -5878,7 +5956,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="clientsSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Správa klientov</h2>
     <div class="cl-top"><button class="action-btn" id="clientAddBtn" onclick="showClientForm()">➕ Pridať klienta</button><button class="btn-edit admin-only" onclick="openMapa()">🗺 Mapa</button></div>
     <div id="clientFormBox" style="display:none">
@@ -5905,14 +5983,14 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="myTasksSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Moje úlohy</h2>
     <select id="meSelect" onchange="setMe()"></select>
     <div id="myTasksList"></div>
   </div>
 
   <div id="dopytySection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>📥 Dopyty od zákazníkov</h2>
     <p style="color:#64748b;font-size:.9rem;margin-top:0">Sem prichádzajú objednávky z QR kódov na zariadeniach a z cenových ponúk.</p>
     <button class="action-btn" style="background:#0ea5e9;margin-bottom:12px" onclick="qrSticker()">🏷 QR nálepky na tlač (všeobecné)</button>
@@ -5920,7 +5998,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="ponukySection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Cenové ponuky</h2>
     <input type="hidden" id="editingPonukaId" value="">
     <button class="action-btn" id="ponukaAddBtn" onclick="showPonukaForm()">➕ Nová cenová ponuka</button>
@@ -5942,14 +6020,14 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="helpSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <p style="color:#8e8e93;margin:0 2px 10px">Klikni na tému a rozbalí sa návod.</p>
     <div id="helpList"></div>
     <button class="action-btn" style="margin-top:14px" onclick="showWelcome()">👋 Zobraziť úvod znova</button>
   </div>
 
   <div id="hovorySection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>📞 Chybové hlásenia</h2>
     <button class="action-btn" onclick="hovorForm()">➕ Zapísať chybové hlásenie</button>
     <input type="search" id="hovorySearch" placeholder="🔍 Hľadať (meno, telefón, kód chyby, popis…)" oninput="render()" autocomplete="off" style="margin-top:8px">
@@ -5957,14 +6035,14 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     <div id="hovoryList" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">Načítavam...</div>
   </div>
   <div id="autaSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>🚗 Firemné autá</h2>
     <button class="action-btn" onclick="autoForm()">➕ Pridať auto</button>
     <div style="color:#64748b;font-size:.88rem;margin:6px 0 10px">Sleduje sa STK, emisná kontrola a diaľničná známka. 30 dní pred koncom sa upozornenie objaví v Prehľade na úvodnej stránke.</div>
     <div id="autaList">Načítavam...</div>
   </div>
   <div id="chladivoSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>❄️ Správa chladiva</h2>
     <p style="color:#64748b;font-size:.9rem;margin-top:0">Zapíš každé doplnenie chladiva: kedy, kde, komu, aké a koľko.</p>
     <input type="hidden" id="chEditId">
@@ -5988,7 +6066,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="volnoSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Voľno</h2>
     <p id="vInfo" style="color:#64748b;font-size:.9rem;margin-top:0"></p>
     <div class="form-grid"><select id="vMember" class="full-width-input"></select><select id="vTyp" class="full-width-input" onchange="volnoTypUi()"><option value="den">📅 Celý deň (alebo viac dní)</option><option value="cas">🕐 Na určitý čas (hodiny)</option></select>
@@ -5999,7 +6077,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="tutSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>📖 Návod</h2>
     <p style="color:#64748b;margin-top:0" class="tutT">Návod pre technika. Ťukni na nadpis a ukáže sa postup.</p>
     <p style="color:#64748b;margin-top:0" class="admin-only">Návod pre správcu (vidíš aj časti pre technikov). Ťukni na nadpis a ukáže sa postup.</p>
@@ -6196,7 +6274,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
     </div>
   </div>
   <div id="zakazkySection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>📋 Zákazky</h2>
     <input id="zkQ" placeholder="🔍 Hľadať klienta, názov, technika…" oninput="renderZakazky()" style="width:100%;box-sizing:border-box;margin-bottom:6px">
     <select id="zkF" onchange="renderZakazky()" style="width:100%;margin-bottom:8px"></select>
@@ -6204,7 +6282,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="bigSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>🏢 Veľkí klienti</h2>
     <select id="bigSel" onchange="renderBig()" style="width:100%"></select>
     <div class="modal-actions" style="margin:8px 0">
@@ -6219,7 +6297,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="mapaSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>🗺 Mapa klientov</h2>
     <input id="mapQ" placeholder="Hľadať klienta / obec…" oninput="drawMapa(false)" style="width:100%;box-sizing:border-box">
     <p id="mapInfo" style="color:#64748b;font-size:.85rem;margin:6px 0"></p>
@@ -6229,21 +6307,21 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="searchSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Hľadať</h2>
     <input type="search" id="srQ" class="full-width-input" placeholder="🔎 Meno, telefón, adresa, číslo ponuky…" oninput="renderSearch()" autocomplete="off">
     <div id="srOut"></div>
   </div>
 
   <div id="prehladSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Prehľad pre správcu</h2>
     <div id="phTabs" class="ph-tabs"></div>
     <div id="phBody">Načítavam...</div>
   </div>
 
   <div id="routeSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Trasa dňa</h2>
     <div style="display:flex;gap:8px;margin:6px 0"><button id="rtBd" class="btn-edit" style="flex:1;background:#2563eb" onclick="rtSetMode('d')">Deň</button><button id="rtBw" class="btn-edit" style="flex:1;background:#64748b" onclick="rtSetMode('w')">Týždeň</button></div>
     <div class="form-grid"><label class="fl">Dátum<input type="date" id="rtDate" onchange="renderRoute()"></label><select id="rtTech" onchange="renderRoute()"></select></div>
@@ -6252,14 +6330,14 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="dueSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Servisné termíny</h2>
     <p style="color:#64748b;font-size:.9rem;margin-top:0">Záručné servisy v najbližších 30 dňoch (a týždeň po termíne).</p>
     <div id="dueList"></div>
   </div>
 
   <div id="adminSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Správa aplikácie</h2>
     <div class="ms-choice">
       <button class="action-btn" style="padding:16px" onclick="admShow('firma')">🏢 Firma</button>
@@ -6272,7 +6350,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="calendarSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Kalendár udalostí</h2>
     <div class="cal-nav" style="margin-bottom:6px"><button id="calBtnM" onclick="setCalMode('month')">Mesiac</button><button id="calBtnW" onclick="setCalMode('week')">Týždeň</button><select id="calTech" onchange="renderCalendar()" style="flex:1;min-width:0"></select></div>
     <div class="cal-nav"><button onclick="changeMonth(-1)">◀</button><span class="cal-title" id="calTitle"></span><button onclick="goToday()">Dnes</button><button onclick="changeMonth(1)">▶</button></div>
@@ -6283,12 +6361,12 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="statSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Štatistika používania</h2>
     <div id="statBody"></div>
   </div>
   <div id="teamSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Správa tímu</h2>
     <input type="hidden" id="editingMemberId" value="">
     <div class="form-grid admin-only"><input type="text" id="tName" placeholder="Meno a priezvisko člena"><input type="text" id="tTel" placeholder="Telefón"><select id="tRola" class="full-width-input"><option value="Technik">Rola: Technik</option><option value="Správca">Rola: Správca</option></select><input type="text" id="tPin" class="full-width-input" inputmode="numeric" maxlength="4" placeholder="PIN technika – 4 čísla (pri úprave prázdne = bez zmeny)" autocomplete="off"><label class="full-width-input" style="display:flex;gap:8px;align-items:center;font-size:.85rem"><input type="checkbox" id="tPinClear" style="width:18px;height:18px;flex:none"> Zrušiť PIN tohto technika</label><input type="password" id="tHeslo" class="full-width-input" placeholder="Heslo správcu (pri úprave nechajte prázdne = bez zmeny)" autocomplete="new-password"></div>
@@ -6298,7 +6376,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="montazSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Montáž / Servis</h2>
     <div id="msChoice" class="ms-choice">
       <button class="action-btn" onclick="newMontaz()">🔧 Montáž</button>
@@ -6457,7 +6535,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="montazListSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Zoznam montáží a servisov</h2>
     <input type="search" id="msSearch" placeholder="🔍 Hľadať podľa mena klienta, názvu alebo technika" oninput="render()" autocomplete="off">
     <select id="msTech" onchange="render()" style="width:100%;margin-bottom:8px"></select>
@@ -6465,7 +6543,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="obhliadkaSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Obhliadky</h2>
     <p style="color:#64748b;font-size:.9rem;margin-top:0">Obhliadka je pre potenciálneho klienta. Keď klient potvrdí montáž, preklopíš ho na kartu klienta.</p>
     <input type="hidden" id="editingObhliadkaId" value="">
@@ -6499,7 +6577,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="obhliadkyListSection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Zoznam obhliadok</h2>
     <input id="obSearch" placeholder="🔍 Hľadať podľa mena, obce, technika…" oninput="render()" style="width:100%;box-sizing:border-box;margin-bottom:6px">
     <select id="obFilter" onchange="render()" style="width:100%;margin-bottom:8px"></select>
@@ -6507,7 +6585,7 @@ setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
   </div>
 
   <div id="spravySection" class="section-content">
-    <button class="back-btn" onclick="goHome()">‹ Späť</button>
+    <button class="back-btn" onclick="goBack()">‹ Späť</button>
     <h2>Správy pre tím</h2>
     <div class="form-grid">
       <div id="sFromInfo" class="full-width-input" style="display:none;color:#64748b"></div>
