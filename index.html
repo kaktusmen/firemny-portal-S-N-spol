@@ -4705,7 +4705,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-24.203';
+var APP_VERSION='2026-11-26.204';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5813,31 +5813,34 @@ function tripBox(o,type){
     '<div id="tripRes" style="margin-top:4px">'+(TRIP[k]?tripHtml(o,TRIP[k]):'<button class="btn-edit" style="background:#0d9488;margin:4px 0 0" onclick="tripCalc(\''+type+'\',\''+esc(o.id)+'\')">🚗 Spočítať cestu a čas výjazdu</button>')+'</div></div>';
 }
 function tripHtml(o,t){
-  var min=Math.round(t.s/60),km=Math.round(t.m/1000),h='🚗 Cesta asi <em style="font-style:normal;font-weight:700;color:inherit">'+(min>=60?Math.floor(min/60)+' h '+(min%60)+' min':min+' min')+'</em> ('+km+' km) z tvojej polohy';
+  var min=Math.round(t.s/60),km=Math.round(t.m/1000),h='🚗 Cesta asi <em style="font-style:normal;font-weight:700;color:inherit">'+(min>=60?Math.floor(min/60)+' h '+(min%60)+' min':min+' min')+'</em> ('+km+' km) '+(t.src||'zo skladu');
   if(o.time&&o.date){
     var st=new Date(o.date+'T'+o.time+':00'),lv=new Date(st.getTime()-(t.s+600)*1000);
     var p=function(x){return ('0'+x).slice(-2)},lt=p(lv.getHours())+':'+p(lv.getMinutes());
     h+='<br>⏰ Na '+esc(o.time)+' vyraz najneskôr o <em style="font-style:normal;font-weight:700;color:inherit">'+(ymd(lv)===o.date?lt:fmtD(ymd(lv))+' '+lt)+'</em> <span style="color:#64748b">(rezerva 10 min)</em>';
   }
-  return h+'<br><span style="color:#64748b;font-size:.78rem">Bez zápch. </span><a href="#" onclick="tripReset(\''+esc(t.k)+'\');return false" style="font-size:.85rem">↻ prepočítať</a>';
+  return h+'<br><span style="color:#64748b;font-size:.78rem">Bez zápch. </span><a href="#" onclick="tripReset(\''+esc(t.k)+'\','+(t.src==='zo skladu'?1:0)+');return false" style="font-size:.85rem">'+(t.src==='zo skladu'?'📍 z mojej polohy':'🏭 zo skladu')+'</a>';
 }
-function tripReset(k){var tid=(TRIP[k]||{}).tid||'';delete TRIP[k];var a=k.split('_'),t=a.shift(),id=a.join('_');tripCalc(t,id,tid||undefined)}
-function tripCalc(type,id,tid){
+function tripReset(k,g){var tid=(TRIP[k]||{}).tid||'';delete TRIP[k];var a=k.split('_'),t=a.shift(),id=a.join('_');tripCalc(t,id,tid||undefined,!!g)}
+var WH={lat:48.390457,lng:20.020585};
+function tripCalc(type,id,tid,gps){
   var o=findById(type,id),r=$(tid||'tripRes');if(!o||!r)return;
   var ad=tripAddr(type,o),k=type+'_'+id;
-  r.innerHTML='⏳ Zisťujem polohu a trasu…';
-  if(!navigator.geolocation){r.innerHTML='Poloha nie je dostupná. Použi 🧭 Navigovať.';return}
-  navigator.geolocation.getCurrentPosition(function(pos){
+  r.innerHTML='⏳ Počítam trasu…';
+  var go=function(from,src){
     geoFetch(ad).then(function(g){
       if(!g&&o.obec)return geoFetch(o.obec);return g;
     }).then(function(g){
       if(!g){r.innerHTML='Adresu sa nepodarilo nájsť na mape. Použi 🧭 Navigovať.';return}
-      return fetch('https://router.project-osrm.org/route/v1/driving/'+pos.coords.longitude+','+pos.coords.latitude+';'+g.lng+','+g.lat+'?overview=false').then(function(x){return x.json()}).then(function(j){
+      return fetch('https://router.project-osrm.org/route/v1/driving/'+from.lng+','+from.lat+';'+g.lng+','+g.lat+'?overview=false').then(function(x){return x.json()}).then(function(j){
         var rt=j&&j.routes&&j.routes[0];if(!rt){r.innerHTML='Trasu sa nepodarilo vypočítať. Použi 🧭 Navigovať.';return}
-        TRIP[k]={s:rt.duration,m:rt.distance,k:k,tid:tid||''};r.innerHTML=tripHtml(o,TRIP[k]);
+        TRIP[k]={s:rt.duration,m:rt.distance,k:k,tid:tid||'',src:src};r.innerHTML=tripHtml(o,TRIP[k]);
       });
     }).catch(function(){r.innerHTML='Cestu sa nepodarilo zistiť (bez internetu?). Použi 🧭 Navigovať.'});
-  },function(){r.innerHTML='Povoľ polohu v nastaveniach prehliadača, inak cestu nespočítam. Použi 🧭 Navigovať.'},{enableHighAccuracy:false,timeout:15000,maximumAge:60000});
+  };
+  if(!gps){go(WH,'zo skladu');return}
+  if(!navigator.geolocation){r.innerHTML='Poloha nie je dostupná.';return}
+  navigator.geolocation.getCurrentPosition(function(pos){go({lat:pos.coords.latitude,lng:pos.coords.longitude},'z tvojej polohy')},function(){r.innerHTML='Povoľ polohu v prehliadači, inak cestu z tvojej polohy nespočítam.'},{enableHighAccuracy:false,timeout:15000,maximumAge:60000});
 }
 
 setInterval(gateUpdate,600);setTimeout(gateUpdate,300);
