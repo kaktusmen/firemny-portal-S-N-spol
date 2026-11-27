@@ -4625,7 +4625,7 @@ function drawMapa(fit){
   if(fit&&pts.length)mapObj.fitBounds(pts,{padding:[30,30],maxZoom:13});
 }
 function geoFetch(q){
-  return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=sk,cz&q='+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(a){return a&&a[0]?{lat:+a[0].lat,lng:+a[0].lon}:null});
+  return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=sk,cz&q='+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(a){return a&&a[0]?{lat:+a[0].lat,lng:+a[0].lon,name:a[0].display_name||''}:null});
 }
 function geoRun(){
   if(geoBusy)return;
@@ -4705,7 +4705,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-26.204';
+var APP_VERSION='2026-11-26.205';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -5819,7 +5819,7 @@ function tripHtml(o,t){
     var p=function(x){return ('0'+x).slice(-2)},lt=p(lv.getHours())+':'+p(lv.getMinutes());
     h+='<br>⏰ Na '+esc(o.time)+' vyraz najneskôr o <em style="font-style:normal;font-weight:700;color:inherit">'+(ymd(lv)===o.date?lt:fmtD(ymd(lv))+' '+lt)+'</em> <span style="color:#64748b">(rezerva 10 min)</em>';
   }
-  return h+'<br><span style="color:#64748b;font-size:.78rem">Bez zápch. </span><a href="#" onclick="tripReset(\''+esc(t.k)+'\','+(t.src==='zo skladu'?1:0)+');return false" style="font-size:.85rem">'+(t.src==='zo skladu'?'📍 z mojej polohy':'🏭 zo skladu')+'</a>';
+  return h+'<br><span style="color:#64748b;font-size:.78rem">Mapa našla: '+esc(t.pl||'?')+'</span><br><a href="https://www.google.com/maps/dir/?api=1&origin='+(t.src==='zo skladu'?WH.lat+','+WH.lng:'')+'&destination='+encodeURIComponent(t.ad||'')+'&travelmode=driving" target="_blank" style="font-size:.85rem">🗺 Presná trasa v Google Mapách</a><br><span style="color:#64748b;font-size:.78rem">Bez zápch. </span><a href="#" onclick="tripReset(\''+esc(t.k)+'\','+(t.src==='zo skladu'?1:0)+');return false" style="font-size:.85rem">'+(t.src==='zo skladu'?'📍 z mojej polohy':'🏭 zo skladu')+'</a>';
 }
 function tripReset(k,g){var tid=(TRIP[k]||{}).tid||'';delete TRIP[k];var a=k.split('_'),t=a.shift(),id=a.join('_');tripCalc(t,id,tid||undefined,!!g)}
 var WH={lat:48.390457,lng:20.020585};
@@ -5834,7 +5834,7 @@ function tripCalc(type,id,tid,gps){
       if(!g){r.innerHTML='Adresu sa nepodarilo nájsť na mape. Použi 🧭 Navigovať.';return}
       return fetch('https://router.project-osrm.org/route/v1/driving/'+from.lng+','+from.lat+';'+g.lng+','+g.lat+'?overview=false').then(function(x){return x.json()}).then(function(j){
         var rt=j&&j.routes&&j.routes[0];if(!rt){r.innerHTML='Trasu sa nepodarilo vypočítať. Použi 🧭 Navigovať.';return}
-        TRIP[k]={s:rt.duration,m:rt.distance,k:k,tid:tid||'',src:src};r.innerHTML=tripHtml(o,TRIP[k]);
+        TRIP[k]={s:rt.duration,m:rt.distance,k:k,tid:tid||'',src:src,pl:(g.name||'').split(',').slice(0,3).join(','),ad:ad};r.innerHTML=tripHtml(o,TRIP[k]);
       });
     }).catch(function(){r.innerHTML='Cestu sa nepodarilo zistiť (bez internetu?). Použi 🧭 Navigovať.'});
   };
