@@ -3958,7 +3958,7 @@ function showEvent(type,id,view){
     }else{
       c=(o.klientId&&findById('clients',o.klientId))||null;
       info='<h3>🔍 Obhliadka: '+esc(onm(o))+(o.vykonana?' <small style="color:#16a34a">✅ vykonaná</small>':'')+'</h3><div class="modal-row"><strong>Dátum:</strong> '+esc(o.date||'-')+'</div>'+
-        '<div class="modal-row"><strong>Telefón:</strong> '+telA(o.telefon)+'</div><div class="modal-row"><strong>E-mail:</strong> '+mailA(o.email)+'</div><div class="modal-row"><strong>Adresa:</strong> '+mapA(o)+'</div>'+tripBox(o,'obhliadky')+
+        '<div class="modal-row"><strong>Telefón:</strong> '+telA(o.telefon)+'</div><div class="modal-row"><strong>E-mail:</strong> '+mailA(o.email)+'</div><div class="modal-row"><strong>Adresa:</strong> '+mapA(o)+'</div>'+tripBox(o,'obhliadky')+'<div class="modal-actions" style="flex-wrap:wrap">'+obhBtns(o,'btn-edit')+'</div>'+
         OL.map(function(x){return o[x[0]]?'<div class="modal-row"><strong>'+x[1]+':</strong> '+esc(o[x[0]])+(x[0]==='vnutorna'&&oUnitTxt(o)?' · '+esc(oUnitTxt(o)):'')+'</div>':''}).join('');
       var obS=(!o.vykonana)?(o.startAt?'<div class="modal-row" style="color:#0d9488;font-weight:600;width:100%">▶ Obhliadka prebieha od '+new Date(o.startAt).toTimeString().slice(0,5)+'</div>':'<button class="btn-edit" style="background:#16a34a" onclick="obhStart(\''+esc(o.id)+'\')">▶ Som na mieste</button>'):'';
       var edO=obS+(o.vykonana?'<button class="btn-edit" style="background:#64748b" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',false)">↩ Vrátiť do úloh</button>':'<button class="btn-edit" style="background:#0d9488" onclick="closeEvent();obhDone(\''+esc(o.id)+'\',true)">✅ Vykonaná</button>')+(isAdmin()?'<button class="btn-edit" style="background:#2563eb" onclick="closeEvent();ponukaFromObhId(\''+esc(o.id)+'\')">💶 Vytvoriť ponuku</button>':'')+'<button class="btn-edit" onclick="closeEvent();editObhliadka(\''+esc(o.id)+'\')">Upraviť obhliadku</button>'+
@@ -4705,7 +4705,7 @@ function listBtns(m){
     '<button class="btn-edit" style="background:#475569" onclick="showProtocol(\''+id+'\')">🧾 Protokol</button>'+
     '<button class="btn-edit" style="background:#16a34a" onclick="showEvent(\'montaze\',\''+id+'\')">📷 Fotky'+(m.fotoCount?' ('+m.fotoCount+')':'')+'</button>'+navBtn(m,'btn-edit')+smsBtn(m);
 }
-var APP_VERSION='2026-11-26.205';
+var APP_VERSION='2026-11-27.206';
 var membersReady=false;
 function sha256(str){
   if(window.crypto&&crypto.subtle&&window.TextEncoder){
@@ -4914,6 +4914,11 @@ function initGestures(){
   document.addEventListener('touchend',function(e){if(pok&&e.changedTouches[0].clientY-py>130)hardRefresh();pok=false},{passive:true});
 }
 function ymd(d){return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())}
+function obhBtns(o,cls){
+  var ph=(o.telefon||'').toString().replace(/[^\d+]/g,''),ad=tripAddr('obhliadky',o);
+  return (ph?'<a '+(cls?'class="'+cls+'" ':'')+'href="tel:'+esc(ph)+'" style="background:#16a34a;color:#fff;text-decoration:none">📞 Zavolať</a>':'')+
+    (ad?'<a '+(cls?'class="'+cls+'" ':'')+'href="'+esc(navUrl(ad))+'" target="_blank" rel="noopener" style="background:#0ea5e9;color:#fff;text-decoration:none">🧭 Navigovať</a>':'');
+}
 function dayRow(e,cp){
   var q='',adr='';
   if(e.type==='montaze'){
@@ -4926,6 +4931,15 @@ function dayRow(e,cp){
       q='<div class="dr-q" onclick="event.stopPropagation()">'+(needsAck(m)?'<a href="#" style="background:#16a34a;color:#fff" onclick="ackJob(\''+esc(e.id)+'\');return false">👍 Beriem na vedomie</a>':'')+(ph&&!cp?'<a href="tel:'+esc(ph)+'">📞 Zavolať</a>':'')+
         (!cp&&stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(smsText(m))+'" onclick="markRem(\''+smsKey(m)+'\')">💬 Odoslať SMS</a>':'')+(!cp&&stel&&m.date&&m.stav!=='Hotová'?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(SMS_TPL[1][1])+'">⏰ Meškáme</a>':'')+
         (!cp&&stel&&m.stav==='Hotová'&&reviewText()?'<a href="sms:'+esc(stel)+'?&body='+encodeURIComponent(reviewText())+'">⭐ Požiadať o hodnotenie</a>':'')+(cp?'':navBtn(m))+(ad0?'<a href="#" onclick="tripCalc(\'montaze\',\''+esc(e.id)+'\',\'trm_'+esc(e.id)+'\');return false">🚗 Cesta</a>':'')+'<a href="#" onclick="showJob(\''+esc(e.id)+'\');return false">📋 Zákazka'+(mi.length?' <span class="miss">'+mi.length+'</span>':'')+'</a></div>';
+    }
+  }
+  if(e.type==='obhliadky'){
+    var ob=findById('obhliadky',e.id);
+    if(ob&&(isAdmin()||(ob.memberIds||[]).indexOf(me)>-1)){
+      var oad=tripAddr('obhliadky',ob);
+      if(oad)adr='<div onclick="event.stopPropagation()" style="margin-top:4px;font-size:.88rem">📍 '+esc(oad)+'<div id="trm_'+esc(e.id)+'">'+(TRIP['obhliadky_'+e.id]?tripHtml(ob,TRIP['obhliadky_'+e.id]):'')+'</div></div>';
+      var ob2=obhBtns(ob)+(oad?'<a href="#" onclick="tripCalc(\'obhliadky\',\''+esc(e.id)+'\',\'trm_'+esc(e.id)+'\');return false">🚗 Cesta</a>':'');
+      if(ob2)q='<div class="dr-q" onclick="event.stopPropagation()">'+ob2+'</div>';
     }
   }
   var dn=e.type==='montaze'&&(findById('montaze',e.id)||{}).stav==='Hotová';
